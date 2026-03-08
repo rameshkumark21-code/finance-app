@@ -10,41 +10,59 @@ st.title("₹ FinTrack Pro")
 
 # Connect to Google Sheets
 conn = st.connection("gsheets", type=GSheetsConnection)
+SHEET_URL = "https://docs.google.com/spreadsheets/d/1g_tT_yuO_-kN-e-3bufhZI3q0WEOVvWYerUV4bwMQQc/edit"
 
-# --- CATEGORY SYNC LOGIC ---
+# --- SYNC CATEGORIES ---
 try:
-    # Use ttl=0 to ensure it doesn't use old, broken cached data
-    categories_df = conn.read(worksheet="Categories", ttl=0)
-    # This grabs everything under the "Category" column in your sheet
+    # Being explicit with the URL helps avoid the 400 error
+    categories_df = conn.read(spreadsheet=SHEET_URL, worksheet="Categories", ttl=0)
     categories = categories_df["Category"].dropna().unique().tolist()
-    
-    if not categories:
-        raise ValueError("Sheet is empty")
 except Exception as e:
-    # If it fails, we show this fallback so the app doesn't crash
-    st.sidebar.warning(f"Note: Using offline categories. (Error: {str(e)})")
-    categories = ["Food", "Groceries", "Fuel", "Rent", "Other"]
+    st.error(f"Sync Error: {e}")
+    categories = ["Food", "Groceries", "Fuel", "Rent", "Bike", "EB", "Home", "Clothing"]
 
-# Expense Input Form
+# --- CARD LOGIC HELPER ---
+def get_card_advice(cat):
+    # HDFC Millennia 5% partners
+    millennia_5pct = ["Zomato", "Swiggy", "Uber", "Amazon", "Flipkart", "Clout Fit"]
+    # SBI Signature 5X partners
+    sbi_5x = ["Dining", "Food", "Groceries", "Vegetables", "Departmental"]
+    # Zero reward categories
+    zero_reward = ["Rent", "Fuel", "Insurance"]
+
+    if cat in sbi_5x:
+        return "SBI Signature", "5X Reward Points"
+    elif cat in millennia_5pct:
+        return "HDFC Millennia", "5% Cashback"
+    elif cat in zero_reward:
+        return "⚠️ ANY", "Zero Rewards Category"
+    else:
+        return "HDFC Millennia", "1% Cashback"
+
+# --- EXPENSE FORM ---
 with st.form("entry_form", clear_on_submit=True):
     st.subheader("Log New Expense")
     amount = st.number_input("Amount (₹)", min_value=0, step=1)
     category = st.selectbox("Category", categories)
     note = st.text_input("Note (Optional)")
     
+    # Live Card Suggestion
+    rec_card, benefit = get_card_advice(category)
+    st.info(f"💡 Recommended: **{rec_card}** ({benefit})")
+    
     submit = st.form_submit_button("Log Expense")
 
-    if submit:
-        if amount > 0:
-            tz = pytz.timezone('Asia/Kolkata')
-            now = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
-            
-            new_row = pd.DataFrame([{"Date": now, "Amount": amount, "Category": category, "Note": note}])
-            
-            # Read and Append (ttl=0 is key here too)
-            existing_data = conn.read(worksheet="Expenses", ttl=0)
-            updated_df = pd.concat([existing_data, new_row], ignore_index=True)
-            
-            conn.update(worksheet="Expenses", data=updated_df)
-            st.success(f"Successfully logged ₹{amount} to your Google Sheet!")
-            st.balloons()
+    if submit and amount > 0:
+        tz = pytz.timezone('Asia/Kolkata')
+        now = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
+        
+        new_row = pd.DataFrame([{"Date": now, "Amount": amount, "Category": category, "Note": note}])
+        
+        # Save to sheet
+        existing_data = conn.read(spreadsheet=SHEET_URL, worksheet="Expenses", ttl=0)
+        updated_df = pd.concat([existing_data, new_row], ignore_index=True)
+        conn.update(spreadsheet=SHEET_URL, worksheet="Expenses", data=updated_df)
+        
+        st.success(f"Logged ₹{amount} for {category}!")
+        if rec_card == "HDFC Millennia":
+            st.write("Progressing towards your ₹1L quarterly milestone!")
