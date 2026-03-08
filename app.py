@@ -470,7 +470,7 @@ with tab_home:
         else:
             for idx, row in txn_df.iterrows():
                 date_disp = pd.to_datetime(row["Date"]).strftime("%-d %b, %H:%M") if pd.notna(row["Date"]) else "-"
-                label     = f"{row['Category']}  --  Rs.{float(row['Amount']):,.0f}  --  {date_disp}"
+                label     = f"   {row['Category']}  --  Rs.{float(row['Amount']):,.0f}  --  {date_disp}"
                 with st.expander(label):
                     ea, eb = st.columns(2)
                     new_amt  = ea.number_input("Amount", value=float(row["Amount"]), min_value=0.0, key=f"e_amt_{idx}")
