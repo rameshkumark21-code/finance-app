@@ -17,7 +17,6 @@ st.markdown("""
         border: 1px solid #333333 !important;
         border-radius: 28px !important;
     }
-    /* Summary Bubble Styling */
     .summary-box {
         background: #1c1c1e; 
         padding: 15px; 
@@ -38,7 +37,6 @@ def load_data():
         c = conn.read(worksheet="Categories", ttl=0)
         return e, c
     except:
-        # Expected columns: Date, Amount, Category, Note, Mode
         return pd.DataFrame(columns=["Date", "Amount", "Category", "Note", "Mode"]), pd.DataFrame(columns=["Category"])
 
 df, cat_df = load_data()
@@ -59,7 +57,6 @@ def log_expense_modal():
     if "temp_note" not in st.session_state:
         st.session_state.temp_note = ""
 
-    # STEP 1: AMOUNT
     if st.session_state.step == 1:
         st.subheader("How much?")
         amount = st.number_input("Amount", min_value=0, step=1, value=st.session_state.temp_amount, placeholder="₹ 0", key="ux_amt", label_visibility="collapsed")
@@ -70,7 +67,6 @@ def log_expense_modal():
                 st.session_state.step = 2
                 st.rerun()
 
-    # STEP 2: CATEGORY & MODE
     elif st.session_state.step == 2:
         st.subheader("Details")
         cat = st.selectbox("Category", categories, index=categories.index(st.session_state.temp_cat) if st.session_state.temp_cat in categories else 0)
@@ -85,7 +81,6 @@ def log_expense_modal():
             st.session_state.step = 3
             st.rerun()
 
-    # STEP 3: NOTE & DONE
     elif st.session_state.step == 3:
         st.subheader("Finalize")
         st.markdown(f"<div class='summary-box'><b>₹{st.session_state.temp_amount}</b> via <b>{st.session_state.temp_mode}</b><br><small>{st.session_state.temp_cat}</small></div>", unsafe_allow_html=True)
@@ -114,16 +109,19 @@ if not df.empty:
     df['Amount'] = pd.to_numeric(df['Amount'], errors='coerce').fillna(0)
     now = datetime.now(pytz.timezone('Asia/Kolkata'))
     
-    # Quarterly Milestone (Q1: Jan-Mar, Q2: Apr-Jun, etc.)
+    # Quarterly Milestone Logic
     q_map = {1:1, 2:1, 3:1, 4:2, 5:2, 6:2, 7:3, 8:3, 9:3, 10:4, 11:4, 12:4}
     curr_q = q_map[now.month]
-    q_df = df[(df['Date'].dt.year == now.year) & (df['Date'].dt.month.map(q_map) == curr_q)]
-    hdfc_q_spend = q_df[q_df['Mode'] == 'HDFC Credit Card']['Amount'].sum()
     
-    # Dashboard Metrics
+    # SAFETY CHECK for 'Mode' column
+    hdfc_q_spend = 0
+    if 'Mode' in df.columns:
+        q_df = df[(df['Date'].dt.year == now.year) & (df['Date'].dt.month.map(q_map) == curr_q)]
+        hdfc_q_spend = q_df[q_df['Mode'] == 'HDFC Credit Card']['Amount'].sum()
+    
     m1, m2 = st.columns(2)
     m1.metric("Spent Today", f"₹{df[df['Date'].dt.date == now.date()]['Amount'].sum():,.0f}")
-    m2.metric(f"Q{curr_q} HDFC Milestone", f"₹{hdfc_q_spend:,.0f}", help="Target: ₹1,00,000 for quarterly benefits")
+    m2.metric(f"Q{curr_q} HDFC Milestone", f"₹{hdfc_q_spend:,.0f}", help="Target: ₹1L for HDFC Millennia quarterly benefit")
 
     if hdfc_q_spend >= 100000:
         st.success("🎉 HDFC Quarterly Milestone Reached!")
