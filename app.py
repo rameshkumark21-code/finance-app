@@ -4,99 +4,164 @@ from streamlit_gsheets import GSheetsConnection
 from datetime import datetime
 import pytz
 
-st.set_page_config(page_title="FinTrack Pro", page_icon="₹", layout="wide")
+# --- 1. SETTINGS & CUSTOM CSS ---
+st.set_page_config(page_title="FinTrack India Pro", page_icon="₹", layout="centered")
 
-# --- 1. TOP ICON TOGGLE ---
-if 'view_mode' not in st.session_state:
-    st.session_state.view_mode = "Mobile"
+st.markdown("""
+    <style>
+    /* Global Dark Theme Overrides */
+    .stApp { background-color: #000000; color: #ffffff; }
+    [data-testid="stHeader"] { background-color: rgba(0,0,0,0); }
+    
+    /* Massive Amount Input Look */
+    .amount-display {
+        font-size: 72px;
+        font-weight: 900;
+        text-align: center;
+        color: white;
+        margin-bottom: 20px;
+        font-family: 'Inter', sans-serif;
+    }
+    
+    /* Custom Card Style */
+    .status-card {
+        background: #0a0a0a;
+        border: 1px solid #1a1a1a;
+        padding: 20px;
+        border-radius: 24px;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    
+    /* Category Button Styling */
+    div.stButton > button {
+        background-color: #111111;
+        border: 1px solid #222222;
+        border-radius: 16px;
+        min-height: 80px;
+        color: #9ca3af;
+        transition: all 0.2s;
+    }
+    div.stButton > button:hover {
+        border-color: #3b82f6;
+        color: white;
+    }
+    div.stButton > button:active {
+        transform: scale(0.95);
+    }
+    
+    /* Primary Log Button */
+    .log-btn button {
+        background-color: #2563eb !important;
+        color: white !important;
+        font-weight: bold !important;
+        font-size: 20px !important;
+        border-radius: 24px !important;
+        padding: 15px !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-# Create two small columns at the very top for icons
-t1, t2, _ = st.columns([0.1, 0.1, 0.8])
-with t1:
-    if st.button("📱"):
-        st.session_state.view_mode = "Mobile"
-with t2:
-    if st.button("💻"):
-        st.session_state.view_mode = "Laptop"
-
-st.caption(f"Current View: **{st.session_state.view_mode}**")
-st.title("₹ FinTrack Pro")
-
+# --- 2. DATA INITIALIZATION ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# --- 2. DATA SYNC ---
 @st.cache_data(ttl=10)
-def get_all_data():
+def load_data():
     try:
-        exp_df = conn.read(worksheet="Expenses", ttl=0)
-        cat_df = conn.read(worksheet="Categories", ttl=0)
-        return exp_df, cat_df
+        e = conn.read(worksheet="Expenses", ttl=0)
+        c = conn.read(worksheet="Categories", ttl=0)
+        return e, c
     except:
         return pd.DataFrame(columns=["Date", "Amount", "Category", "Note"]), pd.DataFrame(columns=["Category"])
 
-df, cat_master = get_all_data()
-categories = cat_master["Category"].dropna().tolist() if not cat_master.empty else ["Food", "Groceries", "Veg", "Rent", "Fuel", "Bike", "EB", "Home", "Clothes", "Clout Fit"]
+df, cat_df = load_data()
+categories = cat_df["Category"].dropna().tolist() if not cat_df.empty else ["Kirana", "Milk/Veg", "Fuel", "Dining", "Staff", "Bills", "Medical", "Shopping"]
 
-# --- 3. MANAGE CATEGORIES ---
-with st.expander("⚙️ Manage Categories"):
-    c1, c2 = st.columns(2)
-    with c1:
-        new_cat = st.text_input("Add Category")
-        if st.button("Add"):
-            if new_cat and new_cat not in categories:
-                new_row = pd.DataFrame([{"Category": new_cat}])
-                conn.update(worksheet="Categories", data=pd.concat([cat_master, new_row], ignore_index=True))
-                st.cache_data.clear()
+# --- 3. NAVIGATION ---
+# Since we can't do bottom nav easily, we use a clean top-tab approach
+tab_log, tab_stats, tab_data = st.tabs(["💸 LOG", "📊 STATS", "💾 DATA"])
+
+# --- 4. LOG PAGE ---
+with tab_log:
+    # Today's Total Header
+    if not df.empty:
+        df['Date'] = pd.to_datetime(df['Date'])
+        today = datetime.now(pytz.timezone('Asia/Kolkata')).date()
+        today_total = df[df['Date'].dt.date == today]['Amount'].astype(float).sum()
+    else:
+        today_total = 0
+        
+    st.markdown(f"""
+        <div class="status-card">
+            <p style="color: #6b7280; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">Spent Today</p>
+            <h2 style="font-size: 32px; margin: 0;">₹{today_total:,.0f}</h2>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Big Amount Input
+    amount = st.number_input("Amount", min_value=0, step=1, label_visibility="collapsed", placeholder="0")
+    st.markdown(f'<p class="amount-display"><span style="color: #4b5563;">₹</span>{amount}</p>', unsafe_allow_html=True)
+
+    # Category Grid (3 columns like your HTML)
+    st.write("### Select Category")
+    if 'selected_cat' not in st.session_state:
+        st.session_state.selected_cat = categories[0]
+
+    cols = st.columns(3)
+    for i, cat in enumerate(categories):
+        with cols[i % 3]:
+            # Highlight the selected one
+            btn_type = "primary" if st.session_state.selected_cat == cat else "secondary"
+            if st.button(cat, use_container_width=True, type=btn_type, key=f"btn_{cat}"):
+                st.session_state.selected_cat = cat
                 st.rerun()
-    with c2:
-        del_cat = st.selectbox("Delete Category", categories)
-        if st.button("Remove"):
-            updated_cats = cat_master[cat_master["Category"] != del_cat]
-            conn.update(worksheet="Categories", data=updated_cats)
-            st.cache_data.clear()
-            st.rerun()
 
-# --- 4. BUTTON GRID ---
-if 'selected_cat' not in st.session_state:
-    st.session_state.selected_cat = categories[0]
+    note = st.text_input("Note (Optional)", placeholder="What was this for?")
 
-st.subheader("1. Select Category")
-cols_count = 3 if st.session_state.view_mode == "Mobile" else 6
-cat_cols = st.columns(cols_count)
-
-for i, cat in enumerate(categories):
-    with cat_cols[i % cols_count]:
-        if st.button(cat, use_container_width=True, 
-                     type="primary" if st.session_state.selected_cat == cat else "secondary"):
-            st.session_state.selected_cat = cat
-
-# --- 5. LOGGING AREA ---
-with st.container(border=True):
-    amount = st.number_input(f"Logging: {st.session_state.selected_cat} (₹)", min_value=0, step=1)
-    note = st.text_input("Note (Optional)")
-    
-    # Reward Logic
-    sbi_5x = ["Food", "Groceries", "Veg", "Dining"]
-    hdfc_5pct = ["Amazon", "Swiggy", "Zomato", "Uber", "Clout Fit", "Flipkart"]
-    
-    rec = "SBI Signature" if st.session_state.selected_cat in sbi_5x else "HDFC Millennia"
-    ben = "5X Points" if st.session_state.selected_cat in sbi_5x else ("5% Cashback" if st.session_state.selected_cat in hdfc_5pct else "1% Cashback")
-    
-    st.info(f"💡 Use: **{rec}** ({ben})")
-
-    if st.button("🚀 Log Expense", use_container_width=True, type="primary"):
+    # Log Button
+    st.markdown('<div class="log-btn">', unsafe_allow_html=True)
+    if st.button("Log Expense", use_container_width=True):
         if amount > 0:
             tz = pytz.timezone('Asia/Kolkata')
             now = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
             new_row = pd.DataFrame([{"Date": now, "Amount": amount, "Category": st.session_state.selected_cat, "Note": note}])
             conn.update(worksheet="Expenses", data=pd.concat([df, new_row], ignore_index=True))
-            st.success("Logged!")
+            st.success("Transaction Saved!")
+            st.balloons()
+            st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# --- 5. STATS PAGE ---
+with tab_stats:
+    st.subheader("Monthly Breakdown")
+    if not df.empty:
+        # Chart matching your Emerald/Blue/Purple theme
+        chart_data = df.groupby("Category")["Amount"].sum().reset_index()
+        st.bar_chart(chart_data, x="Category", y="Amount", color="Category")
+        
+        # HDFC Milestone Card
+        total_all = df['Amount'].astype(float).sum()
+        progress = min(total_all/100000, 1.0)
+        st.markdown(f"""
+            <div class="status-card">
+                <p style="font-size: 14px;">HDFC ₹1L Milestone</p>
+                <h3 style="color: #3b82f6;">{progress*100:.1f}%</h3>
+            </div>
+        """, unsafe_allow_html=True)
+        st.progress(progress)
+    else:
+        st.info("No data available yet.")
+
+# --- 6. DATA PAGE ---
+with tab_data:
+    st.subheader("Manage Categories")
+    new_cat = st.text_input("New Category Name")
+    if st.button("Add Category"):
+        if new_cat:
+            new_cat_row = pd.DataFrame([{"Category": new_cat}])
+            conn.update(worksheet="Categories", data=pd.concat([cat_df, new_cat_row], ignore_index=True))
             st.rerun()
 
-# --- 6. HISTORY & MILESTONE ---
-if not df.empty:
-    total = pd.to_numeric(df['Amount']).sum()
-    st.progress(min(total/100000, 1.0), text=f"Quarterly Milestone: ₹{total:,.0f} / ₹1L")
-
-st.subheader("Recent Spends")
-st.dataframe(df.tail(3 if st.session_state.view_mode == "Mobile" else 10), use_container_width=True)
+    st.divider()
+    st.subheader("Raw History")
+    st.dataframe(df.sort_index(ascending=False), use_container_width=True)
