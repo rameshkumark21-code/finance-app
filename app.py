@@ -470,44 +470,73 @@ with tab_home:
         else:
             for idx, row in txn_df.iterrows():
                 date_disp = pd.to_datetime(row["Date"]).strftime("%-d %b, %H:%M") if pd.notna(row["Date"]) else "-"
-                label     = f"   {row['Category']}  --  Rs.{float(row['Amount']):,.0f}  --  {date_disp}"
-                with st.expander(label):
-                    ea, eb = st.columns(2)
-                    new_amt  = ea.number_input("Amount", value=float(row["Amount"]), min_value=0.0, key=f"e_amt_{idx}")
-                    new_cat  = eb.selectbox(
-                        "Category", categories,
-                        index=categories.index(row["Category"]) if row["Category"] in categories else 0,
-                        key=f"e_cat_{idx}"
+                note_disp = f" · {str(row['Note'])}" if str(row.get("Note","")).strip() else ""
+                edit_key  = f"edit_open_{idx}"
+                del_key   = f"cdel_{idx}"
+                if edit_key not in st.session_state:
+                    st.session_state[edit_key] = False
+                if del_key not in st.session_state:
+                    st.session_state[del_key] = False
+
+                with st.container():
+                    # Row card: amount left, category+date+note centre, edit button right
+                    c_amt, c_info, c_btn = st.columns([2, 5, 1])
+                    c_amt.markdown(
+                        f"<div style='font-size:.95rem;font-weight:700;color:#f0f0f0;"
+                        f"padding:10px 0'>Rs.{float(row['Amount']):,.0f}</div>",
+                        unsafe_allow_html=True
                     )
-                    ec, ed = st.columns(2)
-                    new_mode = ec.selectbox(
-                        "Mode", payment_modes,
-                        index=payment_modes.index(row["Mode"]) if row["Mode"] in payment_modes else 0,
-                        key=f"e_mode_{idx}"
+                    c_info.markdown(
+                        f"<div style='padding:10px 0;line-height:1.35'>"
+                        f"<span style='font-size:.88rem;font-weight:600;color:#ccc'>{row['Category']}</span>"
+                        f"<br><span style='font-size:.72rem;color:#555'>{date_disp} · {row['Mode']}{note_disp}</span>"
+                        f"</div>",
+                        unsafe_allow_html=True
                     )
-                    new_note = ed.text_input("Note", value=str(row.get("Note", "") or ""), key=f"e_note_{idx}")
-                    btn1, btn2 = st.columns(2)
-                    if btn1.button("Save changes", key=f"save_{idx}", use_container_width=True, type="primary"):
-                        update_expense(idx, {"Amount": new_amt, "Category": new_cat,
-                                              "Mode": new_mode, "Note": new_note.strip()})
+                    if c_btn.button("✏️", key=f"tgl_{idx}", help="Edit / Delete"):
+                        st.session_state[edit_key] = not st.session_state[edit_key]
                         st.rerun()
-                    ck = f"cdel_{idx}"
-                    if ck not in st.session_state:
-                        st.session_state[ck] = False
-                    if not st.session_state[ck]:
-                        if btn2.button("Delete", key=f"del_{idx}", use_container_width=True):
-                            st.session_state[ck] = True
+
+                    st.markdown("<hr style='border:none;border-top:1px solid #161616;margin:0'>", unsafe_allow_html=True)
+
+                # Edit panel — shown only when toggled open
+                if st.session_state[edit_key]:
+                    with st.container(border=True):
+                        ea, eb = st.columns(2)
+                        new_amt  = ea.number_input("Amount", value=float(row["Amount"]), min_value=0.0, key=f"e_amt_{idx}")
+                        new_cat  = eb.selectbox(
+                            "Category", categories,
+                            index=categories.index(row["Category"]) if row["Category"] in categories else 0,
+                            key=f"e_cat_{idx}"
+                        )
+                        ec, ed = st.columns(2)
+                        new_mode = ec.selectbox(
+                            "Mode", payment_modes,
+                            index=payment_modes.index(row["Mode"]) if row["Mode"] in payment_modes else 0,
+                            key=f"e_mode_{idx}"
+                        )
+                        new_note = ed.text_input("Note", value=str(row.get("Note", "") or ""), key=f"e_note_{idx}")
+                        btn1, btn2 = st.columns(2)
+                        if btn1.button("Save changes", key=f"save_{idx}", use_container_width=True, type="primary"):
+                            update_expense(idx, {"Amount": new_amt, "Category": new_cat,
+                                                  "Mode": new_mode, "Note": new_note.strip()})
+                            st.session_state[edit_key] = False
                             st.rerun()
-                    else:
-                        btn2.warning("Sure?")
-                        y_, n_ = btn2.columns(2)
-                        if y_.button("Yes", key=f"ydel_{idx}"):
-                            delete_expense(idx)
-                            st.session_state[ck] = False
-                            st.rerun()
-                        if n_.button("No", key=f"ndel_{idx}"):
-                            st.session_state[ck] = False
-                            st.rerun()
+                        if not st.session_state[del_key]:
+                            if btn2.button("Delete", key=f"del_{idx}", use_container_width=True):
+                                st.session_state[del_key] = True
+                                st.rerun()
+                        else:
+                            btn2.warning("Sure?")
+                            y_, n_ = btn2.columns(2)
+                            if y_.button("Yes", key=f"ydel_{idx}"):
+                                delete_expense(idx)
+                                st.session_state[edit_key] = False
+                                st.session_state[del_key]  = False
+                                st.rerun()
+                            if n_.button("No", key=f"ndel_{idx}"):
+                                st.session_state[del_key] = False
+                                st.rerun()
 
 # ------------------------------------------------------------------------------
 # RECURRING TAB
