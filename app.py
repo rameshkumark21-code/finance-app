@@ -85,7 +85,7 @@ with tab_home:
         today_total = df[df['Date'].dt.date == now.date()]['Amount'].sum()
         st.markdown(f'<div class="dashboard-tile"><div class="tile-label">Spent Today</div><div class="tile-value">₹{today_total:,.0f}</div></div>', unsafe_allow_html=True)
         
-        # Q Milestone Tile (Jan-Mar, Apr-Jun cycle)
+        # Q Milestone Tile
         q_map = {1:1, 2:1, 3:1, 4:2, 5:2, 6:2, 7:3, 8:3, 9:3, 10:4, 11:4, 12:4}
         curr_q = q_map[now.month]
         h_spend = df[(df['Date'].dt.month.map(q_map) == curr_q) & (df['Mode'] == 'HDFC Credit Card')]['Amount'].sum()
@@ -101,8 +101,8 @@ with tab_rec:
     with st.expander("➕ Create New Rule"):
         with st.form("new_rec"):
             c_sel = st.selectbox("Category", categories)
-            # UPGRADE: value=None removes the auto-zero
-            a_sel = st.number_input("Amount", min_value=0.00, value=None, placeholder="₹ Enter Amount")
+            # TWEAK: Using 0.0 with value=None keeps it empty
+            a_sel = st.number_input("Amount", min_value=0.0, value=None, placeholder="₹ Enter Amount")
             d_sel = st.slider("Log Day", 1, 31, 1)
             if st.form_submit_button("Add to System"):
                 if a_sel:
@@ -138,14 +138,30 @@ with tab_cat:
 # --- 7. GLOBAL FLOATING QUICK LOG ---
 @st.dialog("Quick Log")
 def log_modal():
-    # UPGRADE: value=None removes the auto-zero
-    amt = st.number_input("Amount", min_value=0.00, value=None, placeholder="₹ Enter Amount", key="modal_amt")
+    # TWEAK: min_value=0.0 and value=None keeps the box empty
+    amt = st.number_input("Amount", min_value=0.0, value=None, placeholder="₹ Enter Amount", key="modal_amt")
+    
+    # UPGRADE: Date Picker pre-filled with today's date
+    tz = pytz.timezone('Asia/Kolkata')
+    today = datetime.now(tz).date()
+    log_date = st.date_input("Transaction Date", value=today)
+    
     cat = st.selectbox("Category", categories)
     mode = st.selectbox("Mode", payment_modes)
+    
     if st.button("Save Transaction", type="primary", use_container_width=True):
         if amt:
-            now_tz = datetime.now(pytz.timezone('Asia/Kolkata'))
-            new_row = pd.DataFrame([{"Date": now_tz.strftime("%Y-%m-%d %H:%M:%S"), "Amount": amt, "Category": cat, "Mode": mode, "Note": ""}])
+            # Combine chosen date with current time for logging
+            now_time = datetime.now(tz).strftime("%H:%M:%S")
+            final_dt = f"{log_date.strftime('%Y-%m-%d')} {now_time}"
+            
+            new_row = pd.DataFrame([{
+                "Date": final_dt, 
+                "Amount": amt, 
+                "Category": cat, 
+                "Mode": mode, 
+                "Note": ""
+            }])
             conn.update(worksheet="Expenses", data=pd.concat([df, new_row], ignore_index=True))
             st.session_state.show_modal = False
             st.rerun()
