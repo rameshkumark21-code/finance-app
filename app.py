@@ -138,21 +138,28 @@ with tab_cat:
 # --- 7. GLOBAL FLOATING QUICK LOG ---
 @st.dialog("Quick Log")
 def log_modal():
+    # Track a 'form_id' in session state to force-reset widgets
+    if "form_id" not in st.session_state:
+        st.session_state.form_id = 0
+
     # Success Message Area
     if "last_log" in st.session_state:
         st.success(f"✅ Logged: ₹{st.session_state.last_log['amt']} for {st.session_state.last_log['cat']}")
-        # Clear the message after showing it once if desired, or keep it until next log
 
-    # Fix: value=None ensures the box is empty (no 0 or 0.0)
-    amt = st.number_input("Amount", min_value=0.0, value=None, placeholder="₹ Enter Amount", key="modal_amt")
+    # The Key includes the form_id; when form_id changes, the widget resets
+    amt = st.number_input("Amount", min_value=0.0, value=None, 
+                          placeholder="₹ Enter Amount", 
+                          key=f"amt_{st.session_state.form_id}")
     
-    # Date picker pre-filled with Today (IST)
     tz = pytz.timezone('Asia/Kolkata')
     today = datetime.now(tz).date()
-    log_date = st.date_input("Transaction Date", value=today)
+    log_date = st.date_input("Transaction Date", value=today, 
+                             key=f"date_{st.session_state.form_id}")
     
-    cat = st.selectbox("Category", categories, key="modal_cat")
-    mode = st.selectbox("Mode", payment_modes, key="modal_mode")
+    cat = st.selectbox("Category", categories, 
+                       key=f"cat_{st.session_state.form_id}")
+    mode = st.selectbox("Mode", payment_modes, 
+                        key=f"mode_{st.session_state.form_id}")
     
     if st.button("Save & Add Another", type="primary", use_container_width=True):
         if amt:
@@ -160,28 +167,18 @@ def log_modal():
             final_dt = f"{log_date.strftime('%Y-%m-%d')} {now_time}"
             
             new_row = pd.DataFrame([{
-                "Date": final_dt, 
-                "Amount": amt, 
-                "Category": cat, 
-                "Mode": mode, 
-                "Note": ""
+                "Date": final_dt, "Amount": amt, "Category": cat, "Mode": mode, "Note": ""
             }])
             
-            # Update GSheet
             conn.update(worksheet="Expenses", data=pd.concat([df, new_row], ignore_index=True))
             
-            # Store last log info to show success message
+            # 1. Store last log for the green success message
             st.session_state.last_log = {"amt": amt, "cat": cat}
-            
-            # Logic: We do NOT set show_modal = False, so it stays open.
-            # We trigger a rerun to refresh the data and clear the inputs.
+            # 2. Increment form_id to KILL the previous widget states (Reset)
+            st.session_state.form_id += 1
             st.rerun()
         else:
             st.warning("Please enter an amount.")
-
-# Trigger Logic
-if "show_modal" not in st.session_state: st.session_state.show_modal = False
-if st.session_state.show_modal: log_modal()
 
 with stylable_container(key="fab", css_styles="button { position: fixed; bottom: 35px; right: 25px; width: 65px; height: 65px; border-radius: 50%; background-color: #2563eb; color: white; font-size: 38px; z-index: 1000; border: none; box-shadow: 0 4px 15px rgba(37,99,235,0.4); }"):
     if st.button("+"):
