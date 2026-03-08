@@ -93,7 +93,7 @@ with tab_home:
         st.markdown(f'<div class="dashboard-tile" style="border-left: 4px solid {color};"><div class="tile-label">HDFC Q{curr_q} Milestone</div><div class="tile-value">₹{h_spend:,.0f}</div></div>', unsafe_allow_html=True)
         
         st.write("### Latest 6 Transactions")
-        st.dataframe(df.tail(6).sort_values(by="Date", ascending=False)[['Amount', 'Category', 'Mode']], use_container_width=True, hide_index=True)
+        st.dataframe(df.tail(6).sort_values(by="Date", ascending=False)[['Amount', 'Category', 'Mode', 'Note']], use_container_width=True, hide_index=True)
 
 # --- 5. TAB: RECURRING MAINTENANCE ---
 with tab_rec:
@@ -143,7 +143,7 @@ def log_modal():
     if "last_log" in st.session_state:
         st.success(f"✅ Logged: ₹{st.session_state.last_log['amt']} for {st.session_state.last_log['cat']}")
 
-    # Amount field - using 0.0 + value=None to ensure the box is empty
+    # Amount field
     amt = st.number_input("Amount", min_value=0.0, value=None, 
                           placeholder="₹ Enter Amount", 
                           key=f"amt_{st.session_state.form_id}")
@@ -155,6 +155,10 @@ def log_modal():
     
     cat = st.selectbox("Category", categories, key=f"cat_{st.session_state.form_id}")
     mode = st.selectbox("Mode", payment_modes, key=f"mode_{st.session_state.form_id}")
+
+    # ✅ NEW: Optional Notes field
+    note = st.text_input("Note", value="", placeholder="Optional note (merchant, tag, etc.)",
+                         key=f"note_{st.session_state.form_id}")
     
     col1, col2 = st.columns(2)
     
@@ -164,7 +168,7 @@ def log_modal():
             final_dt = f"{log_date.strftime('%Y-%m-%d')} {now_time}"
             
             new_row = pd.DataFrame([{
-                "Date": final_dt, "Amount": amt, "Category": cat, "Mode": mode, "Note": ""
+                "Date": final_dt, "Amount": amt, "Category": cat, "Mode": mode, "Note": note.strip()
             }])
             
             conn.update(worksheet="Expenses", data=pd.concat([df, new_row], ignore_index=True))
