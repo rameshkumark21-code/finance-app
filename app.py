@@ -101,7 +101,6 @@ with tab_rec:
     with st.expander("➕ Create New Rule"):
         with st.form("new_rec"):
             c_sel = st.selectbox("Category", categories)
-            # TWEAK: Using 0.0 with value=None keeps it empty
             a_sel = st.number_input("Amount", min_value=0.0, value=None, placeholder="₹ Enter Amount")
             d_sel = st.slider("Log Day", 1, 31, 1)
             if st.form_submit_button("Add to System"):
@@ -138,15 +137,13 @@ with tab_cat:
 # --- 7. GLOBAL FLOATING QUICK LOG ---
 @st.dialog("Quick Log")
 def log_modal():
-    # Track a 'form_id' in session state to force-reset widgets
     if "form_id" not in st.session_state:
         st.session_state.form_id = 0
 
-    # Success Message Area
     if "last_log" in st.session_state:
         st.success(f"✅ Logged: ₹{st.session_state.last_log['amt']} for {st.session_state.last_log['cat']}")
 
-    # The Key includes the form_id; when form_id changes, the widget resets
+    # Amount field - using 0.0 + value=None to ensure the box is empty
     amt = st.number_input("Amount", min_value=0.0, value=None, 
                           placeholder="₹ Enter Amount", 
                           key=f"amt_{st.session_state.form_id}")
@@ -156,12 +153,12 @@ def log_modal():
     log_date = st.date_input("Transaction Date", value=today, 
                              key=f"date_{st.session_state.form_id}")
     
-    cat = st.selectbox("Category", categories, 
-                       key=f"cat_{st.session_state.form_id}")
-    mode = st.selectbox("Mode", payment_modes, 
-                        key=f"mode_{st.session_state.form_id}")
+    cat = st.selectbox("Category", categories, key=f"cat_{st.session_state.form_id}")
+    mode = st.selectbox("Mode", payment_modes, key=f"mode_{st.session_state.form_id}")
     
-    if st.button("Save & Add Another", type="primary", use_container_width=True):
+    col1, col2 = st.columns(2)
+    
+    if col1.button("Save & Add More", type="primary", use_container_width=True):
         if amt:
             now_time = datetime.now(tz).strftime("%H:%M:%S")
             final_dt = f"{log_date.strftime('%Y-%m-%d')} {now_time}"
@@ -172,15 +169,26 @@ def log_modal():
             
             conn.update(worksheet="Expenses", data=pd.concat([df, new_row], ignore_index=True))
             
-            # 1. Store last log for the green success message
             st.session_state.last_log = {"amt": amt, "cat": cat}
-            # 2. Increment form_id to KILL the previous widget states (Reset)
             st.session_state.form_id += 1
             st.rerun()
         else:
             st.warning("Please enter an amount.")
 
+    if col2.button("Finish", use_container_width=True):
+        st.session_state.show_modal = False
+        if "last_log" in st.session_state:
+            del st.session_state.last_log
+        st.rerun()
+
+# --- 8. TRIGGER LOGIC (Bottom of script) ---
+if "show_modal" not in st.session_state:
+    st.session_state.show_modal = False
+
+if st.session_state.show_modal:
+    log_modal()
+
 with stylable_container(key="fab", css_styles="button { position: fixed; bottom: 35px; right: 25px; width: 65px; height: 65px; border-radius: 50%; background-color: #2563eb; color: white; font-size: 38px; z-index: 1000; border: none; box-shadow: 0 4px 15px rgba(37,99,235,0.4); }"):
-    if st.button("+"):
+    if st.button("+", key="main_plus_btn"):
         st.session_state.show_modal = True
         st.rerun()
