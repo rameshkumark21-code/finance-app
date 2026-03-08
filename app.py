@@ -42,15 +42,20 @@ st.markdown("""
         color: #9ca3af;
         transition: all 0.2s;
     }
+    
+    /* Highlight Selected Category (Primary Button) */
+    div.stButton > button[kind="primary"] {
+        background-color: #1d4ed822 !important;
+        border: 2px solid #3b82f6 !important;
+        color: white !important;
+    }
+
     div.stButton > button:hover {
         border-color: #3b82f6;
         color: white;
     }
-    div.stButton > button:active {
-        transform: scale(0.95);
-    }
     
-    /* Primary Log Button */
+    /* Primary Log Button Override */
     .log-btn button {
         background-color: #2563eb !important;
         color: white !important;
@@ -58,6 +63,7 @@ st.markdown("""
         font-size: 20px !important;
         border-radius: 24px !important;
         padding: 15px !important;
+        border: none !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -85,7 +91,6 @@ with tab_log:
     # Today's Total Header
     if not df.empty:
         df['Date'] = pd.to_datetime(df['Date'])
-        # Clean numeric data
         df['Amount'] = pd.to_numeric(df['Amount'], errors='coerce').fillna(0)
         
         today = datetime.now(pytz.timezone('Asia/Kolkata')).date()
@@ -100,7 +105,7 @@ with tab_log:
         </div>
     """, unsafe_allow_html=True)
 
-    # --- UPDATED AMOUNT BOX (BLANK BY DEFAULT) ---
+    # Blank Amount Box
     amount = st.number_input(
         "Amount", 
         min_value=0, 
@@ -110,11 +115,10 @@ with tab_log:
         placeholder="0"
     )
 
-    # Display logic for the massive text
     display_amount = amount if amount is not None else 0
     st.markdown(f'<p class="amount-display"><span style="color: #4b5563;">₹</span>{display_amount}</p>', unsafe_allow_html=True)
 
-    # Category Grid (3 columns)
+    # --- CATEGORY GRID (FIXED HIGHLIGHT) ---
     st.write("### Select Category")
     if 'selected_cat' not in st.session_state:
         st.session_state.selected_cat = categories[0]
@@ -122,8 +126,12 @@ with tab_log:
     cols = st.columns(3)
     for i, cat in enumerate(categories):
         with cols[i % 3]:
-            btn_type = "primary" if st.session_state.selected_cat == cat else "secondary"
-            if st.button(cat, use_container_width=True, type=btn_type, key=f"btn_{cat}"):
+            # Highlight logic
+            is_selected = st.session_state.selected_cat == cat
+            if st.button(cat, 
+                         use_container_width=True, 
+                         type="primary" if is_selected else "secondary", 
+                         key=f"btn_{cat}"):
                 st.session_state.selected_cat = cat
                 st.rerun()
 
