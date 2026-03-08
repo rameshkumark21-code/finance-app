@@ -11,13 +11,19 @@ st.title("₹ FinTrack Pro")
 # Connect to Google Sheets
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# Fetch Categories from your "Categories" Tab
+# --- CATEGORY SYNC LOGIC ---
 try:
-    categories_df = conn.read(worksheet="Categories")
-    categories = categories_df["Category"].dropna().tolist()
-except Exception:
-    # Fallback if the Categories tab isn't ready yet
-    categories = ["Kirana", "Fuel", "Dining", "Bills", "Medical", "Shopping", "Other"]
+    # Use ttl=0 to ensure it doesn't use old, broken cached data
+    categories_df = conn.read(worksheet="Categories", ttl=0)
+    # This grabs everything under the "Category" column in your sheet
+    categories = categories_df["Category"].dropna().unique().tolist()
+    
+    if not categories:
+        raise ValueError("Sheet is empty")
+except Exception as e:
+    # If it fails, we show this fallback so the app doesn't crash
+    st.sidebar.warning(f"Note: Using offline categories. (Error: {str(e)})")
+    categories = ["Food", "Groceries", "Fuel", "Rent", "Other"]
 
 # Expense Input Form
 with st.form("entry_form", clear_on_submit=True):
@@ -30,34 +36,15 @@ with st.form("entry_form", clear_on_submit=True):
 
     if submit:
         if amount > 0:
-            # Prepare the new row
             tz = pytz.timezone('Asia/Kolkata')
             now = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
             
-            new_data = pd.DataFrame([{"Date": now, "Amount": amount, "Category": category, "Note": note}])
+            new_row = pd.DataFrame([{"Date": now, "Amount": amount, "Category": category, "Note": note}])
             
-            # Read existing data and append
-            existing_data = conn.read(worksheet="Expenses")
-            updated_df = pd.concat([existing_data, new_data], ignore_index=True)
+            # Read and Append (ttl=0 is key here too)
+            existing_data = conn.read(worksheet="Expenses", ttl=0)
+            updated_df = pd.concat([existing_data, new_row], ignore_index=True)
             
-            # Update the Sheet
             conn.update(worksheet="Expenses", data=updated_df)
-            st.success(f"Logged ₹{amount} for {category}!")
-        else:
-            st.error("Please enter an amount greater than 0.")
-
-# Dashboard Summary
-st.divider()
-st.subheader("Spend Analysis")
-try:
-    df = conn.read(worksheet="Expenses")
-    if not df.empty:
-        # Simple Bar Chart
-        chart_data = df.groupby("Category")["Amount"].sum()
-        st.bar_chart(chart_data)
-        
-        # Recent Transactions Table
-        st.write("Recent Entries")
-        st.dataframe(df.tail(5), use_container_width=True)
-except:
-    st.info("Log your first expense to see the chart!")
+            st.success(f"Successfully logged ₹{amount} to your Google Sheet!")
+            st.balloons()
