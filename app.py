@@ -138,20 +138,24 @@ with tab_cat:
 # --- 7. GLOBAL FLOATING QUICK LOG ---
 @st.dialog("Quick Log")
 def log_modal():
-    # TWEAK: min_value=0.0 and value=None keeps the box empty
+    # Success Message Area
+    if "last_log" in st.session_state:
+        st.success(f"✅ Logged: ₹{st.session_state.last_log['amt']} for {st.session_state.last_log['cat']}")
+        # Clear the message after showing it once if desired, or keep it until next log
+
+    # Fix: value=None ensures the box is empty (no 0 or 0.0)
     amt = st.number_input("Amount", min_value=0.0, value=None, placeholder="₹ Enter Amount", key="modal_amt")
     
-    # UPGRADE: Date Picker pre-filled with today's date
+    # Date picker pre-filled with Today (IST)
     tz = pytz.timezone('Asia/Kolkata')
     today = datetime.now(tz).date()
     log_date = st.date_input("Transaction Date", value=today)
     
-    cat = st.selectbox("Category", categories)
-    mode = st.selectbox("Mode", payment_modes)
+    cat = st.selectbox("Category", categories, key="modal_cat")
+    mode = st.selectbox("Mode", payment_modes, key="modal_mode")
     
-    if st.button("Save Transaction", type="primary", use_container_width=True):
+    if st.button("Save & Add Another", type="primary", use_container_width=True):
         if amt:
-            # Combine chosen date with current time for logging
             now_time = datetime.now(tz).strftime("%H:%M:%S")
             final_dt = f"{log_date.strftime('%Y-%m-%d')} {now_time}"
             
@@ -162,10 +166,20 @@ def log_modal():
                 "Mode": mode, 
                 "Note": ""
             }])
+            
+            # Update GSheet
             conn.update(worksheet="Expenses", data=pd.concat([df, new_row], ignore_index=True))
-            st.session_state.show_modal = False
+            
+            # Store last log info to show success message
+            st.session_state.last_log = {"amt": amt, "cat": cat}
+            
+            # Logic: We do NOT set show_modal = False, so it stays open.
+            # We trigger a rerun to refresh the data and clear the inputs.
             st.rerun()
+        else:
+            st.warning("Please enter an amount.")
 
+# Trigger Logic
 if "show_modal" not in st.session_state: st.session_state.show_modal = False
 if st.session_state.show_modal: log_modal()
 
