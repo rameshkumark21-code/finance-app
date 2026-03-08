@@ -78,7 +78,6 @@ df, cat_df = load_data()
 categories = cat_df["Category"].dropna().tolist() if not cat_df.empty else ["Kirana", "Milk/Veg", "Fuel", "Dining", "Staff", "Bills", "Medical", "Shopping"]
 
 # --- 3. NAVIGATION ---
-# Since we can't do bottom nav easily, we use a clean top-tab approach
 tab_log, tab_stats, tab_data = st.tabs(["💸 LOG", "📊 STATS", "💾 DATA"])
 
 # --- 4. LOG PAGE ---
@@ -86,23 +85,36 @@ with tab_log:
     # Today's Total Header
     if not df.empty:
         df['Date'] = pd.to_datetime(df['Date'])
+        # Clean numeric data
+        df['Amount'] = pd.to_numeric(df['Amount'], errors='coerce').fillna(0)
+        
         today = datetime.now(pytz.timezone('Asia/Kolkata')).date()
-        today_total = df[df['Date'].dt.date == today]['Amount'].astype(float).sum()
+        today_total = df[df['Date'].dt.date == today]['Amount'].sum()
     else:
         today_total = 0
         
     st.markdown(f"""
         <div class="status-card">
             <p style="color: #6b7280; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">Spent Today</p>
-            <h2 style="font-size: 32px; margin: 0;">₹{today_total:,.0f}</h2>
+            <h2 style="font-size: 32px; margin: 0; color: white;">₹{today_total:,.0f}</h2>
         </div>
     """, unsafe_allow_html=True)
 
-    # Big Amount Input
-    amount = st.number_input("Amount", min_value=0, step=1, label_visibility="collapsed", placeholder="0")
-    st.markdown(f'<p class="amount-display"><span style="color: #4b5563;">₹</span>{amount}</p>', unsafe_allow_html=True)
+    # --- UPDATED AMOUNT BOX (BLANK BY DEFAULT) ---
+    amount = st.number_input(
+        "Amount", 
+        min_value=0, 
+        step=1, 
+        value=None, 
+        label_visibility="collapsed", 
+        placeholder="0"
+    )
 
-    # Category Grid (3 columns like your HTML)
+    # Display logic for the massive text
+    display_amount = amount if amount is not None else 0
+    st.markdown(f'<p class="amount-display"><span style="color: #4b5563;">₹</span>{display_amount}</p>', unsafe_allow_html=True)
+
+    # Category Grid (3 columns)
     st.write("### Select Category")
     if 'selected_cat' not in st.session_state:
         st.session_state.selected_cat = categories[0]
@@ -110,7 +122,6 @@ with tab_log:
     cols = st.columns(3)
     for i, cat in enumerate(categories):
         with cols[i % 3]:
-            # Highlight the selected one
             btn_type = "primary" if st.session_state.selected_cat == cat else "secondary"
             if st.button(cat, use_container_width=True, type=btn_type, key=f"btn_{cat}"):
                 st.session_state.selected_cat = cat
@@ -121,7 +132,7 @@ with tab_log:
     # Log Button
     st.markdown('<div class="log-btn">', unsafe_allow_html=True)
     if st.button("Log Expense", use_container_width=True):
-        if amount > 0:
+        if amount is not None and amount > 0:
             tz = pytz.timezone('Asia/Kolkata')
             now = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
             new_row = pd.DataFrame([{"Date": now, "Amount": amount, "Category": st.session_state.selected_cat, "Note": note}])
@@ -129,18 +140,18 @@ with tab_log:
             st.success("Transaction Saved!")
             st.balloons()
             st.rerun()
+        else:
+            st.warning("Please enter an amount.")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # --- 5. STATS PAGE ---
 with tab_stats:
     st.subheader("Monthly Breakdown")
     if not df.empty:
-        # Chart matching your Emerald/Blue/Purple theme
         chart_data = df.groupby("Category")["Amount"].sum().reset_index()
         st.bar_chart(chart_data, x="Category", y="Amount", color="Category")
         
-        # HDFC Milestone Card
-        total_all = df['Amount'].astype(float).sum()
+        total_all = df['Amount'].sum()
         progress = min(total_all/100000, 1.0)
         st.markdown(f"""
             <div class="status-card">
@@ -160,6 +171,7 @@ with tab_data:
         if new_cat:
             new_cat_row = pd.DataFrame([{"Category": new_cat}])
             conn.update(worksheet="Categories", data=pd.concat([cat_df, new_cat_row], ignore_index=True))
+            st.cache_data.clear()
             st.rerun()
 
     st.divider()
