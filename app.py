@@ -26,6 +26,9 @@ st.markdown("""
     .tile-value { font-size: 1.8rem; font-weight: 700; margin-top: 5px; }
     .tile-sub { font-size: 0.75rem; color: #444444; margin-top: 5px; }
     
+    /* Progress Bar Theme */
+    .stProgress > div > div > div > div { background-color: #2563eb; }
+    
     /* Dialog / Popup */
     div[data-testid="stDialog"] {
         background-color: #0a0a0a !important;
@@ -35,7 +38,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- 2. DATA LOAD (FROZEN) ---
+# --- 2. DATA LOAD & AUTOMATION ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 @st.cache_data(ttl=5)
@@ -43,15 +46,41 @@ def load_data():
     try:
         e = conn.read(worksheet="Expenses", ttl=0)
         c = conn.read(worksheet="Categories", ttl=0)
-        return e, c
+        s = conn.read(worksheet="Settings", ttl=0)
+        return e, c, s
     except:
-        return pd.DataFrame(columns=["Date", "Amount", "Category", "Note", "Mode"]), pd.DataFrame(columns=["Category"])
+        return (pd.DataFrame(columns=["Date", "Amount", "Category", "Note", "Mode"]), 
+                pd.DataFrame(columns=["Category"]),
+                pd.DataFrame(columns=["Category", "Budget", "Is_Recurring", "Day_of_Month"]))
 
-df, cat_df = load_data()
+df, cat_df, settings_df = load_data()
 categories = sorted(cat_df["Category"].dropna().tolist()) if not cat_df.empty else ["Bills", "Dining", "Fuel", "Groceries", "Medical", "Shopping"]
 payment_modes = ["UPI", "Cash", "HDFC Credit Card", "SBI Credit Card"]
 
-# --- 3. ADD EXPENSE MODAL (FROZEN) ---
+# --- 2b. RECURRING EXPENSE AUTO-ENGINE ---
+def process_recurring():
+    now = datetime.now(pytz.timezone('Asia/Kolkata'))
+    if not settings_df.empty and not df.empty:
+        recurring_rules = settings_df[settings_df['Is_Recurring'] == True]
+        for _, rule in recurring_rules.iterrows():
+            if now.day >= int(rule['Day_of_Month']):
+                # Check if this category was already logged this month
+                month_check = now.strftime("%Y-%m")
+                mask = (df['Date'].str.contains(month_check)) & (df['Category'] == rule['Category'])
+                if df[mask].empty:
+                    new_row = pd.DataFrame([{
+                        "Date": now.strftime("%Y-%m-%d %H:%M:%S"),
+                        "Amount": rule['Budget'],
+                        "Category": rule['Category'],
+                        "Mode": "Auto-Debit",
+                        "Note": "Automated Recurring Payment"
+                    }])
+                    conn.update(worksheet="Expenses", data=pd.concat([df, new_row], ignore_index=True))
+                    st.toast(f"✅ Auto-logged {rule['Category']}")
+
+process_recurring()
+
+# --- 3. ADD EXPENSE MODAL ---
 @st.dialog("Log Expense")
 def log_expense_modal():
     if "step" not in st.session_state: st.session_state.step = 1
@@ -86,48 +115,49 @@ if not df.empty:
     df['Amount'] = pd.to_numeric(df['Amount'], errors='coerce').fillna(0)
     now = datetime.now(pytz.timezone('Asia/Kolkata'))
     
-    # Quarterly Logic (Jan-Mar = Q1)
     q_map = {1:1, 2:1, 3:1, 4:2, 5:2, 6:2, 7:3, 8:3, 9:3, 10:4, 11:4, 12:4}
     curr_q = q_map[now.month]
     
-    # Calculate Metrics
     today_total = df[df['Date'].dt.date == now.date()]['Amount'].sum()
     
-    # HDFC Milestone (1L Quarterly)
     hdfc_q_spend = 0
     if 'Mode' in df.columns:
         q_df = df[(df['Date'].dt.year == now.year) & (df['Date'].dt.month.map(q_map) == curr_q)]
         hdfc_q_spend = q_df[q_df['Mode'] == 'HDFC Credit Card']['Amount'].sum()
     
-    # --- UI GRID ---
-    # ROW 1: PRIMARY METRICS
+    # ROW 1: PRIMARY TILES
     r1c1, r1c2 = st.columns(2)
     with r1c1:
-        st.markdown(f"""<div class="dashboard-tile">
-            <div class="tile-label">Spent Today</div>
-            <div class="tile-value">₹{today_total:,.0f}</div>
-        </div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div class="dashboard-tile"><div class="tile-label">Spent Today</div><div class="tile-value">₹{today_total:,.0f}</div></div>""", unsafe_allow_html=True)
     with r1c2:
         color = "#2563eb" if hdfc_q_spend < 100000 else "#22c55e"
-        st.markdown(f"""<div class="dashboard-tile" style="border-left: 4px solid {color};">
-            <div class="tile-label">HDFC Q{curr_q} Milestone</div>
-            <div class="tile-value">₹{hdfc_q_spend:,.0f}</div>
-            <div class="tile-sub">Target: ₹1,00,000</div>
-        </div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div class="dashboard-tile" style="border-left: 4px solid {color};"><div class="tile-label">HDFC Q{curr_q}</div><div class="tile-value">₹{hdfc_q_spend:,.0f}</div><div class="tile-sub">Target: ₹1,00,000</div></div>""", unsafe_allow_html=True)
 
-    # ROW 2: CATEGORY BREAKDOWN (Simple Bar Chart)
+    # ROW 2: BUDGET GUARDRAILS (The Upgrade)
     st.write("")
-    st.markdown('<div class="tile-label">Top Spending Categories</div>', unsafe_allow_html=True)
-    if not df.empty:
-        cat_summary = df.groupby('Category')['Amount'].sum().sort_values(ascending=False).head(5)
-        st.bar_chart(cat_summary, horizontal=True, color="#2563eb")
+    st.markdown('<div class="tile-label">Budget Guardrails</div>', unsafe_allow_html=True)
+    if not settings_df.empty:
+        for _, b_row in settings_df.iterrows():
+            if b_row['Budget'] > 0:
+                month_total = df[(df['Date'].dt.month == now.month) & (df['Category'] == b_row['Category'])]['Amount'].sum()
+                percent = min(month_total / b_row['Budget'], 1.0)
+                
+                # Dynamic Color Feedback
+                status_text = "Safe"
+                if percent >= 1.0: status_text = "LIMIT EXCEEDED"
+                elif percent >= 0.8: status_text = "Warning"
+                
+                cols = st.columns([0.4, 0.6])
+                cols[0].write(f"**{b_row['Category']}**")
+                cols[1].progress(percent)
+                st.caption(f"₹{month_total:,.0f} of ₹{b_row['Budget']:,.0f} spent • {status_text}")
 
-    # ROW 3: RECENT ACTIVITY TILE
+    # ROW 3: RECENT ACTIVITY
     st.write("")
     st.markdown('<div class="tile-label">Recent Transactions</div>', unsafe_allow_html=True)
     st.dataframe(df.tail(8).sort_values(by="Date", ascending=False)[['Date', 'Amount', 'Category', 'Mode']], use_container_width=True, hide_index=True)
 
-# --- 5. FLOATING "+" BUTTON ---
+# --- 5. FLOATING BUTTON ---
 if "show_modal" not in st.session_state: st.session_state.show_modal = False
 if st.session_state.show_modal: log_expense_modal()
 
