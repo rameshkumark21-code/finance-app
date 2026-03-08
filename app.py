@@ -163,14 +163,57 @@ div[data-testid="stDialog"] {
     font-size: 0.87rem !important; font-weight: 500 !important; color: #ccc !important;
 }
 
-/* ── BUTTONS — destructive only red ── */
-button[kind="secondary"]:has(span:contains("🗑")) {
-    border-color: #3a1a1a !important; color: #f87171 !important;
-}
-
 /* ── STREAMLIT OVERRIDES ── */
 [data-testid="stForm"] { border: 1px solid #1c1c1c !important; border-radius: 12px !important; padding: 16px !important; background: #0e0e0e !important; }
 .stAlert { border-radius: 10px !important; }
+
+/* ── PIN LOCK SCREEN ── */
+.pin-wrap {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; min-height: 70vh; gap: 8px;
+}
+.pin-logo {
+    font-size: 2.6rem; margin-bottom: 4px;
+}
+.pin-title {
+    font-size: 1.3rem; font-weight: 700; color: #e8e8e8;
+    letter-spacing: -0.4px; margin-bottom: 2px;
+}
+.pin-sub {
+    font-size: 0.8rem; color: #444; margin-bottom: 20px;
+}
+.pin-dots {
+    display: flex; gap: 14px; margin-bottom: 28px;
+}
+.pin-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 1.5px solid #333; background: transparent;
+    transition: background 0.15s, border-color 0.15s;
+}
+.pin-dot.filled {
+    background: #2563eb; border-color: #2563eb;
+}
+.pin-dot.error {
+    background: #f87171; border-color: #f87171;
+}
+.pin-keypad {
+    display: grid; grid-template-columns: repeat(3, 72px);
+    gap: 12px;
+}
+.pin-key {
+    height: 72px; border-radius: 14px;
+    background: #111; border: 1px solid #1e1e1e;
+    color: #e8e8e8; font-size: 1.3rem; font-weight: 600;
+    cursor: pointer; transition: background 0.12s, transform 0.08s;
+    font-family: 'DM Sans', sans-serif;
+    display: flex; align-items: center; justify-content: center;
+}
+.pin-key:hover  { background: #1a1a1a; }
+.pin-key:active { transform: scale(0.94); background: #222; }
+.pin-key.del    { color: #555; font-size: 1rem; }
+.pin-key.empty  { background: transparent; border-color: transparent; cursor: default; }
+.pin-attempts   { font-size: 0.75rem; color: #f87171; margin-top: 10px; min-height: 18px; }
+.pin-locked     { font-size: 0.8rem; color: #facc15; margin-top: 10px; }
 </style>
 """, unsafe_allow_html=True)
 
