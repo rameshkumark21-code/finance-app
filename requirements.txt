@@ -1,3 +1,5 @@
 streamlit
 pandas
-st-gsheets-connection
+streamlit-gsheets-connection
+streamlit-extras
+pytz
