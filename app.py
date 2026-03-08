@@ -3,9 +3,10 @@ import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 from datetime import datetime
 import pytz
+# Ensure you have 'pip install streamlit-extras'
 from streamlit_extras.stylable_container import stylable_container
 
-# --- 1. SETTINGS & CUSTOM CSS ---
+# --- 1. SETTINGS ---
 st.set_page_config(page_title="FinTrack India Pro", page_icon="₹", layout="centered")
 
 st.markdown("""
@@ -13,33 +14,19 @@ st.markdown("""
     .stApp { background-color: #000000; color: #ffffff; }
     [data-testid="stHeader"] { background-color: rgba(0,0,0,0); }
     
-    /* Floating Action Button (FAB) */
-    .fab-container {
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        z-index: 999;
-    }
-    .fab-button button {
-        background-color: #2563eb !important;
-        color: white !important;
-        border-radius: 50% !important;
-        width: 60px !important;
-        height: 60px !important;
-        font-size: 30px !important;
-        box-shadow: 0px 4px 15px rgba(37, 99, 235, 0.4) !important;
-        border: none !important;
-    }
-    
-    /* Dialog Styling */
+    /* Dialog Box Styling */
     div[data-testid="stDialog"] {
         background-color: #0a0a0a !important;
         border: 1px solid #1a1a1a !important;
+        border-radius: 24px !important;
     }
+    
+    /* Navigation Button Styles */
+    .nav-btn { font-size: 24px !important; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- 2. DATA INITIALIZATION ---
+# --- 2. DATA ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 @st.cache_data(ttl=10)
@@ -52,13 +39,13 @@ def load_data():
         return pd.DataFrame(columns=["Date", "Amount", "Category", "Note"]), pd.DataFrame(columns=["Category"])
 
 df, cat_df = load_data()
-# Sorted Categories
-categories = sorted(cat_df["Category"].dropna().tolist()) if not cat_df.empty else ["Bills", "Clout Fit", "Dining", "Fuel", "Groceries", "Home", "Medical", "Shopping"]
+# Alpha-sorted categories
+categories = sorted(cat_df["Category"].dropna().tolist()) if not cat_df.empty else ["Bills", "Dining", "Fuel", "Groceries", "Medical", "Shopping"]
 
-# --- 3. THE MULTI-STEP DIALOG ---
-@st.dialog("Log New Expense")
+# --- 3. MULTI-STEP LOGGING DIALOG ---
+@st.dialog("Quick Log")
 def log_expense_modal():
-    # Initialize Modal State
+    # State setup
     if "step" not in st.session_state:
         st.session_state.step = 1
         st.session_state.temp_amount = None
@@ -67,19 +54,19 @@ def log_expense_modal():
 
     # --- STEP 1: AMOUNT ---
     if st.session_state.step == 1:
-        st.write("### 1. Enter Amount")
-        amount = st.number_input("Amount", min_value=0, step=1, value=st.session_state.temp_amount, key="modal_amt", placeholder="₹ 0")
+        st.subheader("₹ Enter Amount")
+        amount = st.number_input("Amount", min_value=0, step=1, value=st.session_state.temp_amount, key="m_amt", placeholder="0")
         
         # JS to focus the keyboard automatically
-        st.components.v1.html("""
+        st.components.v1.html(f"""
             <script>
-                var input = window.parent.document.querySelector('input[aria-label="Amount"]');
-                if (input) { input.focus(); }
+                var input = window.parent.document.querySelector('input[placeholder="0"]');
+                if (input) {{ input.focus(); }}
             </script>
         """, height=0)
 
-        col_next = st.columns([0.8, 0.2])[1]
-        if col_next.button("➡️"):
+        cols = st.columns([0.8, 0.2])
+        if cols[1].button("➡️", key="next1"):
             if amount:
                 st.session_state.temp_amount = amount
                 st.session_state.step = 2
@@ -87,59 +74,72 @@ def log_expense_modal():
 
     # --- STEP 2: CATEGORY ---
     elif st.session_state.step == 2:
-        st.write("### 2. Select Category")
+        st.subheader("📂 Select Category")
         cat = st.selectbox("Category", categories, index=categories.index(st.session_state.temp_cat))
         
-        nav_cols = st.columns([0.2, 0.6, 0.2])
-        if nav_cols[0].button("⬅️"):
+        cols = st.columns([0.2, 0.6, 0.2])
+        if cols[0].button("⬅️", key="back2"):
             st.session_state.step = 1
             st.rerun()
-        if nav_cols[2].button("➡️"):
+        if cols[2].button("➡️", key="next2"):
             st.session_state.temp_cat = cat
             st.session_state.step = 3
             st.rerun()
 
-    # --- STEP 3: NOTES & SAVE ---
+    # --- STEP 3: NOTE & ADD ---
     elif st.session_state.step == 3:
-        st.write("### 3. Add Notes")
-        note = st.text_input("Note (Optional)", value=st.session_state.temp_note)
+        st.subheader("📝 Final Note")
+        note = st.text_input("Notes (Optional)", value=st.session_state.temp_note)
         
-        nav_cols = st.columns([0.2, 0.5, 0.3])
-        if nav_cols[0].button("⬅️"):
+        cols = st.columns([0.2, 0.5, 0.3])
+        if cols[0].button("⬅️", key="back3"):
+            st.session_state.temp_note = note
             st.session_state.step = 2
             st.rerun()
-        if nav_cols[2].button("ADD", type="primary"):
+        if cols[2].button("ADD", type="primary"):
             tz = pytz.timezone('Asia/Kolkata')
             now = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
             new_row = pd.DataFrame([{"Date": now, "Amount": st.session_state.temp_amount, "Category": st.session_state.temp_cat, "Note": note}])
             conn.update(worksheet="Expenses", data=pd.concat([df, new_row], ignore_index=True))
             
-            # Reset and close
-            del st.session_state.step
-            st.success("Saved!")
+            # Reset state for next time
+            st.session_state.step = 1
+            st.session_state.temp_amount = None
+            st.success("Logged!")
             st.rerun()
 
-# --- 4. MAIN DASHBOARD ---
+# --- 4. DASHBOARD ---
 st.title("₹ FinTrack Pro")
 
-# Today's Summary Card
+# Total Spent Today
 if not df.empty:
     df['Date'] = pd.to_datetime(df['Date'])
-    df['Amount'] = pd.to_numeric(df['Amount'], errors='coerce').fillna(0)
-    today_total = df[df['Date'].dt.date == datetime.now(pytz.timezone('Asia/Kolkata')).date()]['Amount'].sum()
-    st.metric("Spent Today", f"₹{today_total:,.0f}")
+    today = datetime.now(pytz.timezone('Asia/Kolkata')).date()
+    today_total = df[df['Date'].dt.date == today]['Amount'].astype(float).sum()
+    st.metric("Today", f"₹{today_total:,.0f}")
 
-st.subheader("Recent History")
 st.dataframe(df.tail(10).sort_index(ascending=False), use_container_width=True)
 
-# --- 5. FLOATING ACTION BUTTON ---
-with stylable_container(key="fab", css_styles="""
-    {
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        z-index: 1000;
-    }
-"""):
-    if st.button("+", key="fab_btn", help="Add Expense"):
+# --- 5. FLOATING "+" BUTTON ---
+with stylable_container(
+    key="add_button",
+    css_styles="""
+        button {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px !important;
+            height: 60px !important;
+            border-radius: 50% !important;
+            background-color: #2563eb !important;
+            color: white !important;
+            font-size: 32px !important;
+            font-weight: bold !important;
+            z-index: 1000;
+            border: none !important;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.5);
+        }
+    """
+):
+    if st.button("+"):
         log_expense_modal()
