@@ -102,7 +102,7 @@ with tab_rec:
         with st.form("new_rec"):
             c_sel = st.selectbox("Category", categories)
             # UPGRADE: value=None removes the auto-zero
-            a_sel = st.number_input("Amount", min_value=0, value=None, placeholder="₹ Enter Amount")
+            a_sel = st.number_input("Amount", min_value=0.00, value=None, placeholder="₹ Enter Amount")
             d_sel = st.slider("Log Day", 1, 31, 1)
             if st.form_submit_button("Add to System"):
                 if a_sel:
@@ -139,7 +139,7 @@ with tab_cat:
 @st.dialog("Quick Log")
 def log_modal():
     # UPGRADE: value=None removes the auto-zero
-    amt = st.number_input("Amount", min_value=0, value=None, placeholder="₹ Enter Amount", key="modal_amt")
+    amt = st.number_input("Amount", min_value=0.00, value=None, placeholder="₹ Enter Amount", key="modal_amt")
     cat = st.selectbox("Category", categories)
     mode = st.selectbox("Mode", payment_modes)
     if st.button("Save Transaction", type="primary", use_container_width=True):
