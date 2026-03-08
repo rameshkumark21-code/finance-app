@@ -6,32 +6,62 @@ import pytz
 
 st.set_page_config(page_title="FinTrack Pro", page_icon="₹", layout="wide")
 
-# --- 1. VIEW TOGGLE ---
-view_mode = st.sidebar.radio("View Mode", ["Mobile", "Laptop"], index=0)
+# --- 1. TOP ICON TOGGLE ---
+if 'view_mode' not in st.session_state:
+    st.session_state.view_mode = "Mobile"
+
+# Create two small columns at the very top for icons
+t1, t2, _ = st.columns([0.1, 0.1, 0.8])
+with t1:
+    if st.button("📱"):
+        st.session_state.view_mode = "Mobile"
+with t2:
+    if st.button("💻"):
+        st.session_state.view_mode = "Laptop"
+
+st.caption(f"Current View: **{st.session_state.view_mode}**")
 st.title("₹ FinTrack Pro")
 
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 # --- 2. DATA SYNC ---
-@st.cache_data(ttl=60)
-def get_data():
+@st.cache_data(ttl=10)
+def get_all_data():
     try:
-        return conn.read(worksheet="Expenses", ttl=0)
+        exp_df = conn.read(worksheet="Expenses", ttl=0)
+        cat_df = conn.read(worksheet="Categories", ttl=0)
+        return exp_df, cat_df
     except:
-        return pd.DataFrame(columns=["Date", "Amount", "Category", "Note"])
+        return pd.DataFrame(columns=["Date", "Amount", "Category", "Note"]), pd.DataFrame(columns=["Category"])
 
-df = get_data()
+df, cat_master = get_all_data()
+categories = cat_master["Category"].dropna().tolist() if not cat_master.empty else ["Food", "Groceries", "Veg", "Rent", "Fuel", "Bike", "EB", "Home", "Clothes", "Clout Fit"]
 
-# --- 3. SESSION STATE FOR BUTTON SELECTION ---
+# --- 3. MANAGE CATEGORIES ---
+with st.expander("⚙️ Manage Categories"):
+    c1, c2 = st.columns(2)
+    with c1:
+        new_cat = st.text_input("Add Category")
+        if st.button("Add"):
+            if new_cat and new_cat not in categories:
+                new_row = pd.DataFrame([{"Category": new_cat}])
+                conn.update(worksheet="Categories", data=pd.concat([cat_master, new_row], ignore_index=True))
+                st.cache_data.clear()
+                st.rerun()
+    with c2:
+        del_cat = st.selectbox("Delete Category", categories)
+        if st.button("Remove"):
+            updated_cats = cat_master[cat_master["Category"] != del_cat]
+            conn.update(worksheet="Categories", data=updated_cats)
+            st.cache_data.clear()
+            st.rerun()
+
+# --- 4. BUTTON GRID ---
 if 'selected_cat' not in st.session_state:
-    st.session_state.selected_cat = "Food" # Default
+    st.session_state.selected_cat = categories[0]
 
-# --- 4. CATEGORY BUTTON GRID ---
 st.subheader("1. Select Category")
-categories = ["Food", "Groceries", "Veg", "Rent", "Fuel", "Bike", "EB", "Home", "Clothes", "Clout Fit"]
-
-# Display buttons in a grid (3 columns for Mobile, 5 for Laptop)
-cols_count = 3 if view_mode == "Mobile" else 5
+cols_count = 3 if st.session_state.view_mode == "Mobile" else 6
 cat_cols = st.columns(cols_count)
 
 for i, cat in enumerate(categories):
@@ -41,13 +71,11 @@ for i, cat in enumerate(categories):
             st.session_state.selected_cat = cat
 
 # --- 5. LOGGING AREA ---
-st.markdown(f"Selected: **{st.session_state.selected_cat}**")
-
 with st.container(border=True):
-    amount = st.number_input("2. Enter Amount (₹)", min_value=0, step=1, value=0)
-    note = st.text_input("3. Note (Optional)")
+    amount = st.number_input(f"Logging: {st.session_state.selected_cat} (₹)", min_value=0, step=1)
+    note = st.text_input("Note (Optional)")
     
-    # Card Logic based on selected category
+    # Reward Logic
     sbi_5x = ["Food", "Groceries", "Veg", "Dining"]
     hdfc_5pct = ["Amazon", "Swiggy", "Zomato", "Uber", "Clout Fit", "Flipkart"]
     
@@ -61,13 +89,14 @@ with st.container(border=True):
             tz = pytz.timezone('Asia/Kolkata')
             now = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
             new_row = pd.DataFrame([{"Date": now, "Amount": amount, "Category": st.session_state.selected_cat, "Note": note}])
-            updated_df = pd.concat([df, new_row], ignore_index=True)
-            conn.update(worksheet="Expenses", data=updated_df)
-            st.success(f"Logged ₹{amount} to {st.session_state.selected_cat}!")
-            st.balloons()
+            conn.update(worksheet="Expenses", data=pd.concat([df, new_row], ignore_index=True))
+            st.success("Logged!")
             st.rerun()
 
-# --- 6. HISTORY ---
-st.divider()
+# --- 6. HISTORY & MILESTONE ---
+if not df.empty:
+    total = pd.to_numeric(df['Amount']).sum()
+    st.progress(min(total/100000, 1.0), text=f"Quarterly Milestone: ₹{total:,.0f} / ₹1L")
+
 st.subheader("Recent Spends")
-st.dataframe(df.tail(3 if view_mode == "Mobile" else 10), use_container_width=True)
+st.dataframe(df.tail(3 if st.session_state.view_mode == "Mobile" else 10), use_container_width=True)
