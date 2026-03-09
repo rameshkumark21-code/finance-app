@@ -15,78 +15,83 @@ LARGE_AMT_WARNING  = 50_000
 TZ                 = pytz.timezone('Asia/Kolkata')
 DEFAULT_MODES      = ["UPI", "Cash", "HDFC Credit Card", "SBI Credit Card"]
 MAX_PIN_ATTEMPTS   = 5
+TABS               = ["Home", "Categories", "Search", "Recurring", "Manage"]
+TAB_ICONS          = ["💰", "🏷️", "🔍", "🔄", "⚙️"]
 
 # ==============================================================================
-# 2. PAGE CONFIG + CSS
+# 2. VIEW MODE (mobile default)
+# ==============================================================================
+if "view_mode"  not in st.session_state:
+    st.session_state.view_mode  = "mobile"
+if "active_tab" not in st.session_state:
+    st.session_state.active_tab = 0
+
+is_mobile = st.session_state.view_mode == "mobile"
+
+# ==============================================================================
+# 3. PAGE CONFIG + CSS
 # ==============================================================================
 st.set_page_config(page_title="FinTrack Pro", page_icon="Rs.", layout="centered")
 
-_CSS = (
+# ── Base styles (shared) ──────────────────────────────────────────────────────
+_CSS_BASE = (
     "<link href='https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght"
     "@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap' rel='stylesheet'>"
     "<style>"
     "html,body,*{font-family:'DM Sans',sans-serif!important}"
     ".stApp{background-color:#080808;color:#e8e8e8}"
-    "[data-testid='stHeader']{background:transparent}"
+    "[data-testid='stHeader']{background:transparent!important;height:0!important}"
+    "[data-testid='stToolbar']{display:none!important}"
     "h1,h2,h3,h4{letter-spacing:-0.3px}"
-    ".stTabs [data-baseweb='tab-list']{gap:2px;background:transparent;border-bottom:1px solid #1c1c1c}"
-    ".stTabs [data-baseweb='tab']{height:40px;background:transparent;border-radius:8px 8px 0 0;"
-    "padding:0 16px;color:#555;font-size:.85rem;font-weight:500}"
-    ".stTabs [aria-selected='true']{background:transparent!important;color:#e8e8e8!important;"
-    "border-bottom:2px solid #2563eb!important;font-weight:600!important}"
+    # Tiles
     ".tile{background:#101010;border:1px solid #1c1c1c;border-radius:14px;padding:16px 18px;margin-bottom:10px}"
     ".tile-accent{height:3px;border-radius:2px 2px 0 0;margin-bottom:12px}"
-    ".tile-label{color:#555;font-size:.7rem;text-transform:uppercase;letter-spacing:1.4px;font-weight:600}"
+    ".tile-label{color:#555;font-size:.68rem;text-transform:uppercase;letter-spacing:1.4px;font-weight:600}"
     ".tile-value{font-size:1.85rem;font-weight:700;margin-top:4px;letter-spacing:-.8px;color:#f0f0f0}"
     ".tile-sub{font-size:.78rem;margin-top:4px}"
     ".trend-up{color:#f87171;font-weight:600}"
     ".trend-down{color:#34d399;font-weight:600}"
     ".trend-flat{color:#666}"
+    # Progress bars
     ".prog-wrap{margin-top:10px}"
     ".prog-track{background:#1c1c1c;border-radius:6px;height:10px;overflow:hidden}"
     ".prog-fill{height:10px;border-radius:6px;transition:width .6s ease}"
     ".prog-meta{display:flex;justify-content:space-between;margin-top:5px;font-size:.72rem;color:#444}"
-    ".sec-head{font-size:.68rem;text-transform:uppercase;letter-spacing:1.6px;color:#444;font-weight:700;margin:22px 0 10px}"
+    # Section headings
+    ".sec-head{font-size:.65rem;text-transform:uppercase;letter-spacing:1.6px;color:#444;font-weight:700;margin:22px 0 10px}"
+    # Category rows
     ".cat-row{display:flex;align-items:center;justify-content:space-between;"
     "padding:9px 14px;border-radius:10px;margin-bottom:5px;background:#101010;border:1px solid #1c1c1c}"
     ".cat-name{font-size:.88rem;font-weight:500;color:#ddd;flex:1}"
     ".cat-bar-wrap{width:72px;height:3px;background:#1e1e1e;border-radius:2px;margin:0 12px;flex-shrink:0}"
     ".cat-bar-fill{height:3px;border-radius:2px;background:#2563eb}"
     ".cat-amt{font-size:.88rem;font-weight:600;color:#e8e8e8;white-space:nowrap}"
+    # Budget rows
     ".budget-row{padding:12px 14px;border-radius:10px;background:#101010;border:1px solid #1c1c1c;margin-bottom:7px}"
     ".budget-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}"
     ".budget-name{font-size:.88rem;font-weight:600;color:#ddd}"
     ".budget-nums{font-size:.78rem;color:#555}"
+    # Recurring cards
     ".rec-card{background:#101010;border:1px solid #1c1c1c;border-radius:12px;padding:13px 15px;margin-bottom:6px}"
     ".rec-fired{border-left:3px solid #34d399}"
     ".rec-pending{border-left:3px solid #facc15}"
     ".rec-title{font-size:.93rem;font-weight:600;color:#e0e0e0}"
     ".rec-meta{font-size:.76rem;color:#555;margin-top:3px}"
+    # Manage list rows
     ".catlist-row{font-size:.9rem;font-weight:500;color:#ccc;padding:9px 0;border-bottom:1px solid #141414}"
+    # Empty states
     ".empty-box{text-align:center;padding:48px 20px;color:#333}"
     ".empty-box .ico{font-size:2.2rem;margin-bottom:10px}"
     ".empty-box .msg{font-size:.88rem;line-height:1.5}"
     # Category drilldown
-    ".cat-hero{background:#101010;border:1px solid #1c1c1c;border-radius:14px;padding:16px 18px;margin-bottom:6px;cursor:pointer}"
+    ".cat-hero{background:#101010;border:1px solid #1c1c1c;border-radius:14px;padding:16px 18px;margin-bottom:6px}"
     ".cat-hero-name{font-size:1rem;font-weight:700;color:#f0f0f0}"
-    ".cat-hero-meta{font-size:.74rem;color:#555;margin-top:3px}"
+    ".cat-hero-meta{font-size:.72rem;color:#555;margin-top:3px}"
     ".cat-hero-amt{font-size:1.2rem;font-weight:700;color:#2563eb;white-space:nowrap}"
-    ".txn-sub-row{padding:9px 14px;border-bottom:1px solid #141414;display:flex;justify-content:space-between;align-items:center}"
-    ".txn-sub-left{font-size:.84rem;color:#bbb}"
-    ".txn-sub-right{font-size:.84rem;font-weight:600;color:#e8e8e8;white-space:nowrap}"
-    ".txn-sub-note{font-size:.72rem;color:#555;margin-top:2px}"
-    # Search results
-    ".srch-card{background:#101010;border:1px solid #1c1c1c;border-radius:12px;padding:13px 16px;margin-bottom:5px}"
-    ".srch-top{display:flex;justify-content:space-between;align-items:center}"
-    ".srch-cat{font-size:.9rem;font-weight:700;color:#e0e0e0}"
-    ".srch-amt{font-size:.95rem;font-weight:700;color:#2563eb;white-space:nowrap}"
-    ".srch-meta{font-size:.74rem;color:#555;margin-top:3px}"
-    ".srch-note{font-size:.76rem;color:#777;margin-top:3px;font-style:italic}"
-    # Chips / badges
+    # Chips
     ".chip{display:inline-block;background:#1a2540;color:#6ea3ff;border-radius:6px;"
-    "font-size:.68rem;font-weight:600;padding:2px 7px;margin-right:4px;letter-spacing:.4px}"
-    # Filter panel
-    ".filter-panel{background:#0e0e0e;border:1px solid #1c1c1c;border-radius:14px;padding:16px 18px;margin-bottom:16px}"
+    "font-size:.66rem;font-weight:600;padding:2px 7px;margin-right:4px;letter-spacing:.4px}"
+    # Streamlit widget overrides
     "div[data-testid='stDialog']{background:#0c0c0c!important;border:1px solid #202020!important;border-radius:22px!important}"
     "[data-testid='stTextInput'] input,[data-testid='stNumberInput'] input"
     "{background:#141414!important;border:1px solid #242424!important;border-radius:8px!important;color:#e8e8e8!important}"
@@ -95,15 +100,73 @@ _CSS = (
     "[data-testid='stExpander'] summary{font-size:.87rem!important;font-weight:500!important;color:#ccc!important}"
     "[data-testid='stForm']{border:1px solid #1c1c1c!important;border-radius:12px!important;padding:16px!important;background:#0e0e0e!important}"
     ".stAlert{border-radius:10px!important}"
-    # Multiselect tags
     "[data-testid='stMultiSelect'] span{background:#1a2540!important;color:#6ea3ff!important;"
     "border-radius:5px!important;font-size:.74rem!important}"
+    # Streamlit tabs — hidden in both modes (we use custom nav)
+    ".stTabs [data-baseweb='tab-list']{display:none!important}"
+    ".stTabs [data-baseweb='tab-panel']{padding:0!important}"
     "</style>"
 )
-st.markdown(_CSS, unsafe_allow_html=True)
+
+# ── Mobile-only styles ────────────────────────────────────────────────────────
+_CSS_MOBILE = (
+    "<style>"
+    # Phone frame
+    "[data-testid='stAppViewContainer']{max-width:430px!important;margin:0 auto!important;"
+    "padding:0!important;position:relative}"
+    "[data-testid='stMain']{padding:0 14px 90px!important}"
+    "[data-testid='block-container']{padding:0!important;max-width:430px!important}"
+    # Bottom nav bar
+    ".bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);"
+    "width:100%;max-width:430px;background:#0e0e0e;border-top:1px solid #1c1c1c;"
+    "display:flex;z-index:1000;padding:0 0 env(safe-area-inset-bottom,0)}"
+    ".bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;"
+    "justify-content:center;padding:10px 4px 8px;cursor:pointer;border:none;"
+    "background:transparent;color:#444;font-size:.6rem;font-weight:600;gap:3px;"
+    "text-transform:uppercase;letter-spacing:.6px;min-height:56px}"
+    ".bnav-item.active{color:#2563eb}"
+    ".bnav-icon{font-size:1.25rem;line-height:1}"
+    # Larger touch targets on mobile
+    "button[data-testid='baseButton-secondary']"
+    "{min-height:44px!important;border-radius:10px!important}"
+    "button[data-testid='baseButton-primary']"
+    "{min-height:48px!important;border-radius:10px!important;font-size:.92rem!important}"
+    # Bigger tile values on mobile
+    ".tile-value{font-size:2rem!important}"
+    # Page header
+    ".page-header{display:flex;justify-content:space-between;align-items:center;"
+    "padding:18px 0 10px}"
+    ".page-title{font-size:1.3rem;font-weight:700;letter-spacing:-.3px;color:#f0f0f0}"
+    # FAB — taller clearance on mobile
+    ".fab-mobile{position:fixed;bottom:72px;right:20px;width:56px;height:56px;"
+    "border-radius:50%;background:#2563eb;color:#fff;font-size:28px;border:none;"
+    "cursor:pointer;box-shadow:0 6px 24px rgba(37,99,235,.5);z-index:999;"
+    "display:flex;align-items:center;justify-content:center}"
+    "</style>"
+)
+
+# ── Desktop-only styles ───────────────────────────────────────────────────────
+_CSS_DESKTOP = (
+    "<style>"
+    "[data-testid='stMain']{padding:16px 24px 80px!important}"
+    "[data-testid='block-container']{max-width:860px!important;padding:0!important}"
+    # Desktop top nav
+    ".top-nav{display:flex;border-bottom:1px solid #1c1c1c;gap:2px;margin-bottom:20px;"
+    "position:sticky;top:0;background:#080808;z-index:50;padding-top:12px}"
+    ".tnav-item{padding:10px 16px;font-size:.84rem;font-weight:500;color:#555;"
+    "cursor:pointer;border:none;background:transparent;border-radius:8px 8px 0 0}"
+    ".tnav-item.active{color:#e8e8e8;border-bottom:2px solid #2563eb;font-weight:700}"
+    ".page-header{display:flex;justify-content:space-between;align-items:center;"
+    "margin-bottom:16px}"
+    ".page-title{font-size:1.6rem;font-weight:700;letter-spacing:-.3px;color:#f0f0f0}"
+    "</style>"
+)
+
+st.markdown(_CSS_BASE, unsafe_allow_html=True)
+st.markdown(_CSS_MOBILE if is_mobile else _CSS_DESKTOP, unsafe_allow_html=True)
 
 # ==============================================================================
-# 3. DATA LOAD + SESSION STATE
+# 4. DATA LOAD + SESSION STATE
 # ==============================================================================
 conn = st.connection("gsheets", type=GSheetsConnection)
 
@@ -121,9 +184,9 @@ def load_all_data():
     except Exception as ex:
         st.error(f"Could not connect to Google Sheets: {ex}")
         return (
-            pd.DataFrame(columns=["Date", "Amount", "Category", "Note", "Mode"]),
+            pd.DataFrame(columns=["Date","Amount","Category","Note","Mode"]),
             pd.DataFrame(columns=["Category"]),
-            pd.DataFrame(columns=["Category", "Budget", "Is_Recurring", "Day_of_Month", "Last_Fired"]),
+            pd.DataFrame(columns=["Category","Budget","Is_Recurring","Day_of_Month","Last_Fired"]),
             pd.DataFrame({"Mode": DEFAULT_MODES}),
         )
 
@@ -155,7 +218,7 @@ if not st.session_state.get("bootstrapped"):
 
 def hard_refresh():
     st.cache_data.clear()
-    for k in ["bootstrapped", "df", "cat_df", "settings_df", "modes_df", "active_pin"]:
+    for k in ["bootstrapped","df","cat_df","settings_df","modes_df","active_pin"]:
         st.session_state.pop(k, None)
     st.rerun()
 
@@ -171,7 +234,7 @@ today         = now.date()
 curr_ym       = now.strftime("%Y-%m")
 
 # ==============================================================================
-# 4. SAVE HELPERS
+# 5. SAVE HELPERS
 # ==============================================================================
 def save_expense(row_dict):
     with st.spinner("Saving..."):
@@ -223,12 +286,11 @@ def save_pin(new_pin: str):
         st.cache_data.clear()
 
 # ==============================================================================
-# 5. SHARED TRANSACTION ROW RENDERER (used in Home, Categories, Search)
+# 6. SHARED TRANSACTION ROW RENDERER
 # ==============================================================================
-def render_txn_row(idx, row, key_prefix="txn", show_edit=True):
-    """Renders a single transaction card row with optional inline edit/delete."""
+def render_txn_row(idx, row, key_prefix="txn"):
     date_disp = pd.to_datetime(row["Date"]).strftime("%-d %b %Y, %H:%M") if pd.notna(row["Date"]) else "-"
-    note_val  = str(row.get("Note", "") or "").strip()
+    note_val  = str(row.get("Note","") or "").strip()
     edit_key  = f"{key_prefix}_edit_{idx}"
     del_key   = f"{key_prefix}_del_{idx}"
     if edit_key not in st.session_state:
@@ -243,20 +305,20 @@ def render_txn_row(idx, row, key_prefix="txn", show_edit=True):
         unsafe_allow_html=True
     )
     mode_chip = f"<span class='chip'>{row['Mode']}</span>" if str(row.get("Mode","")).strip() else ""
-    note_html = f"<div style='font-size:.72rem;color:#555;margin-top:2px;font-style:italic'>{note_val}</div>" if note_val else ""
+    note_html = f"<div style='font-size:.7rem;color:#555;margin-top:2px;font-style:italic'>{note_val}</div>" if note_val else ""
     c_info.markdown(
         f"<div style='padding:10px 0;line-height:1.35'>"
-        f"<span style='font-size:.88rem;font-weight:600;color:#ccc'>{row['Category']}</span>"
-        f"<br><span style='font-size:.72rem;color:#555'>{date_disp}</span> {mode_chip}"
+        f"<span style='font-size:.86rem;font-weight:600;color:#ccc'>{row['Category']}</span>"
+        f"<br><span style='font-size:.7rem;color:#555'>{date_disp}</span> {mode_chip}"
         f"{note_html}</div>",
         unsafe_allow_html=True
     )
-    if show_edit and c_btn.button("✏️", key=f"{key_prefix}_tgl_{idx}", help="Edit / Delete"):
+    if c_btn.button("✏️", key=f"{key_prefix}_tgl_{idx}", help="Edit / Delete"):
         st.session_state[edit_key] = not st.session_state[edit_key]
         st.rerun()
     st.markdown("<hr style='border:none;border-top:1px solid #161616;margin:0'>", unsafe_allow_html=True)
 
-    if show_edit and st.session_state[edit_key]:
+    if st.session_state[edit_key]:
         with st.container(border=True):
             ea, eb = st.columns(2)
             new_amt  = ea.number_input("Amount", value=float(row["Amount"]), min_value=0.0, key=f"{key_prefix}_eamt_{idx}")
@@ -295,9 +357,9 @@ def render_txn_row(idx, row, key_prefix="txn", show_edit=True):
                     st.rerun()
 
 # ==============================================================================
-# 6. PIN GATE
+# 7. PIN GATE
 # ==============================================================================
-for _k, _v in [("pin_unlocked", False), ("pin_input", ""), ("pin_attempts", 0), ("pin_error", "")]:
+for _k, _v in [("pin_unlocked",False),("pin_input",""),("pin_attempts",0),("pin_error","")]:
     if _k not in st.session_state:
         st.session_state[_k] = _v
 
@@ -308,7 +370,7 @@ if not st.session_state.pin_unlocked:
     with col:
         st.markdown("### FinTrack Pro")
         st.markdown(
-            "<p style='color:#444;font-size:.8rem;margin-bottom:24px'>Enter your 4-digit PIN to continue</p>",
+            "<p style='color:#444;font-size:.8rem;margin-bottom:24px'>Enter your 4-digit PIN</p>",
             unsafe_allow_html=True
         )
         entered  = len(st.session_state.pin_input)
@@ -331,19 +393,18 @@ if not st.session_state.pin_unlocked:
             remaining = MAX_PIN_ATTEMPTS - st.session_state.pin_attempts
             st.markdown(
                 f"<p style='color:#f87171;font-size:.76rem;text-align:center;margin-bottom:12px'>"
-                f"Incorrect PIN. {remaining} attempt{'s' if remaining != 1 else ''} left.</p>",
+                f"Incorrect PIN. {remaining} attempt{'s' if remaining!=1 else ''} left.</p>",
                 unsafe_allow_html=True
             )
-        keys_layout = [["1","2","3"],["4","5","6"],["7","8","9"],["","0","del"]]
-        for row_keys in keys_layout:
+        for row_keys in [["1","2","3"],["4","5","6"],["7","8","9"],["","0","del"]]:
             k1, k2, k3 = st.columns(3)
-            for col_w, digit in zip([k1, k2, k3], row_keys):
+            for col_w, digit in zip([k1,k2,k3], row_keys):
                 if digit == "":
                     col_w.markdown("")
                 elif digit == "del":
                     if col_w.button("⌫", use_container_width=True, key="pin_del"):
-                        st.session_state.pin_input  = st.session_state.pin_input[:-1]
-                        st.session_state.pin_error  = ""
+                        st.session_state.pin_input = st.session_state.pin_input[:-1]
+                        st.session_state.pin_error = ""
                         st.rerun()
                 else:
                     if col_w.button(digit, use_container_width=True, key=f"pin_{digit}"):
@@ -364,25 +425,24 @@ if not st.session_state.pin_unlocked:
     st.stop()
 
 # ==============================================================================
-# 7. RECURRING AUTO-LOG
+# 8. RECURRING AUTO-LOG
 # ==============================================================================
 if not st.session_state.get("auto_log_checked") and not settings_df.empty:
     fired_any   = False
     updated_sdf = st.session_state.settings_df.copy()
     for i, row in st.session_state.settings_df.iterrows():
         try:
-            is_rec = str(row.get("Is_Recurring", "")).strip().lower() in ("true", "1", "yes")
+            is_rec = str(row.get("Is_Recurring","")).strip().lower() in ("true","1","yes")
             if not is_rec:
                 continue
-            last_fired = str(row.get("Last_Fired", "")).strip()
+            last_fired = str(row.get("Last_Fired","")).strip()
             day_of_mon = int(row.get("Day_of_Month", 32))
             amt        = float(row.get("Budget", 0) or 0)
             if last_fired == curr_ym or today.day < day_of_mon:
                 continue
             fire_dt = f"{today.strftime('%Y-%m-%d')} {now.strftime('%H:%M:%S')}"
-            save_expense({"Date": fire_dt, "Amount": amt, "Category": row["Category"],
-                          "Mode": "Auto", "Note": "Auto-logged (recurring)"})
-            updated_sdf.at[i, "Last_Fired"] = curr_ym
+            save_expense({"Date":fire_dt,"Amount":amt,"Category":row["Category"],"Mode":"Auto","Note":"Auto-logged (recurring)"})
+            updated_sdf.at[i,"Last_Fired"] = curr_ym
             fired_any = True
             st.toast(f"Auto-logged: {row['Category']}  Rs.{amt:,.0f}")
         except Exception:
@@ -392,36 +452,96 @@ if not st.session_state.get("auto_log_checked") and not settings_df.empty:
     st.session_state.auto_log_checked = True
 
 # ==============================================================================
-# 8. TABS  — now 5 tabs
+# 9. NAVIGATION
+#    Mobile  → bottom nav bar (HTML) + view-mode button in page header
+#    Desktop → horizontal top nav buttons + view-mode button
 # ==============================================================================
-tab_home, tab_cat_view, tab_search, tab_rec, tab_manage = st.tabs([
-    "Home", "Categories", "Search", "Recurring", "Manage"
-])
+active = st.session_state.active_tab
+
+if is_mobile:
+    # Bottom nav rendered as HTML — buttons below trigger rerun via session state
+    nav_html = "<div class='bottom-nav'>"
+    for i, (label, icon) in enumerate(zip(TABS, TAB_ICONS)):
+        cls = "bnav-item active" if i == active else "bnav-item"
+        nav_html += (
+            f"<div class='{cls}' id='bnav_{i}'>"
+            f"<span class='bnav-icon'>{icon}</span>"
+            f"<span>{label}</span></div>"
+        )
+    nav_html += "</div>"
+    st.markdown(nav_html, unsafe_allow_html=True)
+
+    # Streamlit buttons for actual tab switching (invisible-ish row)
+    nb = st.columns(5)
+    for i, label in enumerate(TABS):
+        with nb[i]:
+            with stylable_container(
+                key=f"nb_{i}",
+                css_styles="button{background:transparent!important;border:none!important;"
+                           "color:transparent!important;height:1px!important;padding:0!important;"
+                           "min-height:0!important;font-size:1px!important;overflow:hidden}"
+            ):
+                if st.button(label, key=f"nav_{i}"):
+                    st.session_state.active_tab = i
+                    st.rerun()
+else:
+    # Desktop top nav
+    nav_html = "<div class='top-nav'>"
+    for i, (label, icon) in enumerate(zip(TABS, TAB_ICONS)):
+        cls = "tnav-item active" if i == active else "tnav-item"
+        nav_html += f"<span class='{cls}' id='tnav_{i}'>{icon} {label}</span>"
+    nav_html += "</div>"
+    st.markdown(nav_html, unsafe_allow_html=True)
+
+    nb = st.columns(5)
+    for i, label in enumerate(TABS):
+        with nb[i]:
+            with stylable_container(
+                key=f"nb_{i}",
+                css_styles="button{background:transparent!important;border:none!important;"
+                           "color:transparent!important;height:1px!important;padding:0!important;"
+                           "min-height:0!important;font-size:1px!important;overflow:hidden}"
+            ):
+                if st.button(label, key=f"nav_{i}"):
+                    st.session_state.active_tab = i
+                    st.rerun()
 
 # ==============================================================================
-# TAB 1 — HOME
+# 10. PAGE HEADER (title + view toggle + lock/refresh)
 # ==============================================================================
-with tab_home:
-    hc1, hc2, hc3 = st.columns([5, 1, 1])
-    hc1.markdown("## FinTrack")
-    if hc2.button("Lock", use_container_width=True):
+page_names = ["FinTrack", "Categories", "Search", "Recurring", "Manage"]
+toggle_label = "🖥️ Desktop" if is_mobile else "📱 Mobile"
+
+h1, h2 = st.columns([5, 2])
+h1.markdown(f"<div class='page-title'>{page_names[active]}</div>", unsafe_allow_html=True)
+
+with h2:
+    v1, v2, v3 = st.columns(3)
+    if v1.button(toggle_label, key="view_toggle", use_container_width=True):
+        st.session_state.view_mode = "desktop" if is_mobile else "mobile"
+        st.rerun()
+    if v2.button("🔒", key="lock_btn", use_container_width=True, help="Lock"):
         st.session_state.pin_unlocked = False
         st.session_state.pin_input    = ""
         st.session_state.pin_error    = ""
         st.rerun()
-    if hc3.button("Refresh", use_container_width=True):
+    if v3.button("↺", key="refresh_btn", use_container_width=True, help="Refresh"):
         hard_refresh()
 
+st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
+
+# ==============================================================================
+# 11. TAB CONTENT — rendered conditionally by active_tab
+# ==============================================================================
+
+# ──────────────────────────────────────────────────────────────────────────────
+# TAB 0 — HOME
+# ──────────────────────────────────────────────────────────────────────────────
+if active == 0:
     if df.empty:
-        st.markdown(
-            "<div class='empty-box'><div class='ico'>💸</div>"
-            "<div class='msg'>No expenses yet. Tap + to get started.</div></div>",
-            unsafe_allow_html=True
-        )
+        st.markdown('<div class="empty-box"><div class="ico">💸</div><div class="msg">No expenses yet.<br>Tap + to get started.</div></div>', unsafe_allow_html=True)
     else:
-        all_months = sorted(
-            df["Date"].dropna().dt.to_period("M").unique().astype(str).tolist(), reverse=True
-        )
+        all_months  = sorted(df["Date"].dropna().dt.to_period("M").unique().astype(str).tolist(), reverse=True)
         sel_month   = st.selectbox("Period", all_months, index=0, label_visibility="collapsed")
         sel_period  = pd.Period(sel_month, freq="M")
         prev_period = sel_period - 1
@@ -437,32 +557,52 @@ with tab_home:
             t_sign     = "+" if pct_diff > 0 else ""
             trend_html = f'<span class="{t_cls}">{t_sign}{pct_diff:.0f}% vs {str(prev_period)}</span>'
         else:
-            trend_html = '<span class="trend-flat">First month on record</span>'
+            trend_html = '<span class="trend-flat">First month</span>'
 
-        tc1, tc2 = st.columns(2)
-        if sel_month == curr_ym:
-            today_total = df[df["Date"].dt.date == today]["Amount"].sum()
-            tc1.markdown(
-                f'<div class="tile"><div class="tile-accent" style="background:#2563eb"></div>'
-                f'<div class="tile-label">Spent Today</div>'
-                f'<div class="tile-value">Rs.{today_total:,.0f}</div></div>',
+        if is_mobile:
+            # Single-column tiles on mobile
+            if sel_month == curr_ym:
+                today_total = df[df["Date"].dt.date == today]["Amount"].sum()
+                st.markdown(
+                    f'<div class="tile"><div class="tile-accent" style="background:#2563eb"></div>'
+                    f'<div class="tile-label">Spent Today</div>'
+                    f'<div class="tile-value">Rs.{today_total:,.0f}</div></div>',
+                    unsafe_allow_html=True
+                )
+            st.markdown(
+                f'<div class="tile"><div class="tile-accent" style="background:#7c3aed"></div>'
+                f'<div class="tile-label">This Month</div>'
+                f'<div class="tile-value">Rs.{month_total:,.0f}</div>'
+                f'<div class="tile-sub">{trend_html}</div></div>',
                 unsafe_allow_html=True
             )
         else:
-            tc1.markdown(
-                f'<div class="tile"><div class="tile-accent" style="background:#374151"></div>'
-                f'<div class="tile-label">Period</div>'
-                f'<div class="tile-value" style="font-size:1.1rem;padding-top:6px">{sel_month}</div></div>',
+            # Two-column tiles on desktop
+            tc1, tc2 = st.columns(2)
+            if sel_month == curr_ym:
+                today_total = df[df["Date"].dt.date == today]["Amount"].sum()
+                tc1.markdown(
+                    f'<div class="tile"><div class="tile-accent" style="background:#2563eb"></div>'
+                    f'<div class="tile-label">Spent Today</div>'
+                    f'<div class="tile-value">Rs.{today_total:,.0f}</div></div>',
+                    unsafe_allow_html=True
+                )
+            else:
+                tc1.markdown(
+                    f'<div class="tile"><div class="tile-accent" style="background:#374151"></div>'
+                    f'<div class="tile-label">Period</div>'
+                    f'<div class="tile-value" style="font-size:1.1rem;padding-top:6px">{sel_month}</div></div>',
+                    unsafe_allow_html=True
+                )
+            tc2.markdown(
+                f'<div class="tile"><div class="tile-accent" style="background:#7c3aed"></div>'
+                f'<div class="tile-label">Total Spend</div>'
+                f'<div class="tile-value">Rs.{month_total:,.0f}</div>'
+                f'<div class="tile-sub">{trend_html}</div></div>',
                 unsafe_allow_html=True
             )
-        tc2.markdown(
-            f'<div class="tile"><div class="tile-accent" style="background:#7c3aed"></div>'
-            f'<div class="tile-label">Total Spend</div>'
-            f'<div class="tile-value">Rs.{month_total:,.0f}</div>'
-            f'<div class="tile-sub">{trend_html}</div></div>',
-            unsafe_allow_html=True
-        )
 
+        # HDFC Milestone
         q_map   = {1:1,2:1,3:1,4:2,5:2,6:2,7:3,8:3,9:3,10:4,11:4,12:4}
         curr_q  = q_map[now.month]
         h_spend = df[
@@ -480,7 +620,7 @@ with tab_home:
             f'<span style="font-size:.82rem;color:#444;font-weight:400"> / Rs.{HDFC_MILESTONE_AMT:,.0f}</span></div>'
             f'<div class="prog-wrap"><div class="prog-track">'
             f'<div class="prog-fill" style="width:{h_pct:.1f}%;background:{h_color}"></div>'
-            f'</div><div class="prog-meta"><span>{h_pct:.1f}% reached</span>'
+            f'</div><div class="prog-meta"><span>{h_pct:.1f}%</span>'
             f'<span>Rs.{remaining:,.0f} to go</span></div></div></div>',
             unsafe_allow_html=True
         )
@@ -500,7 +640,7 @@ with tab_home:
                 bspent = filt[filt["Category"] == bcat]["Amount"].sum()
                 bpct   = min(bspent / blimit * 100, 100)
                 bcolor = "#34d399" if bpct < 75 else ("#facc15" if bpct < 100 else "#f87171")
-                over   = " Over budget!" if bspent > blimit else ""
+                over   = " ⚠️" if bspent > blimit else ""
                 st.markdown(
                     f'<div class="budget-row"><div class="budget-header">'
                     f'<span class="budget-name">{bcat}{over}</span>'
@@ -509,7 +649,7 @@ with tab_home:
                     unsafe_allow_html=True
                 )
 
-        # Category breakdown bar chart
+        # Category breakdown
         st.markdown('<p class="sec-head">By Category</p>', unsafe_allow_html=True)
         if not filt.empty:
             cat_sum = filt.groupby("Category")["Amount"].sum().sort_values(ascending=False).reset_index()
@@ -545,55 +685,50 @@ with tab_home:
             for idx, row in txn_df.iterrows():
                 render_txn_row(idx, row, key_prefix="home")
 
-
-# ==============================================================================
-# TAB 2 — CATEGORIES (Historical drilldown)
-# ==============================================================================
-with tab_cat_view:
-    st.markdown("## Categories")
-
+# ──────────────────────────────────────────────────────────────────────────────
+# TAB 1 — CATEGORIES
+# ──────────────────────────────────────────────────────────────────────────────
+elif active == 1:
     if df.empty:
         st.markdown('<div class="empty-box"><div class="ico">🏷️</div><div class="msg">No data yet.</div></div>', unsafe_allow_html=True)
     else:
-        # Global summary stats
         total_all  = df["Amount"].sum()
         total_txns = len(df)
         oldest     = df["Date"].min()
         newest     = df["Date"].max()
         span_days  = max((newest - oldest).days, 1)
 
-        s1, s2, s3 = st.columns(3)
-        s1.markdown(
-            f'<div class="tile"><div class="tile-accent" style="background:#2563eb"></div>'
-            f'<div class="tile-label">All Time Spend</div>'
-            f'<div class="tile-value" style="font-size:1.4rem">Rs.{total_all:,.0f}</div></div>',
-            unsafe_allow_html=True
-        )
-        s2.markdown(
-            f'<div class="tile"><div class="tile-accent" style="background:#7c3aed"></div>'
-            f'<div class="tile-label">Transactions</div>'
-            f'<div class="tile-value" style="font-size:1.4rem">{total_txns:,}</div></div>',
-            unsafe_allow_html=True
-        )
-        s3.markdown(
-            f'<div class="tile"><div class="tile-accent" style="background:#0d9488"></div>'
-            f'<div class="tile-label">Daily Average</div>'
-            f'<div class="tile-value" style="font-size:1.4rem">Rs.{total_all/span_days:,.0f}</div></div>',
-            unsafe_allow_html=True
-        )
+        if is_mobile:
+            st.markdown(
+                f'<div class="tile"><div class="tile-accent" style="background:#2563eb"></div>'
+                f'<div class="tile-label">All Time</div>'
+                f'<div class="tile-value">Rs.{total_all:,.0f}</div>'
+                f'<div class="tile-sub" style="color:#555">{total_txns} transactions &nbsp;·&nbsp; Avg Rs.{total_all/span_days:,.0f}/day</div></div>',
+                unsafe_allow_html=True
+            )
+        else:
+            s1, s2, s3 = st.columns(3)
+            for col_w, lbl, color, val in [
+                (s1, "All Time Spend", "#2563eb", f"Rs.{total_all:,.0f}"),
+                (s2, "Transactions",  "#7c3aed", f"{total_txns:,}"),
+                (s3, "Daily Average", "#0d9488", f"Rs.{total_all/span_days:,.0f}"),
+            ]:
+                col_w.markdown(
+                    f'<div class="tile"><div class="tile-accent" style="background:{color}"></div>'
+                    f'<div class="tile-label">{lbl}</div>'
+                    f'<div class="tile-value" style="font-size:1.4rem">{val}</div></div>',
+                    unsafe_allow_html=True
+                )
 
-        # Sort control
-        st.markdown('<p class="sec-head">Category Breakdown — All Time</p>', unsafe_allow_html=True)
+        st.markdown('<p class="sec-head">All Categories — All Time</p>', unsafe_allow_html=True)
         sort_opt = st.radio(
-            "Sort by", ["Total Spend", "No. of Transactions", "Avg Transaction", "A to Z"],
+            "Sort by", ["Total Spend","No. of Transactions","Avg Transaction","A to Z"],
             horizontal=True, label_visibility="collapsed"
         )
 
         cat_grp = df.groupby("Category").agg(
-            Total=("Amount", "sum"),
-            Count=("Amount", "count"),
-            Avg=("Amount", "mean"),
-            Last=("Date", "max"),
+            Total=("Amount","sum"), Count=("Amount","count"),
+            Avg=("Amount","mean"),  Last=("Date","max"),
         ).reset_index()
 
         if sort_opt == "Total Spend":
@@ -616,12 +751,12 @@ with tab_cat_view:
             bar_pct   = cat_total / max_total * 100
             share_pct = cat_total / total_all * 100 if total_all > 0 else 0
 
-            # Category hero card
             st.markdown(
                 f'<div class="cat-hero">'
                 f'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
                 f'<div><div class="cat-hero-name">{cat_name}</div>'
-                f'<div class="cat-hero-meta">{cat_count} transactions &nbsp;·&nbsp; Avg Rs.{cat_avg:,.0f} &nbsp;·&nbsp; Last {cat_last} &nbsp;·&nbsp; {share_pct:.1f}% of total</div></div>'
+                f'<div class="cat-hero-meta">{cat_count} txns &nbsp;·&nbsp; Avg Rs.{cat_avg:,.0f} &nbsp;·&nbsp; {share_pct:.1f}% of total</div>'
+                f'<div class="cat-hero-meta">Last: {cat_last}</div></div>'
                 f'<div class="cat-hero-amt">Rs.{cat_total:,.0f}</div></div>'
                 f'<div style="margin-top:10px;background:#1e1e1e;border-radius:4px;height:4px">'
                 f'<div style="width:{bar_pct:.1f}%;background:#2563eb;height:4px;border-radius:4px"></div></div>'
@@ -629,38 +764,33 @@ with tab_cat_view:
                 unsafe_allow_html=True
             )
 
-            # Toggle to show all entries for this category
             view_key = f"view_cat_{cat_name}"
             if view_key not in st.session_state:
                 st.session_state[view_key] = False
 
-            btn_label = f"Hide entries" if st.session_state[view_key] else f"Show all {cat_count} entries"
-            if st.button(btn_label, key=f"btn_cat_{cat_name}", use_container_width=False):
+            btn_label = "Hide entries" if st.session_state[view_key] else f"Show all {cat_count} entries"
+            if st.button(btn_label, key=f"btn_cat_{cat_name}"):
                 st.session_state[view_key] = not st.session_state[view_key]
                 st.rerun()
 
             if st.session_state[view_key]:
                 cat_entries = df[df["Category"] == cat_name].sort_values("Date", ascending=False)
                 with st.container(border=True):
-                    # Month filter inside drilldown
                     cat_months = sorted(
                         cat_entries["Date"].dropna().dt.to_period("M").unique().astype(str).tolist(),
                         reverse=True
                     )
-                    mf_key = f"mf_{cat_name}"
-                    month_filt = st.selectbox(
-                        "Filter month", ["All months"] + cat_months,
-                        key=mf_key, label_visibility="collapsed"
-                    )
+                    mf_key     = f"mf_{cat_name}"
+                    month_filt = st.selectbox("Filter month", ["All months"] + cat_months,
+                                              key=mf_key, label_visibility="collapsed")
                     if month_filt != "All months":
                         cat_entries = cat_entries[
                             cat_entries["Date"].dt.to_period("M").astype(str) == month_filt
                         ]
-
                     sub_total = cat_entries["Amount"].sum()
                     st.markdown(
-                        f"<p style='font-size:.75rem;color:#555;margin-bottom:8px'>"
-                        f"Showing {len(cat_entries)} entries &nbsp;·&nbsp; Total Rs.{sub_total:,.0f}</p>",
+                        f"<p style='font-size:.74rem;color:#555;margin-bottom:8px'>"
+                        f"{len(cat_entries)} entries &nbsp;·&nbsp; Rs.{sub_total:,.0f}</p>",
                         unsafe_allow_html=True
                     )
                     for idx, erow in cat_entries.iterrows():
@@ -668,68 +798,49 @@ with tab_cat_view:
 
             st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-
-# ==============================================================================
-# TAB 3 — ADVANCED SEARCH
-# ==============================================================================
-with tab_search:
-    st.markdown("## Search & Filter")
-
+# ──────────────────────────────────────────────────────────────────────────────
+# TAB 2 — SEARCH
+# ──────────────────────────────────────────────────────────────────────────────
+elif active == 2:
     if df.empty:
         st.markdown('<div class="empty-box"><div class="ico">🔍</div><div class="msg">No data to search yet.</div></div>', unsafe_allow_html=True)
     else:
-        # ── FILTER PANEL ─────────────────────────────────────────────────────
         with st.container():
             st.markdown('<p class="sec-head">Filters</p>', unsafe_allow_html=True)
 
-            # Row 1: Keyword
-            keyword = st.text_input(
-                "Keyword", placeholder="Search across category, note, mode...",
-                label_visibility="collapsed"
-            )
+            keyword = st.text_input("Keyword", placeholder="Category, note, mode...", label_visibility="collapsed")
 
-            # Row 2: Date range
             dr1, dr2 = st.columns(2)
-            min_date = df["Date"].min().date() if not df.empty else date(2020, 1, 1)
-            max_date = max(df["Date"].max().date() if not df.empty else today, today)
+            min_date  = df["Date"].min().date() if not df.empty else date(2020, 1, 1)
+            max_date  = max(df["Date"].max().date() if not df.empty else today, today)
             date_from = dr1.date_input("From", value=min_date, min_value=min_date, max_value=max_date, key="sf_from")
             date_to   = dr2.date_input("To",   value=today,    min_value=min_date, max_value=max_date, key="sf_to")
 
-            # Row 3: Category + Mode multiselect
             fm1, fm2 = st.columns(2)
             sel_cats  = fm1.multiselect("Categories", options=sorted(df["Category"].dropna().unique().tolist()), placeholder="All categories")
             sel_modes = fm2.multiselect("Modes",      options=sorted(df["Mode"].dropna().unique().tolist()),     placeholder="All modes")
 
-            # Row 4: Amount range
             fa1, fa2 = st.columns(2)
-            amt_min = fa1.number_input("Min amount (Rs.)", min_value=0.0, value=0.0, step=100.0, key="sf_amin")
-            amt_max = fa2.number_input("Max amount (Rs.)", min_value=0.0, value=float(df["Amount"].max() or 100000), step=100.0, key="sf_amax")
+            amt_min = fa1.number_input("Min Rs.", min_value=0.0, value=0.0, step=100.0, key="sf_amin")
+            amt_max = fa2.number_input("Max Rs.", min_value=0.0, value=float(df["Amount"].max() or 100000), step=100.0, key="sf_amax")
 
-            # Row 5: Advanced toggles
             fc1, fc2, fc3, fc4 = st.columns(4)
-            only_noted    = fc1.checkbox("Has note",     key="sf_noted")
-            only_auto     = fc2.checkbox("Auto-logged",  key="sf_auto")
-            only_credited = fc3.checkbox("Credit card",  key="sf_cc")
-            only_today    = fc4.checkbox("Today only",   key="sf_today")
+            only_noted    = fc1.checkbox("Has note",    key="sf_noted")
+            only_auto     = fc2.checkbox("Auto",        key="sf_auto")
+            only_credited = fc3.checkbox("Credit card", key="sf_cc")
+            only_today    = fc4.checkbox("Today",       key="sf_today")
 
-            # Row 6: Sort
             fs1, fs2 = st.columns([3, 1])
-            sort_by  = fs1.selectbox("Sort by", ["Date (newest)", "Date (oldest)", "Amount (highest)", "Amount (lowest)", "Category A-Z"], label_visibility="collapsed")
-            if fs2.button("Clear filters", use_container_width=True):
-                for k in ["sf_from", "sf_to", "sf_amin", "sf_amax", "sf_noted", "sf_auto", "sf_cc", "sf_today"]:
+            sort_by  = fs1.selectbox("Sort", ["Date (newest)","Date (oldest)","Amount (highest)","Amount (lowest)","Category A-Z"], label_visibility="collapsed")
+            if fs2.button("Clear", use_container_width=True):
+                for k in ["sf_from","sf_to","sf_amin","sf_amax","sf_noted","sf_auto","sf_cc","sf_today"]:
                     st.session_state.pop(k, None)
                 st.rerun()
 
-        st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
-
-        # ── APPLY FILTERS ────────────────────────────────────────────────────
+        # Apply filters
         result = df.copy()
-
-        # Date range
         result = result[result["Date"].dt.date >= date_from]
         result = result[result["Date"].dt.date <= date_to]
-
-        # Keyword — searches category, note, mode simultaneously
         if keyword.strip():
             kw   = keyword.strip()
             mask = (
@@ -738,75 +849,50 @@ with tab_search:
                 result["Mode"].astype(str).str.contains(kw, case=False, na=False)
             )
             result = result[mask]
-
-        # Category multiselect
-        if sel_cats:
-            result = result[result["Category"].isin(sel_cats)]
-
-        # Mode multiselect
-        if sel_modes:
-            result = result[result["Mode"].isin(sel_modes)]
-
-        # Amount range
+        if sel_cats:  result = result[result["Category"].isin(sel_cats)]
+        if sel_modes: result = result[result["Mode"].isin(sel_modes)]
         result = result[(result["Amount"] >= amt_min) & (result["Amount"] <= amt_max)]
+        if only_noted:    result = result[result["Note"].astype(str).str.strip().ne("").ne("nan")]
+        if only_auto:     result = result[result["Note"].astype(str).str.contains("Auto-logged", case=False, na=False)]
+        if only_credited: result = result[result["Mode"].astype(str).str.contains("Credit Card", case=False, na=False)]
+        if only_today:    result = result[result["Date"].dt.date == today]
 
-        # Toggles
-        if only_noted:
-            result = result[result["Note"].astype(str).str.strip().ne("").ne("nan")]
-        if only_auto:
-            result = result[result["Note"].astype(str).str.contains("Auto-logged", case=False, na=False)]
-        if only_credited:
-            result = result[result["Mode"].astype(str).str.contains("Credit Card", case=False, na=False)]
-        if only_today:
-            result = result[result["Date"].dt.date == today]
+        if sort_by == "Date (newest)":      result = result.sort_values("Date", ascending=False)
+        elif sort_by == "Date (oldest)":    result = result.sort_values("Date", ascending=True)
+        elif sort_by == "Amount (highest)": result = result.sort_values("Amount", ascending=False)
+        elif sort_by == "Amount (lowest)":  result = result.sort_values("Amount", ascending=True)
+        else:                               result = result.sort_values("Category", ascending=True)
 
-        # Sort
-        if sort_by == "Date (newest)":
-            result = result.sort_values("Date", ascending=False)
-        elif sort_by == "Date (oldest)":
-            result = result.sort_values("Date", ascending=True)
-        elif sort_by == "Amount (highest)":
-            result = result.sort_values("Amount", ascending=False)
-        elif sort_by == "Amount (lowest)":
-            result = result.sort_values("Amount", ascending=True)
-        else:
-            result = result.sort_values("Category", ascending=True)
-
-        # ── RESULTS SUMMARY ──────────────────────────────────────────────────
         r_count = len(result)
         r_total = result["Amount"].sum()
         r_avg   = result["Amount"].mean() if r_count > 0 else 0
 
-        ra1, ra2, ra3 = st.columns(3)
-        ra1.markdown(
-            f'<div class="tile"><div class="tile-accent" style="background:#2563eb"></div>'
-            f'<div class="tile-label">Results</div><div class="tile-value" style="font-size:1.4rem">{r_count:,}</div></div>',
-            unsafe_allow_html=True
-        )
-        ra2.markdown(
-            f'<div class="tile"><div class="tile-accent" style="background:#7c3aed"></div>'
-            f'<div class="tile-label">Total</div><div class="tile-value" style="font-size:1.4rem">Rs.{r_total:,.0f}</div></div>',
-            unsafe_allow_html=True
-        )
-        ra3.markdown(
-            f'<div class="tile"><div class="tile-accent" style="background:#0d9488"></div>'
-            f'<div class="tile-label">Avg per txn</div><div class="tile-value" style="font-size:1.4rem">Rs.{r_avg:,.0f}</div></div>',
-            unsafe_allow_html=True
-        )
-
-        # Category split of results
-        if r_count > 0 and len(sel_cats) != 1:
-            r_cat_split = result.groupby("Category")["Amount"].sum().sort_values(ascending=False)
-            split_str   = "  |  ".join([f"{c}: Rs.{v:,.0f}" for c, v in r_cat_split.items()])
+        if is_mobile:
             st.markdown(
-                f"<p style='font-size:.72rem;color:#444;margin:-6px 0 12px'>{split_str}</p>",
+                f'<div class="tile" style="margin-top:10px"><div class="tile-accent" style="background:#2563eb"></div>'
+                f'<div style="display:flex;justify-content:space-between;align-items:center">'
+                f'<div><div class="tile-label">Results</div><div class="tile-value" style="font-size:1.4rem">{r_count:,}</div></div>'
+                f'<div style="text-align:right"><div class="tile-label">Total</div><div style="font-size:1.1rem;font-weight:700;color:#f0f0f0">Rs.{r_total:,.0f}</div>'
+                f'<div style="font-size:.72rem;color:#555;margin-top:2px">Avg Rs.{r_avg:,.0f}</div></div></div></div>',
                 unsafe_allow_html=True
             )
+        else:
+            ra1, ra2, ra3 = st.columns(3)
+            for col_w, lbl, color, val in [
+                (ra1, "Results",   "#2563eb", f"{r_count:,}"),
+                (ra2, "Total",     "#7c3aed", f"Rs.{r_total:,.0f}"),
+                (ra3, "Avg / txn", "#0d9488", f"Rs.{r_avg:,.0f}"),
+            ]:
+                col_w.markdown(
+                    f'<div class="tile"><div class="tile-accent" style="background:{color}"></div>'
+                    f'<div class="tile-label">{lbl}</div>'
+                    f'<div class="tile-value" style="font-size:1.4rem">{val}</div></div>',
+                    unsafe_allow_html=True
+                )
 
-        # CSV Export
         if r_count > 0:
             csv_buf = io.StringIO()
-            result[["Date", "Category", "Amount", "Mode", "Note"]].to_csv(csv_buf, index=False)
+            result[["Date","Category","Amount","Mode","Note"]].to_csv(csv_buf, index=False)
             st.download_button(
                 label=f"Export {r_count} results as CSV",
                 data=csv_buf.getvalue(),
@@ -816,19 +902,16 @@ with tab_search:
             )
 
         st.markdown('<p class="sec-head">Results</p>', unsafe_allow_html=True)
-
         if result.empty:
-            st.markdown('<div class="empty-box"><div class="ico">🔍</div><div class="msg">No transactions match these filters.<br>Try relaxing the date range or removing some filters.</div></div>', unsafe_allow_html=True)
+            st.markdown('<div class="empty-box"><div class="ico">🔍</div><div class="msg">No transactions match.<br>Try relaxing the filters.</div></div>', unsafe_allow_html=True)
         else:
             for idx, row in result.iterrows():
                 render_txn_row(idx, row, key_prefix="srch")
 
-
-# ==============================================================================
-# TAB 4 — RECURRING
-# ==============================================================================
-with tab_rec:
-    st.markdown("## Recurring Rules")
+# ──────────────────────────────────────────────────────────────────────────────
+# TAB 3 — RECURRING
+# ──────────────────────────────────────────────────────────────────────────────
+elif active == 3:
     with st.expander("Create New Rule"):
         with st.form("new_rec"):
             rc1, rc2 = st.columns(2)
@@ -837,8 +920,8 @@ with tab_rec:
             d_sel = st.slider("Auto-log on day of month", 1, 31, 1)
             if st.form_submit_button("Add Rule", type="primary"):
                 if a_sel:
-                    new_r   = pd.DataFrame([{"Category": c_sel, "Budget": a_sel,
-                                              "Is_Recurring": True, "Day_of_Month": d_sel, "Last_Fired": ""}])
+                    new_r   = pd.DataFrame([{"Category":c_sel,"Budget":a_sel,
+                                              "Is_Recurring":True,"Day_of_Month":d_sel,"Last_Fired":""}])
                     updated = pd.concat([st.session_state.settings_df, new_r], ignore_index=True)
                     save_settings(updated)
                     st.rerun()
@@ -859,7 +942,7 @@ with tab_rec:
                 st.markdown(
                     f'<div class="rec-card {status_cls}">'
                     f'<div class="rec-title">{row["Category"]}</div>'
-                    f'<div class="rec-meta">Rs.{float(row["Budget"]):,.0f}  --  {status_txt}</div></div>',
+                    f'<div class="rec-meta">Rs.{float(row["Budget"]):,.0f} &nbsp;·&nbsp; {status_txt}</div></div>',
                     unsafe_allow_html=True
                 )
                 ck = f"crec_{i}"
@@ -883,13 +966,10 @@ with tab_rec:
             except Exception:
                 pass
 
-
-# ==============================================================================
-# TAB 5 — MANAGE
-# ==============================================================================
-with tab_manage:
-    st.markdown("## Manage")
-
+# ──────────────────────────────────────────────────────────────────────────────
+# TAB 4 — MANAGE
+# ──────────────────────────────────────────────────────────────────────────────
+elif active == 4:
     # Payment Modes
     st.markdown('<p class="sec-head">Payment Modes</p>', unsafe_allow_html=True)
     with st.form("new_mode"):
@@ -897,12 +977,11 @@ with tab_manage:
         nm = nm1.text_input("New mode", label_visibility="collapsed", placeholder="e.g. ICICI Credit Card")
         if nm2.form_submit_button("Add", use_container_width=True):
             if nm.strip():
-                updated = pd.concat([st.session_state.modes_df, pd.DataFrame([{"Mode": nm.strip()}])], ignore_index=True)
+                updated = pd.concat([st.session_state.modes_df, pd.DataFrame([{"Mode":nm.strip()}])], ignore_index=True)
                 save_modes(updated)
                 st.rerun()
             else:
                 st.warning("Mode name cannot be empty.")
-
     for i, row in st.session_state.modes_df.iterrows():
         mc1, mc2 = st.columns([5, 1])
         mc1.markdown(f'<div class="catlist-row">{row["Mode"]}</div>', unsafe_allow_html=True)
@@ -932,12 +1011,11 @@ with tab_manage:
         nc = cc1.text_input("New category", label_visibility="collapsed", placeholder="e.g. Dining Out")
         if cc2.form_submit_button("Add", use_container_width=True):
             if nc.strip():
-                updated = pd.concat([st.session_state.cat_df, pd.DataFrame([{"Category": nc.strip()}])], ignore_index=True)
+                updated = pd.concat([st.session_state.cat_df, pd.DataFrame([{"Category":nc.strip()}])], ignore_index=True)
                 save_categories(updated)
                 st.rerun()
             else:
                 st.warning("Category name cannot be empty.")
-
     if st.session_state.cat_df.empty:
         st.markdown('<div class="empty-box"><div class="ico">🏷️</div><div class="msg">No categories yet.</div></div>', unsafe_allow_html=True)
     else:
@@ -964,7 +1042,7 @@ with tab_manage:
                     st.rerun()
 
     # Change PIN
-    st.markdown('<p class="sec-head">Security -- Change PIN</p>', unsafe_allow_html=True)
+    st.markdown('<p class="sec-head">Security — Change PIN</p>', unsafe_allow_html=True)
     with st.form("change_pin"):
         pa, pb, pc = st.columns(3)
         cur_pin  = pa.text_input("Current PIN", type="password", max_chars=4, placeholder="****")
@@ -982,7 +1060,7 @@ with tab_manage:
                 st.success("PIN updated successfully.")
 
 # ==============================================================================
-# 9. FAB — QUICK LOG
+# 12. FAB — QUICK LOG
 # ==============================================================================
 if "show_modal" not in st.session_state:
     st.session_state.show_modal = False
@@ -1000,8 +1078,8 @@ if st.session_state.show_modal:
         fid = st.session_state.form_id
         amt = st.number_input("Amount (Rs.)", min_value=0.0, value=None, placeholder="Enter amount", key=f"amt_{fid}")
         if amt and amt > LARGE_AMT_WARNING:
-            st.warning(f"Rs.{amt:,.0f} is unusually large — double-check before saving.")
-        date_choice = st.radio("Date", ["Today", "Yesterday", "Pick a date"], horizontal=True, key=f"ds_{fid}")
+            st.warning(f"Rs.{amt:,.0f} is unusually large.")
+        date_choice = st.radio("Date", ["Today","Yesterday","Pick a date"], horizontal=True, key=f"ds_{fid}")
         if date_choice == "Today":
             log_date = today
         elif date_choice == "Yesterday":
@@ -1022,32 +1100,34 @@ if st.session_state.show_modal:
             last_amt = st.session_state.get("last_save_amt", None)
             last_cat = st.session_state.get("last_save_cat", None)
             if (now_ts - last_ts) < 3 and last_amt == amt and last_cat == cat:
-                st.warning("Duplicate detected — same amount & category within 3 seconds.")
+                st.warning("Duplicate detected.")
                 return
             final_dt = f"{log_date.strftime('%Y-%m-%d')} {datetime.now(TZ).strftime('%H:%M:%S')}"
-            save_expense({"Date": final_dt, "Amount": amt, "Category": cat, "Mode": mode, "Note": note.strip()})
+            save_expense({"Date":final_dt,"Amount":amt,"Category":cat,"Mode":mode,"Note":note.strip()})
             st.session_state.update({
-                "last_save_ts": now_ts, "last_save_amt": amt, "last_save_cat": cat,
-                "last_log": {"amt": amt, "cat": cat}, "form_id": fid + 1,
+                "last_save_ts":now_ts,"last_save_amt":amt,"last_save_cat":cat,
+                "last_log":{"amt":amt,"cat":cat},"form_id":fid+1,
             })
             st.rerun()
         if col2.button("Finish", use_container_width=True):
             st.session_state.show_modal = False
-            for k in ["last_log", "last_save_ts", "last_save_amt", "last_save_cat"]:
+            for k in ["last_log","last_save_ts","last_save_amt","last_save_cat"]:
                 st.session_state.pop(k, None)
             st.rerun()
 
     log_modal()
 
-with stylable_container(key="fab", css_styles="""
-button {
-    position: fixed; bottom: 32px; right: 24px;
-    width: 60px; height: 60px; border-radius: 50%;
-    background: #2563eb; color: #fff; font-size: 34px;
-    z-index: 9999; border: none;
-    box-shadow: 0 6px 24px rgba(37,99,235,0.45);
-}
-"""):
+# FAB positioning adapts to mode
+_fab_css = (
+    "button{position:fixed;bottom:80px;right:20px;width:56px;height:56px;"
+    "border-radius:50%;background:#2563eb;color:#fff;font-size:30px;z-index:9999;"
+    "border:none;box-shadow:0 6px 24px rgba(37,99,235,.5)}"
+) if is_mobile else (
+    "button{position:fixed;bottom:32px;right:32px;width:60px;height:60px;"
+    "border-radius:50%;background:#2563eb;color:#fff;font-size:34px;z-index:9999;"
+    "border:none;box-shadow:0 6px 24px rgba(37,99,235,.45)}"
+)
+with stylable_container(key="fab", css_styles=_fab_css):
     if st.button("+", key="main_plus_btn"):
         st.session_state.show_modal = True
         st.rerun()
