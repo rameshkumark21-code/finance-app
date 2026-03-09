@@ -691,7 +691,7 @@ with tab_search:
             # Row 2: Date range
             dr1, dr2 = st.columns(2)
             min_date = df["Date"].min().date() if not df.empty else date(2020, 1, 1)
-            max_date = df["Date"].max().date() if not df.empty else today
+            max_date = max(df["Date"].max().date() if not df.empty else today, today)
             date_from = dr1.date_input("From", value=min_date, min_value=min_date, max_value=max_date, key="sf_from")
             date_to   = dr2.date_input("To",   value=today,    min_value=min_date, max_value=max_date, key="sf_to")
 
