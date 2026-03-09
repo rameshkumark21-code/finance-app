@@ -111,37 +111,50 @@ _CSS_BASE = (
 # ── Mobile-only styles ────────────────────────────────────────────────────────
 _CSS_MOBILE = (
     "<style>"
-    # Phone frame
-    "[data-testid='stAppViewContainer']{max-width:430px!important;margin:0 auto!important;"
-    "padding:0!important;position:relative}"
-    "[data-testid='stMain']{padding:0 14px 90px!important}"
-    "[data-testid='block-container']{padding:0!important;max-width:430px!important}"
+    # Kill ALL Streamlit top chrome & padding
+    "[data-testid='stHeader']{display:none!important}"
+    "[data-testid='stToolbar']{display:none!important}"
+    "[data-testid='stDecoration']{display:none!important}"
+    "[data-testid='stStatusWidget']{display:none!important}"
+    ".stDeployButton{display:none!important}"
+    # Phone frame — zero top padding
+    "[data-testid='stAppViewContainer']{max-width:430px!important;margin:0 auto!important;padding:0!important}"
+    "[data-testid='stMain']{padding:0!important}"
+    "[data-testid='block-container']{padding:0 12px 88px!important;max-width:430px!important;margin-top:0!important}"
+    # Remove Streamlit default top gap on the first element
+    "[data-testid='block-container']>div:first-child{margin-top:0!important;padding-top:0!important}"
+    "section[data-testid='stMain']>div{padding-top:0!important}"
+    # Thin sticky app bar — replaces large page header
+    ".mob-appbar{position:sticky;top:0;z-index:100;background:#0a0a0a;"
+    "border-bottom:1px solid #1a1a1a;display:flex;align-items:center;"
+    "justify-content:space-between;padding:0 12px;height:48px}"
+    ".mob-appbar-title{font-size:.95rem;font-weight:700;color:#f0f0f0;letter-spacing:-.2px}"
+    ".mob-appbar-actions{display:flex;gap:4px;align-items:center}"
+    ".mob-appbar-btn{background:transparent;border:none;color:#555;cursor:pointer;"
+    "font-size:.78rem;padding:6px 8px;border-radius:7px;font-weight:500}"
+    ".mob-appbar-btn:active{background:#1a1a1a}"
     # Bottom nav bar
     ".bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);"
-    "width:100%;max-width:430px;background:#0e0e0e;border-top:1px solid #1c1c1c;"
+    "width:100%;max-width:430px;background:#0a0a0a;border-top:1px solid #1a1a1a;"
     "display:flex;z-index:1000;padding:0 0 env(safe-area-inset-bottom,0)}"
     ".bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;"
-    "justify-content:center;padding:10px 4px 8px;cursor:pointer;border:none;"
-    "background:transparent;color:#444;font-size:.6rem;font-weight:600;gap:3px;"
-    "text-transform:uppercase;letter-spacing:.6px;min-height:56px}"
+    "justify-content:center;padding:8px 4px 6px;cursor:pointer;border:none;"
+    "background:transparent;color:#444;font-size:.55rem;font-weight:600;gap:2px;"
+    "text-transform:uppercase;letter-spacing:.6px;min-height:52px}"
     ".bnav-item.active{color:#2563eb}"
-    ".bnav-icon{font-size:1.25rem;line-height:1}"
-    # Larger touch targets on mobile
-    "button[data-testid='baseButton-secondary']"
-    "{min-height:44px!important;border-radius:10px!important}"
-    "button[data-testid='baseButton-primary']"
-    "{min-height:48px!important;border-radius:10px!important;font-size:.92rem!important}"
-    # Bigger tile values on mobile
-    ".tile-value{font-size:2rem!important}"
-    # Page header
-    ".page-header{display:flex;justify-content:space-between;align-items:center;"
-    "padding:18px 0 10px}"
-    ".page-title{font-size:1.3rem;font-weight:700;letter-spacing:-.3px;color:#f0f0f0}"
-    # FAB — taller clearance on mobile
-    ".fab-mobile{position:fixed;bottom:72px;right:20px;width:56px;height:56px;"
-    "border-radius:50%;background:#2563eb;color:#fff;font-size:28px;border:none;"
-    "cursor:pointer;box-shadow:0 6px 24px rgba(37,99,235,.5);z-index:999;"
-    "display:flex;align-items:center;justify-content:center}"
+    ".bnav-icon{font-size:1.15rem;line-height:1}"
+    # Compact tiles on mobile
+    ".tile{padding:12px 14px!important;margin-bottom:8px!important;border-radius:12px!important}"
+    ".tile-accent{height:2px!important;margin-bottom:8px!important}"
+    ".tile-label{font-size:.63rem!important}"
+    ".tile-value{font-size:1.6rem!important;margin-top:2px!important}"
+    ".sec-head{margin:14px 0 8px!important}"
+    # Touch targets
+    "button[data-testid='baseButton-secondary']{min-height:42px!important;border-radius:10px!important}"
+    "button[data-testid='baseButton-primary']{min-height:44px!important;border-radius:10px!important;font-size:.9rem!important}"
+    # Invisible nav buttons row — zero height, zero space
+    ".nav-ghost-row{height:0!important;overflow:hidden!important;margin:0!important;padding:0!important}"
+    ".nav-ghost-row *{height:0!important;min-height:0!important;padding:0!important;margin:0!important;overflow:hidden!important;border:none!important}"
     "</style>"
 )
 
@@ -472,18 +485,20 @@ if is_mobile:
     st.markdown(nav_html, unsafe_allow_html=True)
 
     # Streamlit buttons for actual tab switching (invisible-ish row)
+    st.markdown("<div class='nav-ghost-row'>", unsafe_allow_html=True)
     nb = st.columns(5)
     for i, label in enumerate(TABS):
         with nb[i]:
             with stylable_container(
                 key=f"nb_{i}",
                 css_styles="button{background:transparent!important;border:none!important;"
-                           "color:transparent!important;height:1px!important;padding:0!important;"
-                           "min-height:0!important;font-size:1px!important;overflow:hidden}"
+                           "color:transparent!important;height:0!important;padding:0!important;"
+                           "min-height:0!important;font-size:0!important;overflow:hidden;display:block}"
             ):
                 if st.button(label, key=f"nav_{i}"):
                     st.session_state.active_tab = i
                     st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
 else:
     # Desktop top nav
     nav_html = "<div class='top-nav'>"
@@ -507,28 +522,55 @@ else:
                     st.rerun()
 
 # ==============================================================================
-# 10. PAGE HEADER (title + view toggle + lock/refresh)
+# 10. PAGE HEADER
 # ==============================================================================
 page_names = ["FinTrack", "Categories", "Search", "Recurring", "Manage"]
 toggle_label = "🖥️ Desktop" if is_mobile else "📱 Mobile"
 
-h1, h2 = st.columns([5, 2])
-h1.markdown(f"<div class='page-title'>{page_names[active]}</div>", unsafe_allow_html=True)
-
-with h2:
-    v1, v2, v3 = st.columns(3)
-    if v1.button(toggle_label, key="view_toggle", use_container_width=True):
-        st.session_state.view_mode = "desktop" if is_mobile else "mobile"
-        st.rerun()
-    if v2.button("🔒", key="lock_btn", use_container_width=True, help="Lock"):
-        st.session_state.pin_unlocked = False
-        st.session_state.pin_input    = ""
-        st.session_state.pin_error    = ""
-        st.rerun()
-    if v3.button("↺", key="refresh_btn", use_container_width=True, help="Refresh"):
-        hard_refresh()
-
-st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
+if is_mobile:
+    # Sticky thin app bar — rendered as HTML for zero Streamlit overhead
+    st.markdown(
+        f"<div class='mob-appbar'>"
+        f"<span class='mob-appbar-title'>💰 {page_names[active]}</span>"
+        f"<div class='mob-appbar-actions'>"
+        f"<span class='mob-appbar-btn' id='mob_toggle'>{toggle_label}</span>"
+        f"<span class='mob-appbar-btn' id='mob_lock'>🔒</span>"
+        f"<span class='mob-appbar-btn' id='mob_refresh'>↺</span>"
+        f"</div></div>",
+        unsafe_allow_html=True
+    )
+    # Actual Streamlit buttons hidden behind the bar — zero-height container
+    with st.container():
+        st.markdown("<div class='nav-ghost-row'>", unsafe_allow_html=True)
+        ab1, ab2, ab3 = st.columns(3)
+        if ab1.button(toggle_label, key="view_toggle"):
+            st.session_state.view_mode = "desktop" if is_mobile else "mobile"
+            st.rerun()
+        if ab2.button("Lock", key="lock_btn"):
+            st.session_state.pin_unlocked = False
+            st.session_state.pin_input    = ""
+            st.session_state.pin_error    = ""
+            st.rerun()
+        if ab3.button("Refresh", key="refresh_btn"):
+            hard_refresh()
+        st.markdown("</div>", unsafe_allow_html=True)
+else:
+    # Desktop — full header row
+    h1, h2 = st.columns([5, 2])
+    h1.markdown(f"<div class='page-title'>{page_names[active]}</div>", unsafe_allow_html=True)
+    with h2:
+        v1, v2, v3 = st.columns(3)
+        if v1.button(toggle_label, key="view_toggle", use_container_width=True):
+            st.session_state.view_mode = "desktop" if is_mobile else "mobile"
+            st.rerun()
+        if v2.button("🔒", key="lock_btn", use_container_width=True, help="Lock"):
+            st.session_state.pin_unlocked = False
+            st.session_state.pin_input    = ""
+            st.session_state.pin_error    = ""
+            st.rerun()
+        if v3.button("↺", key="refresh_btn", use_container_width=True, help="Refresh"):
+            hard_refresh()
+    st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
 
 # ==============================================================================
 # 11. TAB CONTENT — rendered conditionally by active_tab
