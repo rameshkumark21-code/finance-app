@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
+import io
 from streamlit_gsheets import GSheetsConnection
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import pytz
 from streamlit_extras.stylable_container import stylable_container
 
@@ -65,6 +66,27 @@ _CSS = (
     ".empty-box{text-align:center;padding:48px 20px;color:#333}"
     ".empty-box .ico{font-size:2.2rem;margin-bottom:10px}"
     ".empty-box .msg{font-size:.88rem;line-height:1.5}"
+    # Category drilldown
+    ".cat-hero{background:#101010;border:1px solid #1c1c1c;border-radius:14px;padding:16px 18px;margin-bottom:6px;cursor:pointer}"
+    ".cat-hero-name{font-size:1rem;font-weight:700;color:#f0f0f0}"
+    ".cat-hero-meta{font-size:.74rem;color:#555;margin-top:3px}"
+    ".cat-hero-amt{font-size:1.2rem;font-weight:700;color:#2563eb;white-space:nowrap}"
+    ".txn-sub-row{padding:9px 14px;border-bottom:1px solid #141414;display:flex;justify-content:space-between;align-items:center}"
+    ".txn-sub-left{font-size:.84rem;color:#bbb}"
+    ".txn-sub-right{font-size:.84rem;font-weight:600;color:#e8e8e8;white-space:nowrap}"
+    ".txn-sub-note{font-size:.72rem;color:#555;margin-top:2px}"
+    # Search results
+    ".srch-card{background:#101010;border:1px solid #1c1c1c;border-radius:12px;padding:13px 16px;margin-bottom:5px}"
+    ".srch-top{display:flex;justify-content:space-between;align-items:center}"
+    ".srch-cat{font-size:.9rem;font-weight:700;color:#e0e0e0}"
+    ".srch-amt{font-size:.95rem;font-weight:700;color:#2563eb;white-space:nowrap}"
+    ".srch-meta{font-size:.74rem;color:#555;margin-top:3px}"
+    ".srch-note{font-size:.76rem;color:#777;margin-top:3px;font-style:italic}"
+    # Chips / badges
+    ".chip{display:inline-block;background:#1a2540;color:#6ea3ff;border-radius:6px;"
+    "font-size:.68rem;font-weight:600;padding:2px 7px;margin-right:4px;letter-spacing:.4px}"
+    # Filter panel
+    ".filter-panel{background:#0e0e0e;border:1px solid #1c1c1c;border-radius:14px;padding:16px 18px;margin-bottom:16px}"
     "div[data-testid='stDialog']{background:#0c0c0c!important;border:1px solid #202020!important;border-radius:22px!important}"
     "[data-testid='stTextInput'] input,[data-testid='stNumberInput'] input"
     "{background:#141414!important;border:1px solid #242424!important;border-radius:8px!important;color:#e8e8e8!important}"
@@ -73,6 +95,9 @@ _CSS = (
     "[data-testid='stExpander'] summary{font-size:.87rem!important;font-weight:500!important;color:#ccc!important}"
     "[data-testid='stForm']{border:1px solid #1c1c1c!important;border-radius:12px!important;padding:16px!important;background:#0e0e0e!important}"
     ".stAlert{border-radius:10px!important}"
+    # Multiselect tags
+    "[data-testid='stMultiSelect'] span{background:#1a2540!important;color:#6ea3ff!important;"
+    "border-radius:5px!important;font-size:.74rem!important}"
     "</style>"
 )
 st.markdown(_CSS, unsafe_allow_html=True)
@@ -104,7 +129,6 @@ def load_all_data():
 
 @st.cache_data(ttl=30)
 def load_pin():
-    """Read PIN from Security sheet, cell A1."""
     try:
         sec = conn.read(worksheet="Security", usecols=[0], nrows=1)
         raw = str(sec.iloc[0, 0]).strip()
@@ -135,7 +159,6 @@ def hard_refresh():
         st.session_state.pop(k, None)
     st.rerun()
 
-# Live references
 df          = st.session_state.df
 cat_df      = st.session_state.cat_df
 settings_df = st.session_state.settings_df
@@ -193,7 +216,6 @@ def save_modes(new_df):
         st.cache_data.clear()
 
 def save_pin(new_pin: str):
-    """Write new PIN to Security sheet A1."""
     with st.spinner("Saving PIN..."):
         pin_df = pd.DataFrame({"PIN": [new_pin]})
         conn.update(worksheet="Security", data=pin_df)
@@ -201,34 +223,97 @@ def save_pin(new_pin: str):
         st.cache_data.clear()
 
 # ==============================================================================
-# 5. PIN GATE — shown before anything else if not unlocked
+# 5. SHARED TRANSACTION ROW RENDERER (used in Home, Categories, Search)
 # ==============================================================================
-if "pin_unlocked" not in st.session_state:
-    st.session_state.pin_unlocked  = False
-if "pin_input"    not in st.session_state:
-    st.session_state.pin_input     = ""
-if "pin_attempts" not in st.session_state:
-    st.session_state.pin_attempts  = 0
-if "pin_error"    not in st.session_state:
-    st.session_state.pin_error     = ""
+def render_txn_row(idx, row, key_prefix="txn", show_edit=True):
+    """Renders a single transaction card row with optional inline edit/delete."""
+    date_disp = pd.to_datetime(row["Date"]).strftime("%-d %b %Y, %H:%M") if pd.notna(row["Date"]) else "-"
+    note_val  = str(row.get("Note", "") or "").strip()
+    edit_key  = f"{key_prefix}_edit_{idx}"
+    del_key   = f"{key_prefix}_del_{idx}"
+    if edit_key not in st.session_state:
+        st.session_state[edit_key] = False
+    if del_key not in st.session_state:
+        st.session_state[del_key] = False
+
+    c_amt, c_info, c_btn = st.columns([2, 5, 1])
+    c_amt.markdown(
+        f"<div style='font-size:.95rem;font-weight:700;color:#f0f0f0;padding:10px 0'>"
+        f"Rs.{float(row['Amount']):,.0f}</div>",
+        unsafe_allow_html=True
+    )
+    mode_chip = f"<span class='chip'>{row['Mode']}</span>" if str(row.get("Mode","")).strip() else ""
+    note_html = f"<div style='font-size:.72rem;color:#555;margin-top:2px;font-style:italic'>{note_val}</div>" if note_val else ""
+    c_info.markdown(
+        f"<div style='padding:10px 0;line-height:1.35'>"
+        f"<span style='font-size:.88rem;font-weight:600;color:#ccc'>{row['Category']}</span>"
+        f"<br><span style='font-size:.72rem;color:#555'>{date_disp}</span> {mode_chip}"
+        f"{note_html}</div>",
+        unsafe_allow_html=True
+    )
+    if show_edit and c_btn.button("✏️", key=f"{key_prefix}_tgl_{idx}", help="Edit / Delete"):
+        st.session_state[edit_key] = not st.session_state[edit_key]
+        st.rerun()
+    st.markdown("<hr style='border:none;border-top:1px solid #161616;margin:0'>", unsafe_allow_html=True)
+
+    if show_edit and st.session_state[edit_key]:
+        with st.container(border=True):
+            ea, eb = st.columns(2)
+            new_amt  = ea.number_input("Amount", value=float(row["Amount"]), min_value=0.0, key=f"{key_prefix}_eamt_{idx}")
+            new_cat  = eb.selectbox(
+                "Category", categories,
+                index=categories.index(row["Category"]) if row["Category"] in categories else 0,
+                key=f"{key_prefix}_ecat_{idx}"
+            )
+            ec, ed = st.columns(2)
+            new_mode = ec.selectbox(
+                "Mode", payment_modes,
+                index=payment_modes.index(row["Mode"]) if row["Mode"] in payment_modes else 0,
+                key=f"{key_prefix}_emode_{idx}"
+            )
+            new_note = ed.text_input("Note", value=note_val, key=f"{key_prefix}_enote_{idx}")
+            btn1, btn2 = st.columns(2)
+            if btn1.button("Save changes", key=f"{key_prefix}_save_{idx}", use_container_width=True, type="primary"):
+                update_expense(idx, {"Amount": new_amt, "Category": new_cat,
+                                     "Mode": new_mode, "Note": new_note.strip()})
+                st.session_state[edit_key] = False
+                st.rerun()
+            if not st.session_state[del_key]:
+                if btn2.button("Delete", key=f"{key_prefix}_delb_{idx}", use_container_width=True):
+                    st.session_state[del_key] = True
+                    st.rerun()
+            else:
+                btn2.warning("Sure?")
+                y_, n_ = btn2.columns(2)
+                if y_.button("Yes", key=f"{key_prefix}_ydel_{idx}"):
+                    delete_expense(idx)
+                    st.session_state[edit_key] = False
+                    st.session_state[del_key]  = False
+                    st.rerun()
+                if n_.button("No", key=f"{key_prefix}_ndel_{idx}"):
+                    st.session_state[del_key] = False
+                    st.rerun()
+
+# ==============================================================================
+# 6. PIN GATE
+# ==============================================================================
+for _k, _v in [("pin_unlocked", False), ("pin_input", ""), ("pin_attempts", 0), ("pin_error", "")]:
+    if _k not in st.session_state:
+        st.session_state[_k] = _v
 
 if not st.session_state.pin_unlocked:
     locked_out = st.session_state.pin_attempts >= MAX_PIN_ATTEMPTS
-
     st.markdown("<br><br>", unsafe_allow_html=True)
     _, col, _ = st.columns([1, 2, 1])
-
     with col:
         st.markdown("### FinTrack Pro")
         st.markdown(
-            "<p style='color:#444;font-size:.8rem;margin-bottom:24px;'>Enter your 4-digit PIN to continue</p>",
+            "<p style='color:#444;font-size:.8rem;margin-bottom:24px'>Enter your 4-digit PIN to continue</p>",
             unsafe_allow_html=True
         )
-
-        # Dot indicators
-        entered = len(st.session_state.pin_input)
+        entered  = len(st.session_state.pin_input)
         is_error = bool(st.session_state.pin_error)
-        dots_html = "<div style='display:flex;gap:14px;margin-bottom:24px;justify-content:center;'>"
+        dots_html = "<div style='display:flex;gap:14px;margin-bottom:24px;justify-content:center'>"
         for i in range(4):
             if is_error:
                 style = "width:13px;height:13px;border-radius:50%;background:#f87171;border:1.5px solid #f87171"
@@ -239,37 +324,32 @@ if not st.session_state.pin_unlocked:
             dots_html += f"<div style='{style}'></div>"
         dots_html += "</div>"
         st.markdown(dots_html, unsafe_allow_html=True)
-
-        # Error / lockout message
         if locked_out:
-            st.error(f"Too many incorrect attempts. Restart the app to try again.")
+            st.error("Too many incorrect attempts. Restart the app to try again.")
             st.stop()
-
         if st.session_state.pin_error:
+            remaining = MAX_PIN_ATTEMPTS - st.session_state.pin_attempts
             st.markdown(
-                f"<p style='color:#f87171;font-size:.76rem;text-align:center;margin-bottom:12px;'>"
-                f"{st.session_state.pin_error} ({MAX_PIN_ATTEMPTS - st.session_state.pin_attempts} left)</p>",
+                f"<p style='color:#f87171;font-size:.76rem;text-align:center;margin-bottom:12px'>"
+                f"Incorrect PIN. {remaining} attempt{'s' if remaining != 1 else ''} left.</p>",
                 unsafe_allow_html=True
             )
-
-        # Keypad — 3x4 grid
-        keys = [["1","2","3"],["4","5","6"],["7","8","9"],["","0","⌫"]]
-        for row_keys in keys:
+        keys_layout = [["1","2","3"],["4","5","6"],["7","8","9"],["","0","del"]]
+        for row_keys in keys_layout:
             k1, k2, k3 = st.columns(3)
-            for col_widget, digit in zip([k1, k2, k3], row_keys):
+            for col_w, digit in zip([k1, k2, k3], row_keys):
                 if digit == "":
-                    col_widget.markdown("")
-                elif digit == "⌫":
-                    if col_widget.button("⌫", use_container_width=True, key="pin_del"):
-                        st.session_state.pin_input    = st.session_state.pin_input[:-1]
-                        st.session_state.pin_error    = ""
+                    col_w.markdown("")
+                elif digit == "del":
+                    if col_w.button("⌫", use_container_width=True, key="pin_del"):
+                        st.session_state.pin_input  = st.session_state.pin_input[:-1]
+                        st.session_state.pin_error  = ""
                         st.rerun()
                 else:
-                    if col_widget.button(digit, use_container_width=True, key=f"pin_{digit}"):
-                        if not locked_out and len(st.session_state.pin_input) < 4:
+                    if col_w.button(digit, use_container_width=True, key=f"pin_{digit}"):
+                        if len(st.session_state.pin_input) < 4:
                             st.session_state.pin_input += digit
                             st.session_state.pin_error  = ""
-                            # Auto-check when 4 digits entered
                             if len(st.session_state.pin_input) == 4:
                                 if st.session_state.pin_input == st.session_state.active_pin:
                                     st.session_state.pin_unlocked = True
@@ -278,14 +358,13 @@ if not st.session_state.pin_unlocked:
                                     st.session_state.pin_attempts = 0
                                 else:
                                     st.session_state.pin_attempts += 1
-                                    st.session_state.pin_error    = "Incorrect PIN."
+                                    st.session_state.pin_error    = "wrong"
                                     st.session_state.pin_input    = ""
                             st.rerun()
-
-    st.stop()   # Block everything below until unlocked
+    st.stop()
 
 # ==============================================================================
-# 6. RECURRING AUTO-LOG (runs once per session on load)
+# 7. RECURRING AUTO-LOG
 # ==============================================================================
 if not st.session_state.get("auto_log_checked") and not settings_df.empty:
     fired_any   = False
@@ -313,17 +392,19 @@ if not st.session_state.get("auto_log_checked") and not settings_df.empty:
     st.session_state.auto_log_checked = True
 
 # ==============================================================================
-# 7. TABS
+# 8. TABS  — now 5 tabs
 # ==============================================================================
-tab_home, tab_rec, tab_cat = st.tabs(["Home", "Recurring", "Manage"])
+tab_home, tab_cat_view, tab_search, tab_rec, tab_manage = st.tabs([
+    "Home", "Categories", "Search", "Recurring", "Manage"
+])
 
-# ------------------------------------------------------------------------------
-# HOME TAB
-# ------------------------------------------------------------------------------
+# ==============================================================================
+# TAB 1 — HOME
+# ==============================================================================
 with tab_home:
     hc1, hc2, hc3 = st.columns([5, 1, 1])
     hc1.markdown("## FinTrack")
-    if hc2.button("Lock", use_container_width=True, help="Lock the app"):
+    if hc2.button("Lock", use_container_width=True):
         st.session_state.pin_unlocked = False
         st.session_state.pin_input    = ""
         st.session_state.pin_error    = ""
@@ -339,13 +420,11 @@ with tab_home:
         )
     else:
         all_months = sorted(
-            df["Date"].dropna().dt.to_period("M").unique().astype(str).tolist(),
-            reverse=True
+            df["Date"].dropna().dt.to_period("M").unique().astype(str).tolist(), reverse=True
         )
-        sel_month  = st.selectbox("Period", all_months, index=0, label_visibility="collapsed")
-        sel_period = pd.Period(sel_month, freq="M")
+        sel_month   = st.selectbox("Period", all_months, index=0, label_visibility="collapsed")
+        sel_period  = pd.Period(sel_month, freq="M")
         prev_period = sel_period - 1
-
         filt = df[df["Date"].dt.to_period("M") == sel_period].copy()
         prev = df[df["Date"].dt.to_period("M") == prev_period].copy()
 
@@ -354,14 +433,13 @@ with tab_home:
 
         if prev_total > 0:
             pct_diff   = (month_total - prev_total) / prev_total * 100
-            t_arrow    = "up" if pct_diff > 0 else "down"
+            t_cls      = "trend-up" if pct_diff > 0 else "trend-down"
             t_sign     = "+" if pct_diff > 0 else ""
-            trend_html = f'<span class="trend-{t_arrow}">{t_sign}{pct_diff:.0f}% vs {str(prev_period)}</span>'
+            trend_html = f'<span class="{t_cls}">{t_sign}{pct_diff:.0f}% vs {str(prev_period)}</span>'
         else:
             trend_html = '<span class="trend-flat">First month on record</span>'
 
         tc1, tc2 = st.columns(2)
-
         if sel_month == curr_ym:
             today_total = df[df["Date"].dt.date == today]["Amount"].sum()
             tc1.markdown(
@@ -377,7 +455,6 @@ with tab_home:
                 f'<div class="tile-value" style="font-size:1.1rem;padding-top:6px">{sel_month}</div></div>',
                 unsafe_allow_html=True
             )
-
         tc2.markdown(
             f'<div class="tile"><div class="tile-accent" style="background:#7c3aed"></div>'
             f'<div class="tile-label">Total Spend</div>'
@@ -386,7 +463,6 @@ with tab_home:
             unsafe_allow_html=True
         )
 
-        # HDFC Milestone
         q_map   = {1:1,2:1,3:1,4:2,5:2,6:2,7:3,8:3,9:3,10:4,11:4,12:4}
         curr_q  = q_map[now.month]
         h_spend = df[
@@ -394,8 +470,8 @@ with tab_home:
             (df["Date"].dt.year == now.year) &
             (df["Mode"] == "HDFC Credit Card")
         ]["Amount"].sum()
-        h_pct   = min(h_spend / HDFC_MILESTONE_AMT * 100, 100)
-        h_color = "#2563eb" if h_pct < 75 else ("#facc15" if h_pct < 100 else "#34d399")
+        h_pct     = min(h_spend / HDFC_MILESTONE_AMT * 100, 100)
+        h_color   = "#2563eb" if h_pct < 75 else ("#facc15" if h_pct < 100 else "#34d399")
         remaining = max(HDFC_MILESTONE_AMT - h_spend, 0)
         st.markdown(
             f'<div class="tile" style="border-left:3px solid {h_color}">'
@@ -404,7 +480,8 @@ with tab_home:
             f'<span style="font-size:.82rem;color:#444;font-weight:400"> / Rs.{HDFC_MILESTONE_AMT:,.0f}</span></div>'
             f'<div class="prog-wrap"><div class="prog-track">'
             f'<div class="prog-fill" style="width:{h_pct:.1f}%;background:{h_color}"></div>'
-            f'</div><div class="prog-meta"><span>{h_pct:.1f}% reached</span><span>Rs.{remaining:,.0f} to go</span></div></div></div>',
+            f'</div><div class="prog-meta"><span>{h_pct:.1f}% reached</span>'
+            f'<span>Rs.{remaining:,.0f} to go</span></div></div></div>',
             unsafe_allow_html=True
         )
 
@@ -413,7 +490,6 @@ with tab_home:
             st.session_state.settings_df["Budget"].notna() &
             (st.session_state.settings_df["Budget"].astype(str).str.strip() != "")
         ].copy() if not st.session_state.settings_df.empty else pd.DataFrame()
-
         if not budgets.empty:
             st.markdown('<p class="sec-head">Budget Tracker</p>', unsafe_allow_html=True)
             for _, brow in budgets.iterrows():
@@ -433,7 +509,7 @@ with tab_home:
                     unsafe_allow_html=True
                 )
 
-        # Category breakdown
+        # Category breakdown bar chart
         st.markdown('<p class="sec-head">By Category</p>', unsafe_allow_html=True)
         if not filt.empty:
             cat_sum = filt.groupby("Category")["Amount"].sum().sort_values(ascending=False).reset_index()
@@ -450,9 +526,9 @@ with tab_home:
         else:
             st.markdown('<div class="empty-box"><div class="ico">📊</div><div class="msg">No data for this period.</div></div>', unsafe_allow_html=True)
 
-        # Transactions with search + edit/delete
-        st.markdown('<p class="sec-head">Transactions</p>', unsafe_allow_html=True)
-        search_q = st.text_input("search", placeholder="Filter by category, mode or note...", label_visibility="collapsed")
+        # Recent transactions
+        st.markdown('<p class="sec-head">Recent Transactions</p>', unsafe_allow_html=True)
+        search_q = st.text_input("search_home", placeholder="Filter by category, mode or note...", label_visibility="collapsed")
         txn_df = filt.copy()
         if search_q.strip():
             q    = search_q.strip()
@@ -462,85 +538,295 @@ with tab_home:
                 txn_df["Mode"].astype(str).str.contains(q, case=False, na=False)
             )
             txn_df = txn_df[mask]
-
         txn_df = txn_df.sort_values("Date", ascending=False).head(RECENT_TXN_COUNT)
-
         if txn_df.empty:
             st.markdown('<div class="empty-box"><div class="ico">🔍</div><div class="msg">No transactions match.</div></div>', unsafe_allow_html=True)
         else:
             for idx, row in txn_df.iterrows():
-                date_disp = pd.to_datetime(row["Date"]).strftime("%-d %b, %H:%M") if pd.notna(row["Date"]) else "-"
-                note_disp = f" · {str(row['Note'])}" if str(row.get("Note","")).strip() else ""
-                edit_key  = f"edit_open_{idx}"
-                del_key   = f"cdel_{idx}"
-                if edit_key not in st.session_state:
-                    st.session_state[edit_key] = False
-                if del_key not in st.session_state:
-                    st.session_state[del_key] = False
+                render_txn_row(idx, row, key_prefix="home")
 
-                with st.container():
-                    # Row card: amount left, category+date+note centre, edit button right
-                    c_amt, c_info, c_btn = st.columns([2, 5, 1])
-                    c_amt.markdown(
-                        f"<div style='font-size:.95rem;font-weight:700;color:#f0f0f0;"
-                        f"padding:10px 0'>Rs.{float(row['Amount']):,.0f}</div>",
+
+# ==============================================================================
+# TAB 2 — CATEGORIES (Historical drilldown)
+# ==============================================================================
+with tab_cat_view:
+    st.markdown("## Categories")
+
+    if df.empty:
+        st.markdown('<div class="empty-box"><div class="ico">🏷️</div><div class="msg">No data yet.</div></div>', unsafe_allow_html=True)
+    else:
+        # Global summary stats
+        total_all  = df["Amount"].sum()
+        total_txns = len(df)
+        oldest     = df["Date"].min()
+        newest     = df["Date"].max()
+        span_days  = max((newest - oldest).days, 1)
+
+        s1, s2, s3 = st.columns(3)
+        s1.markdown(
+            f'<div class="tile"><div class="tile-accent" style="background:#2563eb"></div>'
+            f'<div class="tile-label">All Time Spend</div>'
+            f'<div class="tile-value" style="font-size:1.4rem">Rs.{total_all:,.0f}</div></div>',
+            unsafe_allow_html=True
+        )
+        s2.markdown(
+            f'<div class="tile"><div class="tile-accent" style="background:#7c3aed"></div>'
+            f'<div class="tile-label">Transactions</div>'
+            f'<div class="tile-value" style="font-size:1.4rem">{total_txns:,}</div></div>',
+            unsafe_allow_html=True
+        )
+        s3.markdown(
+            f'<div class="tile"><div class="tile-accent" style="background:#0d9488"></div>'
+            f'<div class="tile-label">Daily Average</div>'
+            f'<div class="tile-value" style="font-size:1.4rem">Rs.{total_all/span_days:,.0f}</div></div>',
+            unsafe_allow_html=True
+        )
+
+        # Sort control
+        st.markdown('<p class="sec-head">Category Breakdown — All Time</p>', unsafe_allow_html=True)
+        sort_opt = st.radio(
+            "Sort by", ["Total Spend", "No. of Transactions", "Avg Transaction", "A to Z"],
+            horizontal=True, label_visibility="collapsed"
+        )
+
+        cat_grp = df.groupby("Category").agg(
+            Total=("Amount", "sum"),
+            Count=("Amount", "count"),
+            Avg=("Amount", "mean"),
+            Last=("Date", "max"),
+        ).reset_index()
+
+        if sort_opt == "Total Spend":
+            cat_grp = cat_grp.sort_values("Total", ascending=False)
+        elif sort_opt == "No. of Transactions":
+            cat_grp = cat_grp.sort_values("Count", ascending=False)
+        elif sort_opt == "Avg Transaction":
+            cat_grp = cat_grp.sort_values("Avg", ascending=False)
+        else:
+            cat_grp = cat_grp.sort_values("Category")
+
+        max_total = cat_grp["Total"].max() or 1
+
+        for _, crow in cat_grp.iterrows():
+            cat_name  = crow["Category"]
+            cat_total = crow["Total"]
+            cat_count = int(crow["Count"])
+            cat_avg   = crow["Avg"]
+            cat_last  = pd.to_datetime(crow["Last"]).strftime("%-d %b %Y") if pd.notna(crow["Last"]) else "-"
+            bar_pct   = cat_total / max_total * 100
+            share_pct = cat_total / total_all * 100 if total_all > 0 else 0
+
+            # Category hero card
+            st.markdown(
+                f'<div class="cat-hero">'
+                f'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+                f'<div><div class="cat-hero-name">{cat_name}</div>'
+                f'<div class="cat-hero-meta">{cat_count} transactions &nbsp;·&nbsp; Avg Rs.{cat_avg:,.0f} &nbsp;·&nbsp; Last {cat_last} &nbsp;·&nbsp; {share_pct:.1f}% of total</div></div>'
+                f'<div class="cat-hero-amt">Rs.{cat_total:,.0f}</div></div>'
+                f'<div style="margin-top:10px;background:#1e1e1e;border-radius:4px;height:4px">'
+                f'<div style="width:{bar_pct:.1f}%;background:#2563eb;height:4px;border-radius:4px"></div></div>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
+
+            # Toggle to show all entries for this category
+            view_key = f"view_cat_{cat_name}"
+            if view_key not in st.session_state:
+                st.session_state[view_key] = False
+
+            btn_label = f"Hide entries" if st.session_state[view_key] else f"Show all {cat_count} entries"
+            if st.button(btn_label, key=f"btn_cat_{cat_name}", use_container_width=False):
+                st.session_state[view_key] = not st.session_state[view_key]
+                st.rerun()
+
+            if st.session_state[view_key]:
+                cat_entries = df[df["Category"] == cat_name].sort_values("Date", ascending=False)
+                with st.container(border=True):
+                    # Month filter inside drilldown
+                    cat_months = sorted(
+                        cat_entries["Date"].dropna().dt.to_period("M").unique().astype(str).tolist(),
+                        reverse=True
+                    )
+                    mf_key = f"mf_{cat_name}"
+                    month_filt = st.selectbox(
+                        "Filter month", ["All months"] + cat_months,
+                        key=mf_key, label_visibility="collapsed"
+                    )
+                    if month_filt != "All months":
+                        cat_entries = cat_entries[
+                            cat_entries["Date"].dt.to_period("M").astype(str) == month_filt
+                        ]
+
+                    sub_total = cat_entries["Amount"].sum()
+                    st.markdown(
+                        f"<p style='font-size:.75rem;color:#555;margin-bottom:8px'>"
+                        f"Showing {len(cat_entries)} entries &nbsp;·&nbsp; Total Rs.{sub_total:,.0f}</p>",
                         unsafe_allow_html=True
                     )
-                    c_info.markdown(
-                        f"<div style='padding:10px 0;line-height:1.35'>"
-                        f"<span style='font-size:.88rem;font-weight:600;color:#ccc'>{row['Category']}</span>"
-                        f"<br><span style='font-size:.72rem;color:#555'>{date_disp} · {row['Mode']}{note_disp}</span>"
-                        f"</div>",
-                        unsafe_allow_html=True
-                    )
-                    if c_btn.button("✏️", key=f"tgl_{idx}", help="Edit / Delete"):
-                        st.session_state[edit_key] = not st.session_state[edit_key]
-                        st.rerun()
+                    for idx, erow in cat_entries.iterrows():
+                        render_txn_row(idx, erow, key_prefix=f"cat_{cat_name}")
 
-                    st.markdown("<hr style='border:none;border-top:1px solid #161616;margin:0'>", unsafe_allow_html=True)
+            st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-                # Edit panel — shown only when toggled open
-                if st.session_state[edit_key]:
-                    with st.container(border=True):
-                        ea, eb = st.columns(2)
-                        new_amt  = ea.number_input("Amount", value=float(row["Amount"]), min_value=0.0, key=f"e_amt_{idx}")
-                        new_cat  = eb.selectbox(
-                            "Category", categories,
-                            index=categories.index(row["Category"]) if row["Category"] in categories else 0,
-                            key=f"e_cat_{idx}"
-                        )
-                        ec, ed = st.columns(2)
-                        new_mode = ec.selectbox(
-                            "Mode", payment_modes,
-                            index=payment_modes.index(row["Mode"]) if row["Mode"] in payment_modes else 0,
-                            key=f"e_mode_{idx}"
-                        )
-                        new_note = ed.text_input("Note", value=str(row.get("Note", "") or ""), key=f"e_note_{idx}")
-                        btn1, btn2 = st.columns(2)
-                        if btn1.button("Save changes", key=f"save_{idx}", use_container_width=True, type="primary"):
-                            update_expense(idx, {"Amount": new_amt, "Category": new_cat,
-                                                  "Mode": new_mode, "Note": new_note.strip()})
-                            st.session_state[edit_key] = False
-                            st.rerun()
-                        if not st.session_state[del_key]:
-                            if btn2.button("Delete", key=f"del_{idx}", use_container_width=True):
-                                st.session_state[del_key] = True
-                                st.rerun()
-                        else:
-                            btn2.warning("Sure?")
-                            y_, n_ = btn2.columns(2)
-                            if y_.button("Yes", key=f"ydel_{idx}"):
-                                delete_expense(idx)
-                                st.session_state[edit_key] = False
-                                st.session_state[del_key]  = False
-                                st.rerun()
-                            if n_.button("No", key=f"ndel_{idx}"):
-                                st.session_state[del_key] = False
-                                st.rerun()
 
-# ------------------------------------------------------------------------------
-# RECURRING TAB
-# ------------------------------------------------------------------------------
+# ==============================================================================
+# TAB 3 — ADVANCED SEARCH
+# ==============================================================================
+with tab_search:
+    st.markdown("## Search & Filter")
+
+    if df.empty:
+        st.markdown('<div class="empty-box"><div class="ico">🔍</div><div class="msg">No data to search yet.</div></div>', unsafe_allow_html=True)
+    else:
+        # ── FILTER PANEL ─────────────────────────────────────────────────────
+        with st.container():
+            st.markdown('<p class="sec-head">Filters</p>', unsafe_allow_html=True)
+
+            # Row 1: Keyword
+            keyword = st.text_input(
+                "Keyword", placeholder="Search across category, note, mode...",
+                label_visibility="collapsed"
+            )
+
+            # Row 2: Date range
+            dr1, dr2 = st.columns(2)
+            min_date = df["Date"].min().date() if not df.empty else date(2020, 1, 1)
+            max_date = max(df["Date"].max().date() if not df.empty else today, today)
+            date_from = dr1.date_input("From", value=min_date, min_value=min_date, max_value=max_date, key="sf_from")
+            date_to   = dr2.date_input("To",   value=today,    min_value=min_date, max_value=max_date, key="sf_to")
+
+            # Row 3: Category + Mode multiselect
+            fm1, fm2 = st.columns(2)
+            sel_cats  = fm1.multiselect("Categories", options=sorted(df["Category"].dropna().unique().tolist()), placeholder="All categories")
+            sel_modes = fm2.multiselect("Modes",      options=sorted(df["Mode"].dropna().unique().tolist()),     placeholder="All modes")
+
+            # Row 4: Amount range
+            fa1, fa2 = st.columns(2)
+            amt_min = fa1.number_input("Min amount (Rs.)", min_value=0.0, value=0.0, step=100.0, key="sf_amin")
+            amt_max = fa2.number_input("Max amount (Rs.)", min_value=0.0, value=float(df["Amount"].max() or 100000), step=100.0, key="sf_amax")
+
+            # Row 5: Advanced toggles
+            fc1, fc2, fc3, fc4 = st.columns(4)
+            only_noted    = fc1.checkbox("Has note",     key="sf_noted")
+            only_auto     = fc2.checkbox("Auto-logged",  key="sf_auto")
+            only_credited = fc3.checkbox("Credit card",  key="sf_cc")
+            only_today    = fc4.checkbox("Today only",   key="sf_today")
+
+            # Row 6: Sort
+            fs1, fs2 = st.columns([3, 1])
+            sort_by  = fs1.selectbox("Sort by", ["Date (newest)", "Date (oldest)", "Amount (highest)", "Amount (lowest)", "Category A-Z"], label_visibility="collapsed")
+            if fs2.button("Clear filters", use_container_width=True):
+                for k in ["sf_from", "sf_to", "sf_amin", "sf_amax", "sf_noted", "sf_auto", "sf_cc", "sf_today"]:
+                    st.session_state.pop(k, None)
+                st.rerun()
+
+        st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
+
+        # ── APPLY FILTERS ────────────────────────────────────────────────────
+        result = df.copy()
+
+        # Date range
+        result = result[result["Date"].dt.date >= date_from]
+        result = result[result["Date"].dt.date <= date_to]
+
+        # Keyword — searches category, note, mode simultaneously
+        if keyword.strip():
+            kw   = keyword.strip()
+            mask = (
+                result["Category"].astype(str).str.contains(kw, case=False, na=False) |
+                result["Note"].astype(str).str.contains(kw, case=False, na=False)     |
+                result["Mode"].astype(str).str.contains(kw, case=False, na=False)
+            )
+            result = result[mask]
+
+        # Category multiselect
+        if sel_cats:
+            result = result[result["Category"].isin(sel_cats)]
+
+        # Mode multiselect
+        if sel_modes:
+            result = result[result["Mode"].isin(sel_modes)]
+
+        # Amount range
+        result = result[(result["Amount"] >= amt_min) & (result["Amount"] <= amt_max)]
+
+        # Toggles
+        if only_noted:
+            result = result[result["Note"].astype(str).str.strip().ne("").ne("nan")]
+        if only_auto:
+            result = result[result["Note"].astype(str).str.contains("Auto-logged", case=False, na=False)]
+        if only_credited:
+            result = result[result["Mode"].astype(str).str.contains("Credit Card", case=False, na=False)]
+        if only_today:
+            result = result[result["Date"].dt.date == today]
+
+        # Sort
+        if sort_by == "Date (newest)":
+            result = result.sort_values("Date", ascending=False)
+        elif sort_by == "Date (oldest)":
+            result = result.sort_values("Date", ascending=True)
+        elif sort_by == "Amount (highest)":
+            result = result.sort_values("Amount", ascending=False)
+        elif sort_by == "Amount (lowest)":
+            result = result.sort_values("Amount", ascending=True)
+        else:
+            result = result.sort_values("Category", ascending=True)
+
+        # ── RESULTS SUMMARY ──────────────────────────────────────────────────
+        r_count = len(result)
+        r_total = result["Amount"].sum()
+        r_avg   = result["Amount"].mean() if r_count > 0 else 0
+
+        ra1, ra2, ra3 = st.columns(3)
+        ra1.markdown(
+            f'<div class="tile"><div class="tile-accent" style="background:#2563eb"></div>'
+            f'<div class="tile-label">Results</div><div class="tile-value" style="font-size:1.4rem">{r_count:,}</div></div>',
+            unsafe_allow_html=True
+        )
+        ra2.markdown(
+            f'<div class="tile"><div class="tile-accent" style="background:#7c3aed"></div>'
+            f'<div class="tile-label">Total</div><div class="tile-value" style="font-size:1.4rem">Rs.{r_total:,.0f}</div></div>',
+            unsafe_allow_html=True
+        )
+        ra3.markdown(
+            f'<div class="tile"><div class="tile-accent" style="background:#0d9488"></div>'
+            f'<div class="tile-label">Avg per txn</div><div class="tile-value" style="font-size:1.4rem">Rs.{r_avg:,.0f}</div></div>',
+            unsafe_allow_html=True
+        )
+
+        # Category split of results
+        if r_count > 0 and len(sel_cats) != 1:
+            r_cat_split = result.groupby("Category")["Amount"].sum().sort_values(ascending=False)
+            split_str   = "  |  ".join([f"{c}: Rs.{v:,.0f}" for c, v in r_cat_split.items()])
+            st.markdown(
+                f"<p style='font-size:.72rem;color:#444;margin:-6px 0 12px'>{split_str}</p>",
+                unsafe_allow_html=True
+            )
+
+        # CSV Export
+        if r_count > 0:
+            csv_buf = io.StringIO()
+            result[["Date", "Category", "Amount", "Mode", "Note"]].to_csv(csv_buf, index=False)
+            st.download_button(
+                label=f"Export {r_count} results as CSV",
+                data=csv_buf.getvalue(),
+                file_name=f"fintrack_export_{today}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+
+        st.markdown('<p class="sec-head">Results</p>', unsafe_allow_html=True)
+
+        if result.empty:
+            st.markdown('<div class="empty-box"><div class="ico">🔍</div><div class="msg">No transactions match these filters.<br>Try relaxing the date range or removing some filters.</div></div>', unsafe_allow_html=True)
+        else:
+            for idx, row in result.iterrows():
+                render_txn_row(idx, row, key_prefix="srch")
+
+
+# ==============================================================================
+# TAB 4 — RECURRING
+# ==============================================================================
 with tab_rec:
     st.markdown("## Recurring Rules")
     with st.expander("Create New Rule"):
@@ -597,10 +883,11 @@ with tab_rec:
             except Exception:
                 pass
 
-# ------------------------------------------------------------------------------
-# MANAGE TAB — Payment Modes, Categories, PIN Change
-# ------------------------------------------------------------------------------
-with tab_cat:
+
+# ==============================================================================
+# TAB 5 — MANAGE
+# ==============================================================================
+with tab_manage:
     st.markdown("## Manage")
 
     # Payment Modes
@@ -677,7 +964,7 @@ with tab_cat:
                     st.rerun()
 
     # Change PIN
-    st.markdown('<p class="sec-head">Security — Change PIN</p>', unsafe_allow_html=True)
+    st.markdown('<p class="sec-head">Security -- Change PIN</p>', unsafe_allow_html=True)
     with st.form("change_pin"):
         pa, pb, pc = st.columns(3)
         cur_pin  = pa.text_input("Current PIN", type="password", max_chars=4, placeholder="****")
@@ -695,13 +982,12 @@ with tab_cat:
                 st.success("PIN updated successfully.")
 
 # ==============================================================================
-# 8. FAB
+# 9. FAB — QUICK LOG
 # ==============================================================================
 if "show_modal" not in st.session_state:
     st.session_state.show_modal = False
 
 if st.session_state.show_modal:
-
     @st.dialog("Quick Log")
     def log_modal():
         if "form_id" not in st.session_state:
