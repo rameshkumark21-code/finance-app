@@ -1,81 +1,83 @@
-# categorize.py
 import streamlit as st
 import pandas as pd
 
 def show_bulk_review(conn):
-    st.header("🔍 Grouped Exception Review")
+    st.header("🔍 Focused Merchant Review")
     
-    # 1. Fetch Fresh Data (ttl=0 to avoid cache issues)
+    # 1. Fetch Fresh Data
     df_pending = conn.read(worksheet="PendingReview", ttl=0)
-    df_expenses = conn.read(worksheet="Expenses", ttl=0)
-    df_rules = conn.read(worksheet="ImportRules", ttl=0)
-    
     if df_pending.empty:
-        st.success("No pending transactions! Everything is categorized.")
+        st.success("🎉 All caught up! No merchants left to review.")
         return
 
-    # 2. Aggregation: The "Mani M" Grouping
-    grouped = df_pending.groupby("Note").agg({
-        "Amount": ["sum", "count"],
-        "Date": "max"
-    }).reset_index()
-    grouped.columns = ["Merchant", "Total Amount", "Entries", "Latest Date"]
+    # 2. Get Unique Merchants
+    unique_merchants = df_pending["Note"].unique()
+    total_merchants = len(unique_merchants)
+    
+    # Use session_state to track which merchant we are currently looking at
+    if 'merchant_index' not in st.session_state:
+        st.session_state.merchant_index = 0
 
-    # 3. Categorization Editor
-    cat_df = conn.read(worksheet="Categories")
-    available_cats = cat_df["Category"].tolist()
+    # Ensure index is within bounds (if data was deleted)
+    if st.session_state.merchant_index >= total_merchants:
+        st.session_state.merchant_index = 0
 
-    st.write(f"Found {len(grouped)} unique merchants to review.")
+    current_merchant = unique_merchants[st.session_state.merchant_index]
+    merchant_txns = df_pending[df_pending["Note"] == current_merchant]
+    total_amt = merchant_txns["Amount"].sum()
 
-    edited_df = st.data_editor(
-        grouped,
-        column_config={
-            "Category": st.column_config.SelectboxColumn("Final Category", options=available_cats, required=True),
-            "Add Note": st.column_config.TextColumn("Notes (Applies to all)"),
-        },
-        hide_index=True,
-        use_container_width=True
-    )
+    # --- THE MERCHANT BOX (UI) ---
+    with st.container(border=True):
+        st.subheader(f"Merchant: {current_merchant}")
+        col1, col2 = st.columns(2)
+        col1.metric("Total Spends", f"₹{total_amt:,.2f}")
+        col2.metric("Total Entries", len(merchant_txns))
 
-    # 4. Bulk Action Logic
-    if st.button("🚀 Approve & Train AI", type="primary"):
-        processed_groups = edited_df.dropna(subset=["Category"])
+        # Show individual entries in a small table inside the box
+        st.write("**Transactions:**")
+        st.dataframe(merchant_txns[["Date", "Amount"]], hide_index=True, use_container_width=True)
+
+        # --- CATEGORIZATION FORM ---
+        cat_df = conn.read(worksheet="Categories")
+        available_cats = cat_df["Category"].tolist()
         
-        if not processed_groups.empty:
-            new_expenses = []
-            new_rules = []
-            processed_merchants = []
+        with st.form(key=f"form_{current_merchant}"):
+            selected_cat = st.selectbox("Assign Category", options=["Select..."] + available_cats)
+            bulk_note = st.text_input("Optional: Add note for these entries")
+            
+            submit = st.form_submit_button("Approve & Next ➡️", type="primary", use_container_width=True)
 
-            for _, group in processed_groups.iterrows():
-                # Get all sub-transactions for this merchant (e.g., the 65 and 55)
-                matches = df_pending[df_pending["Note"] == group["Merchant"]].copy()
-                
-                # Update them with user choices
-                matches["Category"] = group["Category"]
-                if group["Add Note"]:
-                    matches["Note"] = matches["Note"] + " (" + group["Add Note"] + ")"
-                
-                new_expenses.append(matches)
-                
-                # Create a new rule (Clean "Paid to " prefix)
-                clean_name = group["Merchant"].replace("Paid to ", "").replace("Money sent to ", "").strip()
-                new_rules.append({"Keyword": clean_name, "Type": "Keyword", "Category": group["Category"]})
-                
-                processed_merchants.append(group["Merchant"])
+            if submit:
+                if selected_cat == "Select...":
+                    st.error("Please select a category first!")
+                else:
+                    # PROCESS DATA:
+                    # 1. Prepare Rows for Expenses
+                    matches = merchant_txns.copy()
+                    matches["Category"] = selected_cat
+                    if bulk_note:
+                        matches["Note"] = matches["Note"] + f" ({bulk_note})"
+                    matches["Status"] = "approved"
 
-            # UPDATE GOOGLE SHEETS
-            # A. Update Expenses
-            updated_expenses = pd.concat([df_expenses] + new_expenses, ignore_index=True)
-            conn.update(worksheet="Expenses", data=updated_expenses)
+                    # 2. Add to Expenses & ImportRules
+                    # (Append matches to Expenses sheet)
+                    # (Append [Merchant, "Keyword", Category] to ImportRules)
+                    
+                    # 3. Remove from Pending and Refresh
+                    st.toast(f"Saved {current_merchant} to {selected_cat}!")
+                    
+                    # Move to next or reset
+                    if st.session_state.merchant_index < total_merchants - 1:
+                        st.session_state.merchant_index += 1
+                    else:
+                        st.session_state.merchant_index = 0
+                    
+                    st.rerun()
 
-            # B. Update Rules
-            updated_rules = pd.concat([df_rules, pd.DataFrame(new_rules)], ignore_index=True)
-            conn.update(worksheet="ImportRules", data=updated_rules)
-
-            # C. Clear Pending (Remove the merchants we just processed)
-            remaining_pending = df_pending[~df_pending["Note"].isin(processed_merchants)]
-            conn.update(worksheet="PendingReview", data=remaining_pending)
-
-            st.balloons()
-            st.success(f"Success! {len(processed_groups)} merchants moved to Expenses.")
-            st.rerun()
+    # Progress indicator
+    st.write(f"Merchant {st.session_state.merchant_index + 1} of {total_merchants}")
+    st.progress((st.session_state.merchant_index + 1) / total_merchants)
+    
+    if st.button("Skip for now ⏭️"):
+        st.session_state.merchant_index = (st.session_state.merchant_index + 1) % total_merchants
+        st.rerun()
