@@ -7,6 +7,17 @@ from datetime import datetime, timedelta, date
 import pytz
 from streamlit_extras.stylable_container import stylable_container
 
+page = st.sidebar.selectbox("Navigate", ["Dashboard", "Add Expense", "Review Pending", "Settings"])
+
+if page == "Dashboard":
+    show_dashboard(conn)
+elif page == "Add Expense":
+    show_add_expense(conn)
+elif page == "Review Pending":
+    show_bulk_review(conn) # This is our new function
+elif page == "Settings":
+    show_settings(conn)
+
 # ==============================================================================
 # 1. CONSTANTS
 # ==============================================================================
