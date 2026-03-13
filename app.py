@@ -12,27 +12,24 @@ from categorize import show_bulk_review
 # 1. Establish Connection
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# 2. Define all your functions FIRST
+# 2. DEFINE ALL FUNCTIONS FIRST
 def show_dashboard(conn):
-    # ... (all your dashboard code currently on lines 68+) ...
-    pass
+    # Your existing dashboard code
+    st.write("Dashboard Content")
 
 def show_add_expense(conn):
-    # ... (your add expense code) ...
-    pass
+    # Your existing add expense code
+    st.write("Add Expense Content")
 
-# 3. Sidebar Navigation (Move this near the bottom)
+# 3. NAVIGATION & ROUTING (MOVE TO THE VERY BOTTOM)
 page = st.sidebar.selectbox("Navigate", ["Dashboard", "Add Expense", "Review Pending", "Settings"])
 
-# 4. Routing Logic (MUST BE AT THE VERY BOTTOM)
 if page == "Dashboard":
     show_dashboard(conn)
 elif page == "Review Pending":
     show_bulk_review(conn)
 elif page == "Add Expense":
-    # Ensure you have a function named show_add_expense or 
-    # the relevant code block here.
-    pass
+    show_add_expense(conn)
 
 # ==============================================================================
 # 1. CONSTANTS
