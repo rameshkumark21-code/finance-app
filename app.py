@@ -7,16 +7,28 @@ from datetime import datetime, timedelta, date
 import pytz
 from streamlit_extras.stylable_container import stylable_container
 
+import streamlit as st
+from streamlit_gsheets import GSheetsConnection
+
+# 1. IMPORT your functions from other files
+from categorize import show_bulk_review 
+# If show_dashboard is in another file called dashboard_logic.py:
+# from dashboard_logic import show_dashboard 
+
+# 2. Establish Connection
+conn = st.connection("gsheets", type=GSheetsConnection)
+
+# 3. Sidebar Navigation
 page = st.sidebar.selectbox("Navigate", ["Dashboard", "Add Expense", "Review Pending", "Settings"])
 
+# 4. Routing logic
 if page == "Dashboard":
-    show_dashboard(conn)
-elif page == "Add Expense":
-    show_add_expense(conn)
+    # If the function is defined BELOW in the same file, this will work.
+    # If it's in another file, you MUST import it at the top.
+    show_dashboard(conn) 
+
 elif page == "Review Pending":
-    show_bulk_review(conn) # This is our new function
-elif page == "Settings":
-    show_settings(conn)
+    show_bulk_review(conn)
 
 # ==============================================================================
 # 1. CONSTANTS
