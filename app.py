@@ -1215,40 +1215,79 @@ with tab_manage:
 
     apps_script_url = st.secrets.get("apps_script_url", "")
 
+    # ── Schedule status tile — always visible ────────────────────────────
+    # Compute next 11AM and 11PM IST from now
+    now_ist      = datetime.now(TZ)
+    today_11am   = now_ist.replace(hour=11, minute=0, second=0, microsecond=0)
+    today_11pm   = now_ist.replace(hour=23, minute=0, second=0, microsecond=0)
+    next_runs    = [t for t in [today_11am, today_11pm] if t > now_ist]
+    if not next_runs:
+        # Both passed today — next is tomorrow 11AM
+        tomorrow    = now_ist + timedelta(days=1)
+        next_run_dt = tomorrow.replace(hour=11, minute=0, second=0, microsecond=0)
+    else:
+        next_run_dt = next_runs[0]
+    time_until   = next_run_dt - now_ist
+    hours_until  = int(time_until.total_seconds() // 3600)
+    mins_until   = int((time_until.total_seconds() % 3600) // 60)
+    next_run_str = next_run_dt.strftime("%-I:%M %p")
+    countdown    = f"{hours_until}h {mins_until}m" if hours_until > 0 else f"{mins_until}m"
+
+    # Last run summary from ImportLog
+    last_run_html = ""
+    last_run_ok   = None
+    if not import_log_df.empty:
+        last      = import_log_df.iloc[-1]
+        last_stat = str(last.get("Status","")).strip().upper()
+        last_run_ok = last_stat == "OK"
+        lico      = "✅" if last_run_ok else "❌"
+        last_run_html = (
+            f'<div style="margin-top:10px;padding-top:10px;border-top:1px solid #1c1c1c;'
+            f'font-size:.76rem;color:#555">'
+            f'Last run: {lico} <span style="color:#ccc">'
+            f'{str(last.get("Run_Time","—")).strip()}</span>'
+            f' &nbsp;·&nbsp; <span style="color:#34d399">'
+            f'{int(last.get("Imported",0) or 0)} imported</span>'
+            f' &nbsp;·&nbsp; <span style="color:#facc15">'
+            f'{int(last.get("Pending",0) or 0)} pending</span>'
+            f' &nbsp;·&nbsp; <span style="color:#555">'
+            f'{int(last.get("Skipped",0) or 0)} skipped</span>'
+            f'</div>'
+        )
+
+    st.markdown(
+        f'<div class="sync-card">'
+        f'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+        f'<div>'
+        f'<div class="sync-title">🕐 Auto-Sync Schedule</div>'
+        f'<div class="sync-meta" style="margin-top:4px">'
+        f'Runs automatically at <b style="color:#ccc">11:00 AM</b> and '
+        f'<b style="color:#ccc">11:00 PM</b> IST daily via Google Apps Script.</div>'
+        f'</div>'
+        f'<div style="text-align:right;flex-shrink:0;margin-left:12px">'
+        f'<div style="font-size:.68rem;color:#555;text-transform:uppercase;'
+        f'letter-spacing:1px;margin-bottom:3px">Next run</div>'
+        f'<div style="font-size:1rem;font-weight:700;color:#2563eb">{next_run_str}</div>'
+        f'<div style="font-size:.72rem;color:#555">in {countdown}</div>'
+        f'</div>'
+        f'</div>'
+        f'{last_run_html}'
+        f'</div>',
+        unsafe_allow_html=True
+    )
+
+    # ── Manual Sync button — only if URL is configured ───────────────────
     if not apps_script_url:
         st.markdown(
-            '<div class="sync-card">'
-            '<div class="sync-title">⚙️ Apps Script not configured</div>'
-            '<div class="sync-meta">Add <code>apps_script_url</code> to your Streamlit secrets '
-            'to enable manual sync. The scheduled 11AM / 11PM auto-sync runs independently '
-            'via Google Apps Script triggers.</div>'
+            '<div class="sync-card" style="border-color:#2a1f0a;border-left:3px solid #facc15">'
+            '<div class="sync-title" style="color:#facc15">⚠️ Manual sync not configured</div>'
+            '<div class="sync-meta" style="margin-top:4px">The auto-sync above runs on schedule '
+            'without any setup. To also enable the <b>Sync Now</b> button, add '
+            '<code>apps_script_url</code> to your Streamlit secrets.</div>'
             '</div>',
             unsafe_allow_html=True
         )
     else:
-        # Last run info from ImportLog
-        last_run_html = ""
-        if not import_log_df.empty:
-            last = import_log_df.iloc[-1]
-            last_run_html = (
-                f'<div class="sync-meta" style="margin-top:6px">'
-                f'Last run: <b style="color:#ccc">{last.get("Run_Time","—")}</b> · '
-                f'<span style="color:#34d399">{last.get("Imported",0)} imported</span> · '
-                f'<span style="color:#facc15">{last.get("Pending",0)} pending</span> · '
-                f'<span style="color:#555">{last.get("Skipped",0)} skipped</span>'
-                f'</div>'
-            )
-
-        st.markdown(
-            f'<div class="sync-card">'
-            f'<div class="sync-title">📥 Sync Paytm Emails</div>'
-            f'<div class="sync-meta">Scans Gmail for unread "Update expenses" emails '
-            f'and imports new transactions. Duplicates are automatically skipped.</div>'
-            f'{last_run_html}'
-            f'</div>',
-            unsafe_allow_html=True
-        )
-
         if "sync_result" in st.session_state:
             r = st.session_state.sync_result
             if r.get("status") == "ok":
