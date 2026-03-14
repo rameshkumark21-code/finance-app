@@ -356,7 +356,7 @@ def set_app_setting(key, value):
     st.cache_data.clear()
 
 def split_expense_row(idx, amt1, cat1, amt2, cat2):
-    """Delete one expense row and replace with two split rows."""
+    """Delete one expense row and replace with two split rows (single write)."""
     with st.spinner("Splitting..."):
         orig = st.session_state.df.loc[idx]
         note_base = str(orig.get("Note", "") or "").strip()
@@ -374,7 +374,7 @@ def split_expense_row(idx, amt1, cat1, amt2, cat2):
             "Source_Account": orig.get("Source_Account",""),
             "Import_Source": orig.get("Import_Source",""), "Review_Status": orig.get("Review_Status",""),
         }
-        base = st.session_state.df.drop(idx).reset_index(drop=True)
+        base  = st.session_state.df.drop(idx).reset_index(drop=True)
         r1_df = pd.DataFrame([row1])
         r2_df = pd.DataFrame([row2])
         r1_df["Date"] = pd.to_datetime(r1_df["Date"], errors="coerce")
@@ -383,6 +383,7 @@ def split_expense_row(idx, amt1, cat1, amt2, cat2):
         conn.update(worksheet="Expenses", data=updated)
         st.session_state.df = updated
         st.cache_data.clear()
+
 
 # ==============================================================================
 # 5. ANALYTICS UTILITY FUNCTIONS
@@ -603,11 +604,15 @@ def skip_pending_row(idx):
 
 def approve_all_with_suggestions():
     pend = st.session_state.pending_df
+    if pend.empty:
+        return 0
+    _rs  = pend["Review_Status"].astype(str) if "Review_Status" in pend.columns else pd.Series("", index=pend.index)
+    _sug = pend["Suggested_Category"].astype(str) if "Suggested_Category" in pend.columns else pd.Series("", index=pend.index)
     to_approve = pend[
-        (pend.get("Review_Status", pd.Series(dtype=str)).astype(str) == "pending") &
-        (pend.get("Suggested_Category", pd.Series(dtype=str)).astype(str).str.strip().ne("")) &
-        (pend.get("Suggested_Category", pd.Series(dtype=str)).astype(str).str.strip().ne("nan"))
-    ] if not pend.empty else pd.DataFrame()
+        (_rs == "pending") &
+        (_sug.str.strip().ne("")) &
+        (_sug.str.strip().ne("nan"))
+    ]
     if to_approve.empty:
         return 0
     count = 0
@@ -936,11 +941,9 @@ if not st.session_state.get("auto_log_checked") and not settings_df.empty:
 # ==============================================================================
 # 10. TABS
 # ==============================================================================
-pending_count = len(
-    st.session_state.pending_df[
-        st.session_state.pending_df.get("Review_Status", pd.Series(dtype=str)).astype(str) == "pending"
-    ]
-) if not st.session_state.pending_df.empty else 0
+pending_count = 0
+if not st.session_state.pending_df.empty and "Review_Status" in st.session_state.pending_df.columns:
+    pending_count = int((st.session_state.pending_df["Review_Status"].astype(str) == "pending").sum())
 
 review_label = f"Review ⚠️ {pending_count}" if pending_count > 0 else "Review"
 
@@ -1274,19 +1277,16 @@ with tab_search:
                     '<div class="msg">No data to search yet.</div></div>', unsafe_allow_html=True)
     else:
         st.markdown('<p class="sec-head">Filters</p>', unsafe_allow_html=True)
-        keyword = st.text_input("Keyword", placeholder="Search across category, note, mode...", label_visibility="collapsed")
+        keyword = st.text_input("Keyword", placeholder="Search across category, note, mode...",
+                                label_visibility="collapsed")
         dr1, dr2 = st.columns(2)
         min_date  = df["Date"].min().date() if not df.empty else date(2020, 1, 1)
         max_date  = max(df["Date"].max().date() if not df.empty else today, today)
         date_from = dr1.date_input("From", value=min_date, min_value=min_date, max_value=max_date, key="sf_from")
         date_to   = dr2.date_input("To",   value=today,   min_value=min_date, max_value=max_date, key="sf_to")
         fm1, fm2  = st.columns(2)
-# Convert all unique values to strings to allow sorting mixed types (int/str)
-cat_options = sorted([str(x) for x in df["Category"].dropna().unique()])
-sel_cats = fm1.multiselect("Categories", options=cat_options, placeholder="All categories")
-
-mode_options = sorted([str(x) for x in df["Mode"].dropna().unique()])
-sel_modes = fm2.multiselect("Modes", options=mode_options, placeholder="All modes")
+        sel_cats  = fm1.multiselect("Categories", options=sorted(df["Category"].dropna().unique().tolist()), placeholder="All categories")
+        sel_modes = fm2.multiselect("Modes",      options=sorted(df["Mode"].dropna().unique().tolist()),     placeholder="All modes")
         fa1, fa2  = st.columns(2)
         amt_min   = fa1.number_input("Min amount (Rs.)", min_value=0.0, value=0.0, step=100.0, key="sf_amin")
         amt_max   = fa2.number_input("Max amount (Rs.)", min_value=0.0,
@@ -1899,20 +1899,9 @@ with tab_manage:
         "No action needed in the app — just configure the thresholds here.</p>",
         unsafe_allow_html=True
     )
-def safe_int(val, default):
-    try:
-        # Handles cases where "70.0" (float) is read as a string
-        return int(float(val))
-    except (ValueError, TypeError):
-        return default
-
-# Safely fetch settings with fallback defaults
-curr_thresh = safe_int(get_app_setting(KEY_ALERT_PCT, "70"), 70)
-curr_income = safe_int(get_app_setting(KEY_INCOME, "0"), 0)
-
-# Ensure values are cast to string before .lower() to prevent crashes
-curr_alert = str(get_app_setting(KEY_ALERT_ON, "true")).lower() == "true"
-curr_pulse = str(get_app_setting(KEY_PULSE_ON, "true")).lower() == "true"
+    curr_thresh  = int(float(get_app_setting(KEY_ALERT_PCT, "70") or 70))
+    curr_alert   = str(get_app_setting(KEY_ALERT_ON,  "true")).lower() == "true"
+    curr_pulse   = str(get_app_setting(KEY_PULSE_ON,  "true")).lower() == "true"
     with st.form("alert_form"):
         new_thresh = st.slider(
             "Budget alert threshold — fires on 15th of month if category exceeds this %",
@@ -2263,7 +2252,7 @@ def log_modal():
 
 if st.session_state.show_modal:
     log_modal()
-    
+
 with stylable_container(key="fab", css_styles="""
 button {
     position: fixed; bottom: 32px; right: 24px;
