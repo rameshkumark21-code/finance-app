@@ -8,7 +8,7 @@ import pytz
 from streamlit_extras.stylable_container import stylable_container
 
 # ==============================================================================
-# 1. CONSTANTS
+# 1. CONSTANTS  (unchanged)
 # ==============================================================================
 RECENT_TXN_COUNT    = 10
 HDFC_MILESTONE_AMT  = 100_000
@@ -16,8 +16,8 @@ LARGE_AMT_WARNING   = 50_000
 TZ                  = pytz.timezone('Asia/Kolkata')
 DEFAULT_MODES       = ["UPI", "Cash", "HDFC Credit Card", "SBI Credit Card"]
 MAX_PIN_ATTEMPTS    = 5
-ANOMALY_MULT        = 3.0    # flag if spend > 3x merchant historical avg
-RECUR_MIN_MONTHS    = 3      # flag recurring if seen in 3+ distinct months
+ANOMALY_MULT        = 3.0
+RECUR_MIN_MONTHS    = 3
 
 KEY_INCOME          = "Monthly_Income"
 KEY_ALERT_PCT       = "Budget_Alert_Threshold"
@@ -30,143 +30,163 @@ KEY_PULSE_ON        = "Weekly_Pulse_Enabled"
 st.set_page_config(page_title="FinTrack Pro", page_icon="₹", layout="centered")
 
 _CSS = (
-    "<link href='https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght"
-    "@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap' rel='stylesheet'>"
+    "<link href='https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700"
+    "&family=JetBrains+Mono:wght@400;500&display=swap' rel='stylesheet'>"
     "<style>"
-    "html,body,*{font-family:'DM Sans',sans-serif!important}"
-    ".stApp{background-color:#080808;color:#e8e8e8}"
+    "html,body,*{font-family:'Sora',sans-serif!important}"
+    ".stApp{background-color:#0a0a0f;color:#e8e8f0}"
     "[data-testid='stHeader']{background:transparent}"
-    "h1,h2,h3,h4{letter-spacing:-0.3px}"
-    ".stTabs [data-baseweb='tab-list']{gap:2px;background:transparent;border-bottom:1px solid #1c1c1c}"
+    "h1,h2,h3,h4{letter-spacing:-0.3px;color:#e8e8f0}"
+    # Tabs
+    ".stTabs [data-baseweb='tab-list']{gap:2px;background:transparent;border-bottom:1px solid #2a2a3a}"
     ".stTabs [data-baseweb='tab']{height:40px;background:transparent;border-radius:8px 8px 0 0;"
-    "padding:0 10px;color:#555;font-size:.78rem;font-weight:500}"
-    ".stTabs [aria-selected='true']{background:transparent!important;color:#e8e8e8!important;"
-    "border-bottom:2px solid #2563eb!important;font-weight:600!important}"
+    "padding:0 10px;color:#444460;font-size:.78rem;font-weight:500}"
+    ".stTabs [aria-selected='true']{background:transparent!important;color:#f0f0f0!important;"
+    "border-bottom:2px solid #f0a500!important;font-weight:600!important}"
     # Core tiles
-    ".tile{background:#101010;border:1px solid #1c1c1c;border-radius:14px;padding:16px 18px;margin-bottom:10px}"
+    ".tile{background:#13131a;border:1px solid #2a2a3a;border-radius:14px;padding:16px 18px;margin-bottom:10px}"
     ".tile-accent{height:3px;border-radius:2px 2px 0 0;margin-bottom:12px}"
-    ".tile-label{color:#555;font-size:.7rem;text-transform:uppercase;letter-spacing:1.4px;font-weight:600}"
-    ".tile-value{font-size:1.85rem;font-weight:700;margin-top:4px;letter-spacing:-.8px;color:#f0f0f0}"
+    ".tile-label{color:#444460;font-size:.7rem;text-transform:uppercase;letter-spacing:1.4px;font-weight:600}"
+    ".tile-value{font-size:1.85rem;font-weight:700;margin-top:4px;letter-spacing:-.8px;color:#e8e8f0;"
+    "font-family:'JetBrains Mono',monospace!important}"
     ".tile-sub{font-size:.78rem;margin-top:4px}"
-    ".trend-up{color:#f87171;font-weight:600}"
-    ".trend-down{color:#34d399;font-weight:600}"
-    ".trend-flat{color:#666}"
+    ".trend-up{color:#f75676;font-weight:600}"
+    ".trend-down{color:#2dce89;font-weight:600}"
+    ".trend-flat{color:#444460}"
     # Progress bars
     ".prog-wrap{margin-top:10px}"
-    ".prog-track{background:#1c1c1c;border-radius:6px;height:10px;overflow:hidden}"
-    ".prog-fill{height:10px;border-radius:6px;transition:width .6s ease}"
-    ".prog-meta{display:flex;justify-content:space-between;margin-top:5px;font-size:.72rem;color:#444}"
+    ".prog-track{background:#22222f;border-radius:6px;height:8px;overflow:hidden}"
+    ".prog-fill{height:8px;border-radius:6px;transition:width .6s ease}"
+    ".prog-meta{display:flex;justify-content:space-between;margin-top:5px;font-size:.72rem;color:#444460}"
     # Section headings
-    ".sec-head{font-size:.68rem;text-transform:uppercase;letter-spacing:1.6px;color:#444;font-weight:700;margin:22px 0 10px}"
+    ".sec-head{font-size:.68rem;text-transform:uppercase;letter-spacing:1.6px;color:#444460;"
+    "font-weight:700;margin:22px 0 10px}"
     # Category rows
     ".cat-row{display:flex;align-items:center;justify-content:space-between;"
-    "padding:9px 14px;border-radius:10px;margin-bottom:5px;background:#101010;border:1px solid #1c1c1c}"
-    ".cat-name{font-size:.88rem;font-weight:500;color:#ddd;flex:1}"
-    ".cat-bar-wrap{width:72px;height:3px;background:#1e1e1e;border-radius:2px;margin:0 12px;flex-shrink:0}"
-    ".cat-bar-fill{height:3px;border-radius:2px;background:#2563eb}"
-    ".cat-amt{font-size:.88rem;font-weight:600;color:#e8e8e8;white-space:nowrap}"
+    "padding:9px 14px;border-radius:10px;margin-bottom:5px;background:#13131a;border:1px solid #2a2a3a}"
+    ".cat-name{font-size:.88rem;font-weight:500;color:#ccc;flex:1}"
+    ".cat-bar-wrap{width:72px;height:3px;background:#22222f;border-radius:2px;margin:0 12px;flex-shrink:0}"
+    ".cat-bar-fill{height:3px;border-radius:2px;background:#f0a500}"
+    ".cat-amt{font-size:.88rem;font-weight:600;color:#e8e8f0;white-space:nowrap;"
+    "font-family:'JetBrains Mono',monospace!important}"
     # Budget rows
-    ".budget-row{padding:12px 14px;border-radius:10px;background:#101010;border:1px solid #1c1c1c;margin-bottom:7px}"
+    ".budget-row{padding:12px 14px;border-radius:10px;background:#13131a;"
+    "border:1px solid #2a2a3a;margin-bottom:7px}"
     ".budget-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}"
-    ".budget-name{font-size:.88rem;font-weight:600;color:#ddd}"
-    ".budget-nums{font-size:.78rem;color:#555}"
+    ".budget-name{font-size:.88rem;font-weight:600;color:#ccc}"
+    ".budget-nums{font-size:.78rem;color:#444460;font-family:'JetBrains Mono',monospace!important}"
     # Recurring cards
-    ".rec-card{background:#101010;border:1px solid #1c1c1c;border-radius:12px;padding:13px 15px;margin-bottom:6px}"
-    ".rec-fired{border-left:3px solid #34d399}"
-    ".rec-pending{border-left:3px solid #facc15}"
+    ".rec-card{background:#13131a;border:1px solid #2a2a3a;border-radius:12px;"
+    "padding:13px 15px;margin-bottom:6px}"
+    ".rec-fired{border-left:3px solid #2dce89}"
+    ".rec-pending{border-left:3px solid #f0a500}"
     ".rec-title{font-size:.93rem;font-weight:600;color:#e0e0e0}"
-    ".rec-meta{font-size:.76rem;color:#555;margin-top:3px}"
+    ".rec-meta{font-size:.76rem;color:#444460;margin-top:3px;font-family:'JetBrains Mono',monospace!important}"
     # Category list rows
-    ".catlist-row{font-size:.9rem;font-weight:500;color:#ccc;padding:9px 0;border-bottom:1px solid #141414}"
+    ".catlist-row{font-size:.9rem;font-weight:500;color:#ccc;padding:9px 0;border-bottom:1px solid #1a1a24}"
     # Empty states
-    ".empty-box{text-align:center;padding:48px 20px;color:#333}"
+    ".empty-box{text-align:center;padding:48px 20px;color:#444460}"
     ".empty-box .ico{font-size:2.2rem;margin-bottom:10px}"
     ".empty-box .msg{font-size:.88rem;line-height:1.5}"
     # Category hero
-    ".cat-hero{background:#101010;border:1px solid #1c1c1c;border-radius:14px;padding:16px 18px;margin-bottom:6px}"
-    ".cat-hero-name{font-size:1rem;font-weight:700;color:#f0f0f0}"
-    ".cat-hero-meta{font-size:.74rem;color:#555;margin-top:3px}"
-    ".cat-hero-amt{font-size:1.2rem;font-weight:700;color:#2563eb;white-space:nowrap}"
+    ".cat-hero{background:#13131a;border:1px solid #2a2a3a;border-radius:14px;"
+    "padding:16px 18px;margin-bottom:6px}"
+    ".cat-hero-name{font-size:1rem;font-weight:700;color:#e8e8f0}"
+    ".cat-hero-meta{font-size:.74rem;color:#444460;margin-top:3px}"
+    ".cat-hero-amt{font-size:1.2rem;font-weight:700;color:#f0a500;white-space:nowrap;"
+    "font-family:'JetBrains Mono',monospace!important}"
     # Search cards
-    ".srch-card{background:#101010;border:1px solid #1c1c1c;border-radius:12px;padding:13px 16px;margin-bottom:5px}"
+    ".srch-card{background:#13131a;border:1px solid #2a2a3a;border-radius:12px;"
+    "padding:13px 16px;margin-bottom:5px}"
     ".srch-top{display:flex;justify-content:space-between;align-items:center}"
     ".srch-cat{font-size:.9rem;font-weight:700;color:#e0e0e0}"
-    ".srch-amt{font-size:.95rem;font-weight:700;color:#2563eb;white-space:nowrap}"
-    ".srch-meta{font-size:.74rem;color:#555;margin-top:3px}"
-    ".srch-note{font-size:.76rem;color:#777;margin-top:3px;font-style:italic}"
+    ".srch-amt{font-size:.95rem;font-weight:700;color:#f0a500;white-space:nowrap;"
+    "font-family:'JetBrains Mono',monospace!important}"
+    ".srch-meta{font-size:.74rem;color:#444460;margin-top:3px}"
+    ".srch-note{font-size:.76rem;color:#8888aa;margin-top:3px;font-style:italic}"
     # Chips / badges
-    ".chip{display:inline-block;background:#1a2540;color:#6ea3ff;border-radius:6px;"
+    ".chip{display:inline-block;background:#1a2035;color:#7c9eff;border-radius:6px;"
     "font-size:.68rem;font-weight:600;padding:2px 7px;margin-right:4px;letter-spacing:.4px}"
     # Review cards
-    ".review-card{background:#101010;border:1px solid #2a1f0a;border-left:3px solid #facc15;"
+    ".review-card{background:#13131a;border:1px solid #2a1f05;border-left:3px solid #f0a500;"
     "border-radius:14px;padding:16px 18px;margin-bottom:12px}"
-    ".review-card-amt{font-size:1.25rem;font-weight:700;color:#f0f0f0;letter-spacing:-.5px}"
+    ".review-card-amt{font-size:1.25rem;font-weight:700;color:#e8e8f0;letter-spacing:-.5px;"
+    "font-family:'JetBrains Mono',monospace!important}"
     ".review-card-txn{font-size:.9rem;font-weight:500;color:#ccc;margin-top:4px}"
-    ".review-card-meta{font-size:.73rem;color:#555;margin-top:5px;line-height:1.6}"
-    ".review-badge-remarks{display:inline-block;background:#1a2a1a;color:#86efac;"
+    ".review-card-meta{font-size:.73rem;color:#444460;margin-top:5px;line-height:1.6}"
+    ".review-badge-remarks{display:inline-block;background:#0f2a1a;color:#86efac;"
     "border-radius:6px;font-size:.68rem;font-weight:600;padding:2px 8px;margin-right:4px}"
-    ".review-badge-tags{display:inline-block;background:#1a1a2a;color:#93c5fd;"
+    ".review-badge-tags{display:inline-block;background:#0f1a2a;color:#93c5fd;"
     "border-radius:6px;font-size:.68rem;font-weight:600;padding:2px 8px;margin-right:4px}"
-    ".review-badge-sug{display:inline-block;background:#2a2010;color:#fcd34d;"
+    ".review-badge-sug{display:inline-block;background:#2a1f05;color:#f0a500;"
     "border-radius:6px;font-size:.68rem;font-weight:600;padding:2px 8px}"
-    # Anomaly / dup / recurring intel badges
-    ".badge-anomaly{display:inline-block;background:#2a0a0a;color:#f87171;"
+    # Intel badges
+    ".badge-anomaly{display:inline-block;background:#1f0505;color:#f75676;"
     "border-radius:6px;font-size:.68rem;font-weight:700;padding:2px 8px;margin-right:4px}"
-    ".badge-dup{display:inline-block;background:#2a1a0a;color:#fb923c;"
+    ".badge-dup{display:inline-block;background:#1f1005;color:#fb923c;"
     "border-radius:6px;font-size:.68rem;font-weight:700;padding:2px 8px;margin-right:4px}"
-    ".badge-recur{display:inline-block;background:#0a1a2a;color:#60a5fa;"
+    ".badge-recur{display:inline-block;background:#050f1a;color:#60a5fa;"
     "border-radius:6px;font-size:.68rem;font-weight:700;padding:2px 8px;margin-right:4px}"
-    ".badge-intel{display:inline-block;background:#0f1f0f;color:#4ade80;"
+    ".badge-intel{display:inline-block;background:#0a1a0a;color:#4ade80;"
     "border-radius:6px;font-size:.68rem;font-weight:700;padding:2px 8px;margin-right:4px}"
     # Anomaly panel on Home
-    ".anomaly-panel{background:#140a0a;border:1px solid #2a1010;border-left:3px solid #f87171;"
+    ".anomaly-panel{background:#100505;border:1px solid #200a0a;border-left:3px solid #f75676;"
     "border-radius:12px;padding:12px 16px;margin-bottom:14px}"
-    ".anomaly-panel-title{font-size:.75rem;font-weight:700;color:#f87171;margin-bottom:8px;"
+    ".anomaly-panel-title{font-size:.75rem;font-weight:700;color:#f75676;margin-bottom:8px;"
     "text-transform:uppercase;letter-spacing:1px}"
     ".anomaly-item{display:flex;justify-content:space-between;align-items:center;"
-    "padding:5px 0;font-size:.8rem;border-bottom:1px solid #1e0e0e}"
+    "padding:5px 0;font-size:.8rem;border-bottom:1px solid #180808}"
     # ImportLog table
     ".log-row{display:flex;justify-content:space-between;align-items:center;"
-    "padding:8px 14px;border-bottom:1px solid #141414;font-size:.8rem}"
-    ".log-ok{color:#34d399;font-weight:600}"
-    ".log-err{color:#f87171;font-weight:600}"
-    ".log-num{color:#e8e8e8;font-weight:600}"
-    ".log-dim{color:#444}"
+    "padding:8px 14px;border-bottom:1px solid #1a1a24;font-size:.8rem}"
+    ".log-ok{color:#2dce89;font-weight:600}"
+    ".log-err{color:#f75676;font-weight:600}"
+    ".log-num{color:#e8e8f0;font-weight:600;font-family:'JetBrains Mono',monospace!important}"
+    ".log-dim{color:#444460}"
     # Sync panel
-    ".sync-card{background:#101010;border:1px solid #1c1c1c;border-radius:14px;"
+    ".sync-card{background:#13131a;border:1px solid #2a2a3a;border-radius:14px;"
     "padding:20px 20px;margin-bottom:16px}"
-    ".sync-title{font-size:.95rem;font-weight:700;color:#f0f0f0;margin-bottom:6px}"
-    ".sync-meta{font-size:.78rem;color:#555}"
+    ".sync-title{font-size:.95rem;font-weight:700;color:#e8e8f0;margin-bottom:6px}"
+    ".sync-meta{font-size:.78rem;color:#444460}"
     # Filter panel
-    ".filter-panel{background:#0e0e0e;border:1px solid #1c1c1c;border-radius:14px;padding:16px 18px;margin-bottom:16px}"
-    # Analytics
-    ".analytics-card{background:#101010;border:1px solid #1c1c1c;border-radius:14px;"
+    ".filter-panel{background:#0f0f15;border:1px solid #2a2a3a;border-radius:14px;"
+    "padding:16px 18px;margin-bottom:16px}"
+    # Analytics cards
+    ".analytics-card{background:#13131a;border:1px solid #2a2a3a;border-radius:14px;"
     "padding:18px 20px;margin-bottom:14px}"
     ".analytics-title{font-size:.68rem;text-transform:uppercase;letter-spacing:1.4px;"
-    "color:#444;font-weight:700;margin-bottom:14px}"
+    "color:#444460;font-weight:700;margin-bottom:14px}"
     ".heatmap-wrap{overflow-x:auto;padding:4px 0}"
     ".dow-row{display:flex;align-items:center;margin-bottom:6px;gap:8px}"
-    ".dow-label{font-size:.72rem;color:#555;width:28px;flex-shrink:0;text-align:right}"
+    ".dow-label{font-size:.72rem;color:#444460;width:28px;flex-shrink:0;text-align:right}"
     ".dow-bar-fill{height:16px;border-radius:4px;min-width:3px}"
-    ".dow-bar-amt{font-size:.7rem;color:#555;white-space:nowrap}"
+    ".dow-bar-amt{font-size:.7rem;color:#444460;white-space:nowrap;"
+    "font-family:'JetBrains Mono',monospace!important}"
     ".merchant-rank-row{display:flex;align-items:center;justify-content:space-between;"
-    "padding:9px 0;border-bottom:1px solid #141414}"
+    "padding:9px 0;border-bottom:1px solid #1a1a24}"
     ".merchant-rank-name{font-size:.86rem;color:#ccc;flex:1}"
-    ".merchant-rank-bar{height:4px;border-radius:2px;background:#2563eb;margin:0 12px;flex-shrink:0}"
-    ".merchant-rank-amt{font-size:.88rem;font-weight:600;color:#2563eb;white-space:nowrap}"
+    ".merchant-rank-bar{height:4px;border-radius:2px;background:#f0a500;margin:0 12px;flex-shrink:0}"
+    ".merchant-rank-amt{font-size:.88rem;font-weight:600;color:#f0a500;white-space:nowrap;"
+    "font-family:'JetBrains Mono',monospace!important}"
     # Split form
-    ".split-row{background:#0c0c0c;border:1px solid #2a2a10;border-left:2px solid #facc15;"
+    ".split-row{background:#0a0a05;border:1px solid #2a2a10;border-left:2px solid #f0a500;"
     "border-radius:10px;padding:10px 14px;margin-bottom:8px}"
     # Dialog
-    "div[data-testid='stDialog']{background:#0c0c0c!important;border:1px solid #202020!important;border-radius:22px!important}"
+    "div[data-testid='stDialog']{background:#0f0f15!important;border:1px solid #2a2a3a!important;"
+    "border-radius:22px!important}"
     "[data-testid='stTextInput'] input,[data-testid='stNumberInput'] input"
-    "{background:#141414!important;border:1px solid #242424!important;border-radius:8px!important;color:#e8e8e8!important}"
-    "[data-testid='stSelectbox']>div>div{background:#141414!important;border:1px solid #242424!important;border-radius:8px!important}"
-    "[data-testid='stExpander']{background:#101010!important;border:1px solid #1c1c1c!important;border-radius:10px!important;margin-bottom:5px}"
-    "[data-testid='stExpander'] summary{font-size:.87rem!important;font-weight:500!important;color:#ccc!important}"
-    "[data-testid='stForm']{border:1px solid #1c1c1c!important;border-radius:12px!important;padding:16px!important;background:#0e0e0e!important}"
+    "{background:#1a1a24!important;border:1px solid #2a2a3a!important;"
+    "border-radius:8px!important;color:#e8e8f0!important}"
+    "[data-testid='stSelectbox']>div>div{background:#1a1a24!important;"
+    "border:1px solid #2a2a3a!important;border-radius:8px!important}"
+    "[data-testid='stExpander']{background:#13131a!important;border:1px solid #2a2a3a!important;"
+    "border-radius:10px!important;margin-bottom:5px}"
+    "[data-testid='stExpander'] summary{font-size:.87rem!important;font-weight:500!important;"
+    "color:#ccc!important}"
+    "[data-testid='stForm']{border:1px solid #2a2a3a!important;border-radius:12px!important;"
+    "padding:16px!important;background:#0f0f15!important}"
     ".stAlert{border-radius:10px!important}"
-    "[data-testid='stMultiSelect'] span{background:#1a2540!important;color:#6ea3ff!important;"
+    "[data-testid='stMultiSelect'] span{background:#1a2035!important;color:#7c9eff!important;"
     "border-radius:5px!important;font-size:.74rem!important}"
     "</style>"
 )
@@ -174,7 +194,7 @@ st.markdown(_CSS, unsafe_allow_html=True)
 
 
 # ==============================================================================
-# 3. DATA LOAD + SESSION STATE
+# 3. DATA LOAD + SESSION STATE  (unchanged)
 # ==============================================================================
 conn = st.connection("gsheets", type=GSheetsConnection)
 
@@ -278,7 +298,7 @@ curr_ym       = now.strftime("%Y-%m")
 
 
 # ==============================================================================
-# 4. SAVE HELPERS
+# 4. SAVE HELPERS  (unchanged)
 # ==============================================================================
 def save_expense(row_dict):
     with st.spinner("Saving..."):
@@ -386,7 +406,7 @@ def split_expense_row(idx, amt1, cat1, amt2, cat2):
 
 
 # ==============================================================================
-# 5. ANALYTICS UTILITY FUNCTIONS
+# 5. ANALYTICS UTILITY FUNCTIONS  (logic unchanged; heatmap/DOW colors updated)
 # ==============================================================================
 def extract_merchant(row):
     txn  = str(row.get("Transaction_Details", "") or "").strip()
@@ -401,18 +421,16 @@ def extract_merchant(row):
 def build_heatmap_html(df_h):
     now_date = datetime.now(TZ).date()
     if df_h.empty:
-        return "<div style='color:#444;font-size:.82rem;padding:20px 0'>No data yet — sync transactions to see your heatmap</div>"
+        return "<div style='color:#444460;font-size:.82rem;padding:20px 0'>No data yet — sync transactions to see your heatmap</div>"
     dfc = df_h[df_h["Date"].notna()].copy()
     if dfc.empty:
-        return "<div style='color:#444;font-size:.82rem'>No dated transactions</div>"
+        return "<div style='color:#444460;font-size:.82rem'>No dated transactions</div>"
     dfc["_day"] = dfc["Date"].dt.date
     daily = dfc.groupby("_day")["Amount"].sum()
     mx = float(daily.max()) if not daily.empty else 1.0
     if mx == 0: mx = 1.0
-    # Align to Monday 52 weeks ago
     start = now_date - timedelta(weeks=52)
     start = start - timedelta(days=start.weekday())
-    # Collect week starts + month marks
     week_starts, month_marks, last_m, wi = [], [], None, 0
     cur = start
     while cur <= now_date:
@@ -424,20 +442,17 @@ def build_heatmap_html(df_h):
         cur += timedelta(weeks=1)
         wi += 1
     total_weeks = len(week_starts)
-    # Month labels
     mh = '<div style="display:flex;margin-bottom:4px;margin-left:18px">'
     for i, (wk, mn) in enumerate(month_marks):
         nxt = month_marks[i+1][0] if i+1 < len(month_marks) else total_weeks
         px  = (nxt - wk) * 12
-        mh += f'<div style="min-width:{px}px;font-size:.6rem;color:#444;overflow:hidden;white-space:nowrap">{mn}</div>'
+        mh += f'<div style="min-width:{px}px;font-size:.6rem;color:#444460;overflow:hidden;white-space:nowrap">{mn}</div>'
     mh += '</div>'
-    # Day labels
     dlabels = ["M","","W","","F","","S"]
     lc = '<div style="display:flex;flex-direction:column;gap:2px;margin-right:4px;flex-shrink:0">'
     for d in dlabels:
         lc += f'<div style="width:10px;height:10px;font-size:.55rem;color:#333;line-height:10px;text-align:center">{d}</div>'
     lc += '</div>'
-    # Grid
     gc = ""
     for ws in week_starts:
         col = '<div style="display:flex;flex-direction:column;gap:2px">'
@@ -448,30 +463,30 @@ def build_heatmap_html(df_h):
                 continue
             amt = float(daily.get(day, 0))
             if amt == 0:
-                color, tip = "#1a1a1a", f"Rs.0 · {day.strftime('%d %b')}"
+                color, tip = "#1a1a24", f"Rs.0 · {day.strftime('%d %b')}"
             else:
                 inten = amt / mx
-                if   inten < 0.2: color = "#1a3a2a"
-                elif inten < 0.4: color = "#15532e"
-                elif inten < 0.6: color = "#166534"
-                elif inten < 0.8: color = "#16a34a"
-                else:             color = "#34d399"
+                if   inten < 0.2: color = "#2a1f05"
+                elif inten < 0.4: color = "#3a2c05"
+                elif inten < 0.6: color = "#5a4010"
+                elif inten < 0.8: color = "#8a6200"
+                else:             color = "#f0a500"
                 tip = f"Rs.{amt:,.0f} · {day.strftime('%d %b')}"
             col += f'<div title="{tip}" style="width:10px;height:10px;border-radius:2px;background:{color}"></div>'
         col += '</div>'
         gc += col
     legend = (
-        '<div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:.62rem;color:#444">'
+        '<div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:.62rem;color:#444460">'
         '<span>Less</span>'
         + "".join([f'<div style="width:10px;height:10px;border-radius:2px;background:{c}"></div>'
-                   for c in ["#1a1a1a","#1a3a2a","#166534","#16a34a","#34d399"]])
+                   for c in ["#1a1a24","#2a1f05","#5a4010","#8a6200","#f0a500"]])
         + '<span>More</span></div>'
     )
     return f'<div class="heatmap-wrap">{mh}<div style="display:flex;gap:2px">{lc}{gc}</div>{legend}</div>'
 
 def build_dow_html(df_d):
     if df_d.empty:
-        return "<div style='color:#444;font-size:.82rem'>No data</div>"
+        return "<div style='color:#444460;font-size:.82rem'>No data</div>"
     dfc = df_d[df_d["Date"].notna()].copy()
     dfc["_dow"] = dfc["Date"].dt.dayofweek
     dow_avg = dfc.groupby("_dow")["Amount"].mean()
@@ -482,11 +497,11 @@ def build_dow_html(df_d):
     for i, day in enumerate(days):
         avg    = float(dow_avg.get(i, 0))
         pct    = avg / mx * 100
-        color  = "#7c3aed" if i >= 5 else "#2563eb"
+        color  = "#5e72e4" if i >= 5 else "#f0a500"
         html  += (
             f'<div class="dow-row">'
             f'<span class="dow-label">{day}</span>'
-            f'<div style="flex:1;background:#1a1a1a;border-radius:4px;height:16px;overflow:hidden">'
+            f'<div style="flex:1;background:#1a1a24;border-radius:4px;height:16px;overflow:hidden">'
             f'<div class="dow-bar-fill" style="width:{pct:.1f}%;background:{color}"></div>'
             f'</div>'
             f'<span class="dow-bar-amt">Rs.{avg:,.0f}</span>'
@@ -551,7 +566,6 @@ def detect_recurring_merchants(pending_df_r, expenses_df_r):
     return set(mnth[mnth >= RECUR_MIN_MONTHS].index)
 
 def get_merchant_trend(merchant, expenses_df_t):
-    """Return avg spend per month for a given merchant over last 3 months."""
     if expenses_df_t.empty:
         return None
     hist = expenses_df_t[expenses_df_t["Date"].notna()].copy()
@@ -565,7 +579,7 @@ def get_merchant_trend(merchant, expenses_df_t):
 
 
 # ==============================================================================
-# 6. REVIEW HELPERS
+# 6. REVIEW HELPERS  (unchanged)
 # ==============================================================================
 def approve_pending_row(idx, chosen_category, create_new_cat=False):
     with st.spinner("Approving..."):
@@ -624,7 +638,6 @@ def approve_all_with_suggestions():
     return count
 
 def auto_save_import_rule(merchant, category):
-    """Auto-add merchant → category to ImportRules so future imports self-approve."""
     rules = st.session_state.import_rules
     words = [w for w in merchant.split() if len(w) > 3]
     keyword = words[0] if words else merchant[:10]
@@ -671,7 +684,6 @@ def approve_merchant_group(indices, chosen_category, create_new_cat=False, merch
         conn.update(worksheet="PendingReview", data=updated_pend)
         st.session_state.pending_df = updated_pend
         st.cache_data.clear()
-        # ── Merchant Intelligence: auto-save to ImportRules ──────
         if merchant_name and chosen_category:
             auto_save_import_rule(merchant_name, chosen_category)
 
@@ -684,7 +696,6 @@ def skip_merchant_group(indices):
         st.cache_data.clear()
 
 def approve_split_group(split_map, create_cats=None):
-    """Approve PendingReview rows with per-row category assignments."""
     with st.spinner(f"Approving {len(split_map)} transactions..."):
         create_cats = create_cats or []
         existing_cats = st.session_state.cat_df["Category"].dropna().tolist()
@@ -724,7 +735,7 @@ def approve_split_group(split_map, create_cats=None):
 
 
 # ==============================================================================
-# 7. SHARED TRANSACTION ROW RENDERER
+# 7. SHARED TRANSACTION ROW RENDERER  (same keys; visual lift only)
 # ==============================================================================
 def render_txn_row(idx, row, key_prefix="txn", show_edit=True):
     date_disp = pd.to_datetime(row["Date"]).strftime("%-d %b %Y, %H:%M") if pd.notna(row["Date"]) else "-"
@@ -738,17 +749,18 @@ def render_txn_row(idx, row, key_prefix="txn", show_edit=True):
 
     c_amt, c_info, c_btn = st.columns([2, 5, 1])
     c_amt.markdown(
-        f"<div style='font-size:.95rem;font-weight:700;color:#f0f0f0;padding:10px 0'>"
+        f"<div style='font-size:.97rem;font-weight:700;color:#e8e8f0;padding:10px 0;"
+        f"font-family:\"JetBrains Mono\",monospace'>"
         f"Rs.{float(row['Amount']):,.0f}</div>",
         unsafe_allow_html=True
     )
     mode_chip = f"<span class='chip'>{row['Mode']}</span>" if str(row.get("Mode","")).strip() else ""
-    note_html = (f"<div style='font-size:.72rem;color:#555;margin-top:2px;font-style:italic'>"
+    note_html = (f"<div style='font-size:.72rem;color:#8888aa;margin-top:2px;font-style:italic'>"
                  f"{note_val}</div>") if note_val else ""
     c_info.markdown(
         f"<div style='padding:10px 0;line-height:1.35'>"
         f"<span style='font-size:.88rem;font-weight:600;color:#ccc'>{row['Category']}</span>"
-        f"<br><span style='font-size:.72rem;color:#555'>{date_disp}</span> {mode_chip}"
+        f"<br><span style='font-size:.72rem;color:#444460'>{date_disp}</span> {mode_chip}"
         f"{note_html}</div>",
         unsafe_allow_html=True
     )
@@ -756,7 +768,10 @@ def render_txn_row(idx, row, key_prefix="txn", show_edit=True):
         st.session_state[edit_key]  = not st.session_state[edit_key]
         st.session_state[split_key] = False
         st.rerun()
-    st.markdown("<hr style='border:none;border-top:1px solid #161616;margin:0'>", unsafe_allow_html=True)
+    st.markdown(
+        "<hr style='border:none;border-top:1px solid #1a1a24;margin:0'>",
+        unsafe_allow_html=True
+    )
 
     if show_edit and st.session_state[edit_key]:
         with st.container(border=True):
@@ -807,7 +822,7 @@ def render_txn_row(idx, row, key_prefix="txn", show_edit=True):
         total_amt = float(row["Amount"])
         st.markdown(
             f'<div class="split-row">'
-            f'<span style="font-size:.8rem;font-weight:700;color:#facc15">✂ Split Rs.{total_amt:,.0f} into two</span>'
+            f'<span style="font-size:.8rem;font-weight:700;color:#f0a500">✂ Split Rs.{total_amt:,.0f} into two</span>'
             f'</div>',
             unsafe_allow_html=True
         )
@@ -820,7 +835,8 @@ def render_txn_row(idx, row, key_prefix="txn", show_edit=True):
             spl2_amt = total_amt - spl1_amt
             s2a, s2b = st.columns([1, 2])
             s2a.markdown(
-                f'<div style="padding:8px 0;font-size:.92rem;font-weight:600;color:#e8e8e8">'
+                f'<div style="padding:8px 0;font-size:.92rem;font-weight:600;color:#e8e8f0;'
+                f'font-family:\'JetBrains Mono\',monospace">'
                 f'Rs.{spl2_amt:,.0f}</div>',
                 unsafe_allow_html=True
             )
@@ -840,7 +856,7 @@ def render_txn_row(idx, row, key_prefix="txn", show_edit=True):
 
 
 # ==============================================================================
-# 8. PIN GATE
+# 8. PIN GATE  (same logic; amber colour scheme)
 # ==============================================================================
 for _k, _v in [("pin_unlocked", False), ("pin_input", ""), ("pin_attempts", 0), ("pin_error", "")]:
     if _k not in st.session_state:
@@ -851,9 +867,16 @@ if not st.session_state.pin_unlocked:
     st.markdown("<br><br>", unsafe_allow_html=True)
     _, col, _ = st.columns([1, 2, 1])
     with col:
-        st.markdown("### FinTrack Pro")
         st.markdown(
-            "<p style='color:#444;font-size:.8rem;margin-bottom:24px'>Enter your 4-digit PIN to continue</p>",
+            "<div style='text-align:center;margin-bottom:6px'>"
+            "<span style='font-size:1.5rem;font-weight:700;color:#e8e8f0;"
+            "font-family:\"Sora\",sans-serif;letter-spacing:-.5px'>Fin"
+            "<span style='color:#f0a500'>Track</span> Pro</span></div>",
+            unsafe_allow_html=True
+        )
+        st.markdown(
+            "<p style='color:#444460;font-size:.8rem;margin-bottom:24px;text-align:center'>"
+            "Enter your 4-digit PIN to continue</p>",
             unsafe_allow_html=True
         )
         entered  = len(st.session_state.pin_input)
@@ -861,11 +884,11 @@ if not st.session_state.pin_unlocked:
         dots_html = "<div style='display:flex;gap:14px;margin-bottom:24px;justify-content:center'>"
         for i in range(4):
             if is_error:
-                style = "width:13px;height:13px;border-radius:50%;background:#f87171;border:1.5px solid #f87171"
+                style = "width:13px;height:13px;border-radius:50%;background:#f75676;border:1.5px solid #f75676"
             elif i < entered:
-                style = "width:13px;height:13px;border-radius:50%;background:#2563eb;border:1.5px solid #2563eb"
+                style = "width:13px;height:13px;border-radius:50%;background:#f0a500;border:1.5px solid #f0a500"
             else:
-                style = "width:13px;height:13px;border-radius:50%;background:transparent;border:1.5px solid #333"
+                style = "width:13px;height:13px;border-radius:50%;background:transparent;border:1.5px solid #2a2a3a"
             dots_html += f"<div style='{style}'></div>"
         dots_html += "</div>"
         st.markdown(dots_html, unsafe_allow_html=True)
@@ -875,7 +898,7 @@ if not st.session_state.pin_unlocked:
         if st.session_state.pin_error:
             remaining = MAX_PIN_ATTEMPTS - st.session_state.pin_attempts
             st.markdown(
-                f"<p style='color:#f87171;font-size:.76rem;text-align:center;margin-bottom:12px'>"
+                f"<p style='color:#f75676;font-size:.76rem;text-align:center;margin-bottom:12px'>"
                 f"Incorrect PIN. {remaining} attempt{'s' if remaining != 1 else ''} left.</p>",
                 unsafe_allow_html=True
             )
@@ -910,7 +933,7 @@ if not st.session_state.pin_unlocked:
 
 
 # ==============================================================================
-# 9. RECURRING AUTO-LOG
+# 9. RECURRING AUTO-LOG  (unchanged)
 # ==============================================================================
 if not st.session_state.get("auto_log_checked") and not settings_df.empty:
     fired_any   = False
@@ -957,7 +980,11 @@ tab_home, tab_cat_view, tab_search, tab_rec, tab_analytics, tab_review, tab_mana
 # ==============================================================================
 with tab_home:
     hc1, hc2, hc3 = st.columns([5, 1, 1])
-    hc1.markdown("## FinTrack")
+    hc1.markdown(
+        "<span style='font-size:1.4rem;font-weight:700;color:#e8e8f0;letter-spacing:-.5px'>"
+        "Fin<span style='color:#f0a500'>Track</span></span>",
+        unsafe_allow_html=True
+    )
     if hc2.button("Lock", use_container_width=True):
         st.session_state.pin_unlocked = False
         st.session_state.pin_input    = ""
@@ -998,42 +1025,42 @@ with tab_home:
         if sel_month == curr_ym:
             today_total = df[df["Date"].dt.date == today]["Amount"].sum()
             tc1.markdown(
-                f'<div class="tile"><div class="tile-accent" style="background:#2563eb"></div>'
+                f'<div class="tile"><div class="tile-accent" style="background:#f0a500"></div>'
                 f'<div class="tile-label">Spent Today</div>'
                 f'<div class="tile-value">Rs.{today_total:,.0f}</div></div>',
                 unsafe_allow_html=True
             )
         else:
             tc1.markdown(
-                f'<div class="tile"><div class="tile-accent" style="background:#374151"></div>'
+                f'<div class="tile"><div class="tile-accent" style="background:#2a2a3a"></div>'
                 f'<div class="tile-label">Period</div>'
                 f'<div class="tile-value" style="font-size:1.1rem;padding-top:6px">{sel_month}</div></div>',
                 unsafe_allow_html=True
             )
         tc2.markdown(
-            f'<div class="tile"><div class="tile-accent" style="background:#7c3aed"></div>'
+            f'<div class="tile"><div class="tile-accent" style="background:#5e72e4"></div>'
             f'<div class="tile-label">Total Spend</div>'
             f'<div class="tile-value">Rs.{month_total:,.0f}</div>'
             f'<div class="tile-sub">{trend_html}</div></div>',
             unsafe_allow_html=True
         )
 
-        # ── Savings Rate tile (only when income is set) ───────────────────────
+        # ── Savings Rate tile (only when income is set + current month) ───────
         monthly_income = float(get_app_setting(KEY_INCOME, "0") or "0")
         if monthly_income > 0 and sel_month == curr_ym:
             savings      = monthly_income - month_total
             savings_pct  = savings / monthly_income * 100
-            sav_color    = "#34d399" if savings >= 0 else "#f87171"
+            sav_color    = "#2dce89" if savings >= 0 else "#f75676"
             sav_sign     = "+" if savings >= 0 else ""
             sav_label    = "Saving" if savings >= 0 else "Over budget by"
             sav_pct_fill = min(abs(savings_pct), 100)
-            sav_bar_col  = "#34d399" if savings >= 0 else "#f87171"
+            sav_bar_col  = "#2dce89" if savings >= 0 else "#f75676"
             st.markdown(
                 f'<div class="tile" style="border-left:3px solid {sav_color}">'
                 f'<div class="tile-label">Savings Rate</div>'
                 f'<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:4px">'
-                f'<span style="font-size:1.6rem;font-weight:700;color:{sav_color}">{sav_sign}{savings_pct:.1f}%</span>'
-                f'<span style="font-size:.78rem;color:#555">{sav_label} Rs.{abs(savings):,.0f}</span>'
+                f'<span style="font-size:1.6rem;font-weight:700;color:{sav_color};font-family:JetBrains Mono,monospace">{sav_sign}{savings_pct:.1f}%</span>'
+                f'<span style="font-size:.78rem;color:#444460">{sav_label} Rs.{abs(savings):,.0f}</span>'
                 f'</div>'
                 f'<div class="prog-wrap"><div class="prog-track">'
                 f'<div class="prog-fill" style="width:{sav_pct_fill:.1f}%;background:{sav_bar_col}"></div>'
@@ -1042,7 +1069,7 @@ with tab_home:
                 unsafe_allow_html=True
             )
 
-        # ── HDFC Milestone ────────────────────────────────────────────────────
+        # ── HDFC Quarterly Milestone ──────────────────────────────────────────
         q_map  = {1:1,2:1,3:1,4:2,5:2,6:2,7:3,8:3,9:3,10:4,11:4,12:4}
         curr_q = q_map[now.month]
         h_spend = df[
@@ -1051,13 +1078,13 @@ with tab_home:
             (df["Mode"] == "HDFC Credit Card")
         ]["Amount"].sum()
         h_pct     = min(h_spend / HDFC_MILESTONE_AMT * 100, 100)
-        h_color   = "#2563eb" if h_pct < 75 else ("#facc15" if h_pct < 100 else "#34d399")
+        h_color   = "#5e72e4" if h_pct < 75 else ("#f0a500" if h_pct < 100 else "#2dce89")
         remaining = max(HDFC_MILESTONE_AMT - h_spend, 0)
         st.markdown(
             f'<div class="tile" style="border-left:3px solid {h_color}">'
             f'<div class="tile-label">HDFC Q{curr_q} Milestone</div>'
             f'<div class="tile-value">Rs.{h_spend:,.0f}'
-            f'<span style="font-size:.82rem;color:#444;font-weight:400"> / Rs.{HDFC_MILESTONE_AMT:,.0f}</span></div>'
+            f'<span style="font-size:.82rem;color:#444460;font-weight:400"> / Rs.{HDFC_MILESTONE_AMT:,.0f}</span></div>'
             f'<div class="prog-wrap"><div class="prog-track">'
             f'<div class="prog-fill" style="width:{h_pct:.1f}%;background:{h_color}"></div>'
             f'</div><div class="prog-meta"><span>{h_pct:.1f}% reached</span>'
@@ -1074,8 +1101,8 @@ with tab_home:
                     items_html += (
                         f'<div class="anomaly-item">'
                         f'<span style="color:#ccc">{info["merchant"][:30]}</span>'
-                        f'<span style="color:#f87171;font-weight:600">Rs.{info["amount"]:,.0f}'
-                        f' <span style="color:#555;font-weight:400;font-size:.72rem">'
+                        f'<span style="color:#f75676;font-weight:600">Rs.{info["amount"]:,.0f}'
+                        f' <span style="color:#444460;font-weight:400;font-size:.72rem">'
                         f'(avg Rs.{info["avg"]:,.0f})</span></span>'
                         f'</div>'
                     )
@@ -1101,7 +1128,7 @@ with tab_home:
                     continue
                 bspent = filt[filt["Category"] == bcat]["Amount"].sum()
                 bpct   = min(bspent / blimit * 100, 100)
-                bcolor = "#34d399" if bpct < 75 else ("#facc15" if bpct < 100 else "#f87171")
+                bcolor = "#2dce89" if bspent/blimit < 0.75 else ("#f0a500" if bspent <= blimit else "#f75676")
                 over   = " ⚠ Over!" if bspent > blimit else ""
                 st.markdown(
                     f'<div class="budget-row"><div class="budget-header">'
@@ -1116,13 +1143,10 @@ with tab_home:
         if not filt.empty:
             cat_sum = filt.groupby("Category")["Amount"].sum().sort_values(ascending=False).reset_index()
             max_amt = cat_sum["Amount"].max() or 1
-
-            # 3-month avg per category
             three_mo_ago = sel_period - 3
             prev3 = df[df["Date"].dt.to_period("M") > three_mo_ago]
             prev3 = prev3[df["Date"].dt.to_period("M") < sel_period]
             cat_3mo_avg = prev3.groupby("Category")["Amount"].mean() if not prev3.empty else pd.Series(dtype=float)
-
             for _, crow in cat_sum.iterrows():
                 bar_pct = crow["Amount"] / max_amt * 100
                 cat_nm  = crow["Category"]
@@ -1130,9 +1154,9 @@ with tab_home:
                 if avg_3 > 0:
                     delta_pct = (crow["Amount"] - avg_3) / avg_3 * 100
                     if delta_pct > 10:
-                        trend_arrow = f'<span style="color:#f87171;font-size:.7rem">↑{delta_pct:.0f}%</span>'
+                        trend_arrow = f'<span style="color:#f75676;font-size:.7rem">↑{delta_pct:.0f}%</span>'
                     elif delta_pct < -10:
-                        trend_arrow = f'<span style="color:#34d399;font-size:.7rem">↓{abs(delta_pct):.0f}%</span>'
+                        trend_arrow = f'<span style="color:#2dce89;font-size:.7rem">↓{abs(delta_pct):.0f}%</span>'
                     else:
                         trend_arrow = ""
                 else:
@@ -1174,7 +1198,10 @@ with tab_home:
 # TAB 2 — CATEGORIES
 # ==============================================================================
 with tab_cat_view:
-    st.markdown("## Categories")
+    st.markdown(
+        "<span style='font-size:1.2rem;font-weight:700;color:#e8e8f0'>Categories</span>",
+        unsafe_allow_html=True
+    )
     if df.empty:
         st.markdown('<div class="empty-box"><div class="ico">🏷️</div>'
                     '<div class="msg">No data yet.</div></div>', unsafe_allow_html=True)
@@ -1186,19 +1213,19 @@ with tab_cat_view:
         span_days  = max((newest - oldest).days, 1)
         s1, s2, s3 = st.columns(3)
         s1.markdown(
-            f'<div class="tile"><div class="tile-accent" style="background:#2563eb"></div>'
+            f'<div class="tile"><div class="tile-accent" style="background:#f0a500"></div>'
             f'<div class="tile-label">All Time Spend</div>'
             f'<div class="tile-value" style="font-size:1.4rem">Rs.{total_all:,.0f}</div></div>',
             unsafe_allow_html=True
         )
         s2.markdown(
-            f'<div class="tile"><div class="tile-accent" style="background:#7c3aed"></div>'
+            f'<div class="tile"><div class="tile-accent" style="background:#5e72e4"></div>'
             f'<div class="tile-label">Transactions</div>'
             f'<div class="tile-value" style="font-size:1.4rem">{total_txns:,}</div></div>',
             unsafe_allow_html=True
         )
         s3.markdown(
-            f'<div class="tile"><div class="tile-accent" style="background:#0d9488"></div>'
+            f'<div class="tile"><div class="tile-accent" style="background:#2dce89"></div>'
             f'<div class="tile-label">Daily Average</div>'
             f'<div class="tile-value" style="font-size:1.4rem">Rs.{total_all/span_days:,.0f}</div></div>',
             unsafe_allow_html=True
@@ -1231,8 +1258,8 @@ with tab_cat_view:
                 f'<div class="cat-hero-meta">{cat_count} transactions &nbsp;·&nbsp; Avg Rs.{cat_avg:,.0f}'
                 f' &nbsp;·&nbsp; Last {cat_last} &nbsp;·&nbsp; {share_pct:.1f}% of total</div></div>'
                 f'<div class="cat-hero-amt">Rs.{cat_total:,.0f}</div></div>'
-                f'<div style="margin-top:10px;background:#1e1e1e;border-radius:4px;height:4px">'
-                f'<div style="width:{bar_pct:.1f}%;background:#2563eb;height:4px;border-radius:4px"></div></div></div>',
+                f'<div style="margin-top:10px;background:#22222f;border-radius:4px;height:4px">'
+                f'<div style="width:{bar_pct:.1f}%;background:#f0a500;height:4px;border-radius:4px"></div></div></div>',
                 unsafe_allow_html=True
             )
             view_key = f"view_cat_{cat_name}"
@@ -1258,7 +1285,7 @@ with tab_cat_view:
                         ]
                     sub_total = cat_entries["Amount"].sum()
                     st.markdown(
-                        f"<p style='font-size:.75rem;color:#555;margin-bottom:8px'>"
+                        f"<p style='font-size:.75rem;color:#444460;margin-bottom:8px'>"
                         f"Showing {len(cat_entries)} entries &nbsp;·&nbsp; Total Rs.{sub_total:,.0f}</p>",
                         unsafe_allow_html=True
                     )
@@ -1271,7 +1298,10 @@ with tab_cat_view:
 # TAB 3 — SEARCH
 # ==============================================================================
 with tab_search:
-    st.markdown("## Search & Filter")
+    st.markdown(
+        "<span style='font-size:1.2rem;font-weight:700;color:#e8e8f0'>Search & Filter</span>",
+        unsafe_allow_html=True
+    )
     if df.empty:
         st.markdown('<div class="empty-box"><div class="ico">🔍</div>'
                     '<div class="msg">No data to search yet.</div></div>', unsafe_allow_html=True)
@@ -1335,24 +1365,32 @@ with tab_search:
         r_total = result["Amount"].sum()
         r_avg   = result["Amount"].mean() if r_count > 0 else 0
         ra1, ra2, ra3 = st.columns(3)
-        ra1.markdown(f'<div class="tile"><div class="tile-accent" style="background:#2563eb"></div>'
-                     f'<div class="tile-label">Results</div>'
-                     f'<div class="tile-value" style="font-size:1.4rem">{r_count:,}</div></div>',
-                     unsafe_allow_html=True)
-        ra2.markdown(f'<div class="tile"><div class="tile-accent" style="background:#7c3aed"></div>'
-                     f'<div class="tile-label">Total</div>'
-                     f'<div class="tile-value" style="font-size:1.4rem">Rs.{r_total:,.0f}</div></div>',
-                     unsafe_allow_html=True)
-        ra3.markdown(f'<div class="tile"><div class="tile-accent" style="background:#0d9488"></div>'
-                     f'<div class="tile-label">Avg per txn</div>'
-                     f'<div class="tile-value" style="font-size:1.4rem">Rs.{r_avg:,.0f}</div></div>',
-                     unsafe_allow_html=True)
+        ra1.markdown(
+            f'<div class="tile"><div class="tile-accent" style="background:#f0a500"></div>'
+            f'<div class="tile-label">Results</div>'
+            f'<div class="tile-value" style="font-size:1.4rem">{r_count:,}</div></div>',
+            unsafe_allow_html=True
+        )
+        ra2.markdown(
+            f'<div class="tile"><div class="tile-accent" style="background:#5e72e4"></div>'
+            f'<div class="tile-label">Total</div>'
+            f'<div class="tile-value" style="font-size:1.4rem">Rs.{r_total:,.0f}</div></div>',
+            unsafe_allow_html=True
+        )
+        ra3.markdown(
+            f'<div class="tile"><div class="tile-accent" style="background:#2dce89"></div>'
+            f'<div class="tile-label">Avg per txn</div>'
+            f'<div class="tile-value" style="font-size:1.4rem">Rs.{r_avg:,.0f}</div></div>',
+            unsafe_allow_html=True
+        )
 
         if r_count > 0 and len(sel_cats) != 1:
             r_cat_split = result.groupby("Category")["Amount"].sum().sort_values(ascending=False)
             split_str   = "  |  ".join([f"{c}: Rs.{v:,.0f}" for c, v in r_cat_split.items()])
-            st.markdown(f"<p style='font-size:.72rem;color:#444;margin:-6px 0 12px'>{split_str}</p>",
-                        unsafe_allow_html=True)
+            st.markdown(
+                f"<p style='font-size:.72rem;color:#444460;margin:-6px 0 12px'>{split_str}</p>",
+                unsafe_allow_html=True
+            )
 
         if r_count > 0:
             csv_buf = io.StringIO()
@@ -1379,7 +1417,10 @@ with tab_search:
 # TAB 4 — RECURRING
 # ==============================================================================
 with tab_rec:
-    st.markdown("## Recurring Rules")
+    st.markdown(
+        "<span style='font-size:1.2rem;font-weight:700;color:#e8e8f0'>Recurring Rules</span>",
+        unsafe_allow_html=True
+    )
     with st.expander("Create New Rule"):
         with st.form("new_rec"):
             rc1, rc2 = st.columns(2)
@@ -1411,7 +1452,7 @@ with tab_rec:
                 st.markdown(
                     f'<div class="rec-card {status_cls}">'
                     f'<div class="rec-title">{row["Category"]}</div>'
-                    f'<div class="rec-meta">Rs.{float(row["Budget"]):,.0f}  --  {status_txt}</div></div>',
+                    f'<div class="rec-meta">Rs.{float(row["Budget"]):,.0f}  ·  {status_txt}</div></div>',
                     unsafe_allow_html=True
                 )
                 ck = f"crec_{i}"
@@ -1440,14 +1481,15 @@ with tab_rec:
 # TAB 5 — ANALYTICS
 # ==============================================================================
 with tab_analytics:
-    st.markdown("## Analytics")
-
+    st.markdown(
+        "<span style='font-size:1.2rem;font-weight:700;color:#e8e8f0'>Analytics</span>",
+        unsafe_allow_html=True
+    )
     if df.empty:
         st.markdown('<div class="empty-box"><div class="ico">📈</div>'
                     '<div class="msg">No data yet. Sync transactions to unlock analytics.</div></div>',
                     unsafe_allow_html=True)
     else:
-        # Period selector for analytics (affects DOW, top merchants, category trend)
         all_months_a = sorted(
             df["Date"].dropna().dt.to_period("M").unique().astype(str).tolist(), reverse=True
         )
@@ -1490,14 +1532,16 @@ with tab_analytics:
                     continue
                 bspent = an_df[an_df["Category"] == bcat]["Amount"].sum()
                 bpct   = bspent / blimit * 100
-                bcolor = "#34d399" if bpct < 75 else ("#facc15" if bpct < 100 else "#f87171")
+                bcolor = "#2dce89" if bpct < 75 else ("#f0a500" if bpct < 100 else "#f75676")
                 bar_w  = min(bpct, 100)
-                over   = f'<span style="color:#f87171;font-size:.7rem"> +Rs.{bspent-blimit:,.0f} over</span>' if bspent > blimit else ""
+                over   = (f'<span style="color:#f75676;font-size:.7rem"> +Rs.{bspent-blimit:,.0f} over</span>'
+                          if bspent > blimit else "")
                 st.markdown(
                     f'<div style="margin-bottom:12px">'
                     f'<div style="display:flex;justify-content:space-between;margin-bottom:5px">'
                     f'<span style="font-size:.86rem;font-weight:600;color:#ccc">{bcat}{over}</span>'
-                    f'<span style="font-size:.8rem;color:#555">Rs.{bspent:,.0f} / Rs.{blimit:,.0f} &nbsp; {bpct:.0f}%</span>'
+                    f'<span style="font-size:.8rem;color:#444460;font-family:\'JetBrains Mono\',monospace">'
+                    f'Rs.{bspent:,.0f} / Rs.{blimit:,.0f} &nbsp; {bpct:.0f}%</span>'
                     f'</div>'
                     f'<div class="prog-track"><div class="prog-fill" style="width:{bar_w:.1f}%;background:{bcolor}"></div></div>'
                     f'</div>',
@@ -1525,20 +1569,21 @@ with tab_analytics:
                     trend_df = pd.DataFrame(trend_rows).sort_values("Delta", ascending=False)
                     st.markdown('<div class="analytics-card">', unsafe_allow_html=True)
                     st.markdown(
-                        f'<div class="analytics-title">Category Trend vs 3-Month Average</div>',
+                        '<div class="analytics-title">Category Trend vs 3-Month Average</div>',
                         unsafe_allow_html=True
                     )
                     for _, tr in trend_df.iterrows():
                         d     = tr["Delta"]
-                        col   = "#f87171" if d > 10 else ("#34d399" if d < -10 else "#555")
+                        col   = "#f75676" if d > 10 else ("#2dce89" if d < -10 else "#444460")
                         sign  = "+" if d >= 0 else ""
                         arrow = "↑" if d > 10 else ("↓" if d < -10 else "→")
                         st.markdown(
                             f'<div style="display:flex;justify-content:space-between;'
-                            f'align-items:center;padding:7px 0;border-bottom:1px solid #141414">'
+                            f'align-items:center;padding:7px 0;border-bottom:1px solid #1a1a24">'
                             f'<span style="font-size:.85rem;color:#ccc">{tr["Category"]}</span>'
                             f'<span style="font-size:.82rem">'
-                            f'<span style="color:#555">Rs.{tr["This"]:,.0f}</span>'
+                            f'<span style="color:#444460;font-family:\'JetBrains Mono\',monospace">'
+                            f'Rs.{tr["This"]:,.0f}</span>'
                             f'&nbsp;<span style="color:{col};font-weight:600">{arrow} {sign}{d:.0f}%</span></span>'
                             f'</div>',
                             unsafe_allow_html=True
@@ -1554,8 +1599,8 @@ with tab_analytics:
             st.markdown(build_dow_html(an_df), unsafe_allow_html=True)
             st.markdown(
                 '<div style="font-size:.65rem;color:#333;margin-top:8px">'
-                '<span style="color:#2563eb">■</span> Weekday &nbsp; '
-                '<span style="color:#7c3aed">■</span> Weekend</div>',
+                '<span style="color:#f0a500">■</span> Weekday &nbsp; '
+                '<span style="color:#5e72e4">■</span> Weekend</div>',
                 unsafe_allow_html=True
             )
             st.markdown('</div>', unsafe_allow_html=True)
@@ -1587,16 +1632,19 @@ with tab_analytics:
                         unsafe_allow_html=True
                     )
             else:
-                st.markdown('<div style="color:#444;font-size:.82rem">No data for period</div>',
+                st.markdown('<div style="color:#444460;font-size:.82rem">No data for period</div>',
                             unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
 
 # ==============================================================================
-# TAB 6 — REVIEW (Merchant Grouped + Intelligence + Anomaly + Dup + Recurring)
+# TAB 6 — REVIEW
 # ==============================================================================
 with tab_review:
-    st.markdown("## Pending Review")
+    st.markdown(
+        "<span style='font-size:1.2rem;font-weight:700;color:#e8e8f0'>Pending Review</span>",
+        unsafe_allow_html=True
+    )
 
     pend_all = st.session_state.pending_df.copy() if not st.session_state.pending_df.empty else pd.DataFrame()
 
@@ -1618,7 +1666,6 @@ with tab_review:
             st.session_state.cat_df["Category"].dropna().tolist()
         ) if not st.session_state.cat_df.empty else []
 
-        # ── Pre-compute intelligence signals ────────────────────────────────
         anomaly_map    = detect_anomalies(active_pend, df) if not df.empty else {}
         dup_set        = detect_duplicates(active_pend)
         recur_set      = detect_recurring_merchants(active_pend, df) if not df.empty else set()
@@ -1642,7 +1689,6 @@ with tab_review:
         n_groups = len(merchant_list)
         n_with_sug = int((merchant_list["sug"].str.strip().ne("")).sum())
 
-        # ── Summary bar ──────────────────────────────────────────────────────
         anomaly_badge = (
             f'<span class="badge-anomaly">🚨 {len(anomaly_map)} unusual</span>'
             if anomaly_map else ""
@@ -1652,12 +1698,12 @@ with tab_review:
             if dup_set else ""
         )
         st.markdown(
-            f'<div style="background:#0f0f0f;border:1px solid #1c1c1c;border-radius:12px;'
+            f'<div style="background:#0f0f15;border:1px solid #2a2a3a;border-radius:12px;'
             f'padding:13px 16px;margin-bottom:16px">'
             f'<div style="display:flex;justify-content:space-between;align-items:center">'
-            f'<span style="font-size:.9rem;font-weight:600;color:#facc15">'
+            f'<span style="font-size:.9rem;font-weight:600;color:#f0a500">'
             f'⚠️ {n_pend} transaction{"s" if n_pend!=1 else ""} · {n_groups} merchants</span>'
-            f'<span style="font-size:.76rem;color:#555">{n_with_sug} with suggestions</span>'
+            f'<span style="font-size:.76rem;color:#444460">{n_with_sug} with suggestions</span>'
             f'</div>'
             f'<div style="margin-top:6px">{anomaly_badge}{dup_badge}</div>'
             f'</div>',
@@ -1675,7 +1721,6 @@ with tab_review:
 
         st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
-        # ── Per-merchant group cards ──────────────────────────────────────────
         for _, grp_row in merchant_list.iterrows():
             merchant    = grp_row["_merchant"]
             count       = int(grp_row["count"])
@@ -1684,7 +1729,6 @@ with tab_review:
 
             grp_indices = active_pend[active_pend["_merchant"] == merchant].index.tolist()
 
-            # Check signals for this group
             grp_anomaly  = any(idx in anomaly_map for idx in grp_indices)
             grp_dup      = any(idx in dup_set     for idx in grp_indices)
             grp_recur    = merchant in recur_set
@@ -1693,7 +1737,6 @@ with tab_review:
                 for _, r in st.session_state.import_rules.iterrows()
             ) if not st.session_state.import_rules.empty else False
 
-            # Date range
             grp_dates = active_pend.loc[grp_indices, "Date"]
             try:
                 dates_p = pd.to_datetime(grp_dates, errors="coerce").dropna()
@@ -1705,7 +1748,8 @@ with tab_review:
             except Exception:
                 date_range = ""
 
-            sug_badge   = (f'<span class="review-badge-sug">💡 {sug_cat}</span>' if sug_cat and sug_cat != "nan" else "")
+            sug_badge   = (f'<span class="review-badge-sug">💡 {sug_cat}</span>'
+                           if sug_cat and sug_cat != "nan" else "")
             anom_badge  = '<span class="badge-anomaly">🚨 Unusual amount</span>' if grp_anomaly else ""
             dup_b       = '<span class="badge-dup">⚠ Possible dup</span>'        if grp_dup    else ""
             recur_badge = '<span class="badge-recur">🔄 Recurring pattern</span>' if grp_recur  else ""
@@ -1714,12 +1758,13 @@ with tab_review:
             st.markdown(
                 f'<div class="review-card">'
                 f'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
-                f'<div style="font-size:1rem;font-weight:700;color:#e8e8e8">{merchant}</div>'
+                f'<div style="font-size:1rem;font-weight:700;color:#e8e8f0">{merchant}</div>'
                 f'<div style="text-align:right">'
-                f'<div style="font-size:1rem;font-weight:700;color:#34d399">Rs.{total:,.0f}</div>'
-                f'<div style="font-size:.7rem;color:#555">{count} txn{"s" if count>1 else ""}</div>'
+                f'<div style="font-size:1rem;font-weight:700;color:#2dce89;'
+                f'font-family:\'JetBrains Mono\',monospace">Rs.{total:,.0f}</div>'
+                f'<div style="font-size:.7rem;color:#444460">{count} txn{"s" if count>1 else ""}</div>'
                 f'</div></div>'
-                f'<div style="font-size:.75rem;color:#444;margin-top:4px;margin-bottom:6px">{date_range}</div>'
+                f'<div style="font-size:.75rem;color:#444460;margin-top:4px;margin-bottom:6px">{date_range}</div>'
                 f'<div>{sug_badge}{anom_badge}{dup_b}{recur_badge}{intel_badge}</div>'
                 f'</div>',
                 unsafe_allow_html=True
@@ -1727,7 +1772,6 @@ with tab_review:
 
             grp_key = merchant.replace(" ","_").replace(".","")[:30]
 
-            # ── Bulk approve ─────────────────────────────────────────────────
             default_opts = ["-- New category --"] + live_categories
             if sug_cat and sug_cat in live_categories:
                 default_idx = live_categories.index(sug_cat) + 1
@@ -1765,7 +1809,7 @@ with tab_review:
                     approve_merchant_group(
                         grp_indices, final_cat,
                         create_new_cat=is_new_cat,
-                        merchant_name=merchant   # ← Merchant Intelligence
+                        merchant_name=merchant
                     )
                     st.toast(f"Approved {count} · {merchant} → {final_cat}")
                     if grp_recur:
@@ -1780,7 +1824,6 @@ with tab_review:
                 st.toast(f"Skipped {count} from {merchant}")
                 st.rerun()
 
-            # ── Split by transaction (per-row category assign) ────────────────
             split_exp_key = f"split_exp_{grp_key}"
             if split_exp_key not in st.session_state:
                 st.session_state[split_exp_key] = False
@@ -1796,9 +1839,9 @@ with tab_review:
                 if split_map_key not in st.session_state:
                     st.session_state[split_map_key] = {}
                 st.markdown(
-                    '<div style="background:#0c0c0c;border:1px solid #2a2a10;'
+                    '<div style="background:#0a0a0f;border:1px solid #2a2a10;'
                     'border-radius:10px;padding:12px 14px;margin:4px 0 8px">'
-                    '<div style="font-size:.75rem;color:#facc15;font-weight:700;'
+                    '<div style="font-size:.75rem;color:#f0a500;font-weight:700;'
                     'margin-bottom:8px">✂ Assign individual categories</div>',
                     unsafe_allow_html=True
                 )
@@ -1811,9 +1854,9 @@ with tab_review:
                     t_date_s = t_date_r.strftime("%-d %b") if pd.notna(t_date_r) else ""
                     tc1, tc2 = st.columns([2, 3])
                     tc1.markdown(
-                        f'<div style="font-size:.78rem;color:#888;padding:6px 0">'
+                        f'<div style="font-size:.78rem;color:#8888aa;padding:6px 0">'
                         f'Rs.{t_amt:,.0f} · {t_date_s}<br>'
-                        f'<span style="font-size:.7rem;color:#555">{t_note}</span></div>',
+                        f'<span style="font-size:.7rem;color:#444460">{t_note}</span></div>',
                         unsafe_allow_html=True
                     )
                     pre_idx = 0
@@ -1852,7 +1895,7 @@ with tab_review:
                     idxs = skipped[sk_copy["_merchant"] == m].index.tolist()
                     col_info, col_btn = st.columns([3, 1])
                     col_info.markdown(
-                        f'<div style="font-size:.85rem;color:#555;padding:6px 0">'
+                        f'<div style="font-size:.85rem;color:#444460;padding:6px 0">'
                         f'{m} · {c} txns · Rs.{t:,.0f}</div>',
                         unsafe_allow_html=True
                     )
@@ -1868,7 +1911,10 @@ with tab_review:
 # TAB 7 — MANAGE
 # ==============================================================================
 with tab_manage:
-    st.markdown("## Manage")
+    st.markdown(
+        "<span style='font-size:1.2rem;font-weight:700;color:#e8e8f0'>Manage</span>",
+        unsafe_allow_html=True
+    )
 
     # ── FINANCIAL SETTINGS ───────────────────────────────────────────────────
     st.markdown('<p class="sec-head">Financial Settings</p>', unsafe_allow_html=True)
@@ -1886,7 +1932,7 @@ with tab_manage:
             st.rerun()
     if current_income == 0:
         st.markdown(
-            '<div style="font-size:.76rem;color:#555;margin-top:-8px;margin-bottom:10px">'
+            '<div style="font-size:.76rem;color:#444460;margin-top:-8px;margin-bottom:10px">'
             'Set your monthly income to unlock the Savings Rate tile on Home.</div>',
             unsafe_allow_html=True
         )
@@ -1894,7 +1940,7 @@ with tab_manage:
     # ── EMAIL ALERT SETTINGS ─────────────────────────────────────────────────
     st.markdown('<p class="sec-head">Email Alerts</p>', unsafe_allow_html=True)
     st.markdown(
-        "<p style='font-size:.75rem;color:#555;margin-bottom:10px'>"
+        "<p style='font-size:.75rem;color:#444460;margin-bottom:10px'>"
         "These alerts are sent automatically by Google Apps Script. "
         "No action needed in the app — just configure the thresholds here.</p>",
         unsafe_allow_html=True
@@ -1918,7 +1964,7 @@ with tab_manage:
             st.toast("Alert settings saved!")
             st.rerun()
     st.markdown(
-        f'<div style="font-size:.74rem;color:#444;margin-top:-8px;margin-bottom:6px">'
+        f'<div style="font-size:.74rem;color:#444460;margin-top:-8px;margin-bottom:6px">'
         f'Budget alert: <b style="color:#ccc">{"On" if curr_alert else "Off"}</b> at {curr_thresh}% &nbsp;·&nbsp; '
         f'Weekly pulse: <b style="color:#ccc">{"On" if curr_pulse else "Off"}</b></div>',
         unsafe_allow_html=True
@@ -1947,12 +1993,12 @@ with tab_manage:
         last_stat = str(last.get("Status","")).strip().upper()
         lico      = "✅" if last_stat == "OK" else "❌"
         last_run_html = (
-            f'<div style="margin-top:10px;padding-top:10px;border-top:1px solid #1c1c1c;'
-            f'font-size:.76rem;color:#555">'
+            f'<div style="margin-top:10px;padding-top:10px;border-top:1px solid #2a2a3a;'
+            f'font-size:.76rem;color:#444460">'
             f'Last run: {lico} <span style="color:#ccc">{str(last.get("Run_Time","—")).strip()}</span>'
-            f' &nbsp;·&nbsp; <span style="color:#34d399">{int(last.get("Imported",0) or 0)} imported</span>'
-            f' &nbsp;·&nbsp; <span style="color:#facc15">{int(last.get("Pending",0) or 0)} pending</span>'
-            f' &nbsp;·&nbsp; <span style="color:#555">{int(last.get("Skipped",0) or 0)} skipped</span>'
+            f' &nbsp;·&nbsp; <span style="color:#2dce89">{int(last.get("Imported",0) or 0)} imported</span>'
+            f' &nbsp;·&nbsp; <span style="color:#f0a500">{int(last.get("Pending",0) or 0)} pending</span>'
+            f' &nbsp;·&nbsp; <span style="color:#444460">{int(last.get("Skipped",0) or 0)} skipped</span>'
             f'</div>'
         )
 
@@ -1964,9 +2010,10 @@ with tab_manage:
         f'<b style="color:#ccc">11:00 AM</b> and <b style="color:#ccc">11:00 PM</b> IST daily</div>'
         f'</div>'
         f'<div style="text-align:right;flex-shrink:0;margin-left:12px">'
-        f'<div style="font-size:.68rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">Next run</div>'
-        f'<div style="font-size:1rem;font-weight:700;color:#2563eb">{next_run_str}</div>'
-        f'<div style="font-size:.72rem;color:#555">in {countdown}</div>'
+        f'<div style="font-size:.68rem;color:#444460;text-transform:uppercase;'
+        f'letter-spacing:1px;margin-bottom:3px">Next run</div>'
+        f'<div style="font-size:1rem;font-weight:700;color:#f0a500">{next_run_str}</div>'
+        f'<div style="font-size:.72rem;color:#444460">in {countdown}</div>'
         f'</div></div>'
         f'{last_run_html}</div>',
         unsafe_allow_html=True
@@ -1974,8 +2021,8 @@ with tab_manage:
 
     if not apps_script_url:
         st.markdown(
-            '<div class="sync-card" style="border-color:#2a1f0a;border-left:3px solid #facc15">'
-            '<div class="sync-title" style="color:#facc15">⚠️ Manual sync not configured</div>'
+            '<div class="sync-card" style="border-color:#2a1f05;border-left:3px solid #f0a500">'
+            '<div class="sync-title" style="color:#f0a500">⚠️ Manual sync not configured</div>'
             '<div class="sync-meta" style="margin-top:4px">Auto-sync runs on schedule. '
             'Add <code>apps_script_url</code> to Streamlit secrets to enable Sync Now.</div></div>',
             unsafe_allow_html=True
@@ -2027,24 +2074,24 @@ with tab_manage:
                 f'<div class="log-row">'
                 f'<span class="{status_cls}">{"✅" if is_ok else "❌"}</span>'
                 f'<span class="log-dim" style="flex:1;margin:0 12px;font-size:.75rem">{run_time}</span>'
-                f'<span class="log-num" style="color:#34d399">{imp}↓</span>'
+                f'<span class="log-num" style="color:#2dce89">{imp}↓</span>'
                 f'<span class="log-dim" style="margin:0 8px">|</span>'
-                f'<span class="log-num" style="color:#facc15">{pnd}⚠</span>'
+                f'<span class="log-num" style="color:#f0a500">{pnd}⚠</span>'
                 f'<span class="log-dim" style="margin:0 8px">|</span>'
                 f'<span class="log-dim">{skp} skip</span></div>',
                 unsafe_allow_html=True
             )
             if not is_ok and notes:
                 st.markdown(
-                    f'<div style="font-size:.7rem;color:#f87171;padding:3px 14px 8px;'
-                    f'background:#140a0a;border-radius:6px;margin-bottom:2px">{notes}</div>',
+                    f'<div style="font-size:.7rem;color:#f75676;padding:3px 14px 8px;'
+                    f'background:#100505;border-radius:6px;margin-bottom:2px">{notes}</div>',
                     unsafe_allow_html=True
                 )
 
     # ── IMPORT RULES ─────────────────────────────────────────────────────────
     st.markdown('<p class="sec-head">Import Rules (Keyword → Category)</p>', unsafe_allow_html=True)
     st.markdown(
-        "<p style='font-size:.75rem;color:#555;margin-bottom:10px'>"
+        "<p style='font-size:.75rem;color:#444460;margin-bottom:10px'>"
         "New rules are auto-added when you approve merchants in Review. "
         "You can also add rules manually below.</p>",
         unsafe_allow_html=True
@@ -2065,10 +2112,14 @@ with tab_manage:
     if not st.session_state.import_rules.empty:
         for i, rrow in st.session_state.import_rules.iterrows():
             rc1, rc2, rc3 = st.columns([3, 3, 1])
-            rc1.markdown(f'<div class="catlist-row" style="color:#86efac">{rrow.get("Keyword","")}</div>',
-                         unsafe_allow_html=True)
-            rc2.markdown(f'<div class="catlist-row">→ {rrow.get("Category","")}</div>',
-                         unsafe_allow_html=True)
+            rc1.markdown(
+                f'<div class="catlist-row" style="color:#2dce89">{rrow.get("Keyword","")}</div>',
+                unsafe_allow_html=True
+            )
+            rc2.markdown(
+                f'<div class="catlist-row">→ {rrow.get("Category","")}</div>',
+                unsafe_allow_html=True
+            )
             irk = f"del_rule_{i}"
             if irk not in st.session_state:
                 st.session_state[irk] = False
@@ -2190,7 +2241,7 @@ with tab_manage:
 
 
 # ==============================================================================
-# 8. FAB — QUICK LOG
+# 11. FAB — QUICK LOG  (unchanged logic; amber colour)
 # ==============================================================================
 if "show_modal" not in st.session_state:
     st.session_state.show_modal = False
@@ -2257,9 +2308,9 @@ with stylable_container(key="fab", css_styles="""
 button {
     position: fixed; bottom: 32px; right: 24px;
     width: 60px; height: 60px; border-radius: 50%;
-    background: #2563eb; color: #fff; font-size: 34px;
+    background: #f0a500; color: #000; font-size: 34px;
     z-index: 9999; border: none;
-    box-shadow: 0 6px 24px rgba(37,99,235,0.45);
+    box-shadow: 0 6px 24px rgba(240,165,0,0.45);
 }
 """):
     if st.button("+", key="main_plus_btn"):
