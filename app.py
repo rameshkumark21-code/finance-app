@@ -502,7 +502,8 @@ def detect_anomalies(pending_df_a, expenses_df_a):
     stats = stats[stats["count"] >= 3]
     stats_map = stats["mean"].to_dict()
     anomalies = {}
-_rs = pending_df_a["Review_Status"].astype(str) if "Review_Status" in pending_df_a.columns else pd.Series("", index=pending_df_a.index) active = pending_df_a[_rs == "pending"].copy()
+_rs = pending_df_a["Review_Status"].astype(str) if "Review_Status" in pending_df_a.columns else pd.Series("", index=pending_df_a.index)
+    active = pending_df_a[_rs == "pending"].copy()
     if active.empty:
         return {}
     active["_m"] = active.apply(extract_merchant, axis=1)
