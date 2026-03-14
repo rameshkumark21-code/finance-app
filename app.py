@@ -1285,8 +1285,8 @@ with tab_search:
 cat_options = sorted([str(x) for x in df["Category"].dropna().unique()])
 sel_cats = fm1.multiselect("Categories", options=cat_options, placeholder="All categories")
 
-    mode_options = sorted([str(x) for x in df["Mode"].dropna().unique()])
-        sel_modes = fm2.multiselect("Modes", options=mode_options, placeholder="All modes")
+mode_options = sorted([str(x) for x in df["Mode"].dropna().unique()])
+sel_modes = fm2.multiselect("Modes", options=mode_options, placeholder="All modes")
         fa1, fa2  = st.columns(2)
         amt_min   = fa1.number_input("Min amount (Rs.)", min_value=0.0, value=0.0, step=100.0, key="sf_amin")
         amt_max   = fa2.number_input("Max amount (Rs.)", min_value=0.0,
