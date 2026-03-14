@@ -1277,8 +1277,16 @@ with tab_search:
         date_from = dr1.date_input("From", value=min_date, min_value=min_date, max_value=max_date, key="sf_from")
         date_to   = dr2.date_input("To",   value=today,   min_value=min_date, max_value=max_date, key="sf_to")
         fm1, fm2  = st.columns(2)
-        sel_cats  = fm1.multiselect("Categories", options=sorted(df["Category"].dropna().unique().tolist()), placeholder="All categories")
-        sel_modes = fm2.multiselect("Modes",      options=sorted(df["Mode"].dropna().unique().tolist()),     placeholder="All modes")
+# Convert all unique values to strings to allow sorting mixed types (int/str)
+cat_options = sorted([str(x) for x in df["Category"].dropna().unique()])
+sel_cats = fm1.multiselect("Categories", 
+                            options=cat_options, 
+                            placeholder="All categories")
+
+mode_options = sorted([str(x) for x in df["Mode"].dropna().unique()])
+sel_modes = fm2.multiselect("Modes", 
+                            options=mode_options, 
+                            placeholder="All modes")
         fa1, fa2  = st.columns(2)
         amt_min   = fa1.number_input("Min amount (Rs.)", min_value=0.0, value=0.0, step=100.0, key="sf_amin")
         amt_max   = fa2.number_input("Max amount (Rs.)", min_value=0.0,
@@ -1891,9 +1899,20 @@ with tab_manage:
         "No action needed in the app — just configure the thresholds here.</p>",
         unsafe_allow_html=True
     )
-    curr_thresh  = int(get_app_setting(KEY_ALERT_PCT, "70") or 70)
-    curr_alert   = get_app_setting(KEY_ALERT_ON,  "true").lower()  == "true"
-    curr_pulse   = get_app_setting(KEY_PULSE_ON,  "true").lower()  == "true"
+def safe_int(val, default):
+    try:
+        # Handles cases where "70.0" (float) is read as a string
+        return int(float(val))
+    except (ValueError, TypeError):
+        return default
+
+# Safely fetch settings with fallback defaults
+curr_thresh = safe_int(get_app_setting(KEY_ALERT_PCT, "70"), 70)
+curr_income = safe_int(get_app_setting(KEY_INCOME, "0"), 0)
+
+# Ensure values are cast to string before .lower() to prevent crashes
+curr_alert = str(get_app_setting(KEY_ALERT_ON, "true")).lower() == "true"
+curr_pulse = str(get_app_setting(KEY_PULSE_ON, "true")).lower() == "true"
     with st.form("alert_form"):
         new_thresh = st.slider(
             "Budget alert threshold — fires on 15th of month if category exceeds this %",
