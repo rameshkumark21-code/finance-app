@@ -374,13 +374,15 @@ def split_expense_row(idx, amt1, cat1, amt2, cat2):
             "Source_Account": orig.get("Source_Account",""),
             "Import_Source": orig.get("Import_Source",""), "Review_Status": orig.get("Review_Status",""),
         }
-        updated = st.session_state.df.drop(idx).reset_index(drop=True)
+        base = st.session_state.df.drop(idx).reset_index(drop=True)
+        r1_df = pd.DataFrame([row1])
+        r2_df = pd.DataFrame([row2])
+        r1_df["Date"] = pd.to_datetime(r1_df["Date"], errors="coerce")
+        r2_df["Date"] = pd.to_datetime(r2_df["Date"], errors="coerce")
+        updated = pd.concat([base, r1_df, r2_df], ignore_index=True)
         conn.update(worksheet="Expenses", data=updated)
         st.session_state.df = updated
         st.cache_data.clear()
-        save_expense(row1)
-        save_expense(row2)
-
 
 # ==============================================================================
 # 5. ANALYTICS UTILITY FUNCTIONS
@@ -500,7 +502,8 @@ def detect_anomalies(pending_df_a, expenses_df_a):
     stats = stats[stats["count"] >= 3]
     stats_map = stats["mean"].to_dict()
     anomalies = {}
-    active = pending_df_a[pending_df_a.get("Review_Status", pd.Series(dtype=str)).astype(str) == "pending"].copy()
+_rs = pending_df_a["Review_Status"].astype(str) if "Review_Status" in pending_df_a.columns else pd.Series("", index=pending_df_a.index)
+    active = pending_df_a[_rs == "pending"].copy()
     if active.empty:
         return {}
     active["_m"] = active.apply(extract_merchant, axis=1)
@@ -514,7 +517,8 @@ def detect_anomalies(pending_df_a, expenses_df_a):
 def detect_duplicates(pending_df_d):
     if pending_df_d.empty:
         return set()
-    active = pending_df_d[pending_df_d.get("Review_Status", pd.Series(dtype=str)).astype(str) == "pending"].copy()
+_rs = pending_df_d["Review_Status"].astype(str) if "Review_Status" in pending_df_d.columns else pd.Series("", index=pending_df_d.index)
+    active = pending_df_d[_rs == "pending"].copy()
     if active.empty:
         return set()
     active["_m"] = active.apply(extract_merchant, axis=1)
@@ -533,7 +537,8 @@ def detect_duplicates(pending_df_d):
 def detect_recurring_merchants(pending_df_r, expenses_df_r):
     if pending_df_r.empty or expenses_df_r.empty:
         return set()
-    active = pending_df_r[pending_df_r.get("Review_Status", pd.Series(dtype=str)).astype(str) == "pending"].copy()
+_rs = pending_df_r["Review_Status"].astype(str) if "Review_Status" in pending_df_r.columns else pd.Series("", index=pending_df_r.index)
+    active = pending_df_r[_rs == "pending"].copy()
     if active.empty:
         return set()
     active["_m"] = active.apply(extract_merchant, axis=1)
@@ -2201,64 +2206,64 @@ curr_pulse = str(get_app_setting(KEY_PULSE_ON, "true")).lower() == "true"
 if "show_modal" not in st.session_state:
     st.session_state.show_modal = False
 
+@st.dialog("Quick Log")
+def log_modal():
+    if "form_id" not in st.session_state:
+        st.session_state.form_id = 0
+    if "last_log" in st.session_state:
+        ll = st.session_state.last_log
+        st.success(f"Logged: Rs.{ll['amt']:,.0f} under {ll['cat']}")
+    live_cats  = sorted(st.session_state.cat_df["Category"].dropna().tolist()) \
+                 if not st.session_state.cat_df.empty else []
+    live_modes = st.session_state.modes_df["Mode"].dropna().tolist() \
+                 if not st.session_state.modes_df.empty else DEFAULT_MODES
+    fid = st.session_state.form_id
+    amt = st.number_input("Amount (Rs.)", min_value=0.0, value=None,
+                           placeholder="Enter amount", key=f"amt_{fid}")
+    if amt and amt > LARGE_AMT_WARNING:
+        st.warning(f"Rs.{amt:,.0f} is unusually large — double-check before saving.")
+    date_choice = st.radio("Date", ["Today","Yesterday","Pick a date"],
+                            horizontal=True, key=f"ds_{fid}")
+    if date_choice == "Today":
+        log_date = today
+    elif date_choice == "Yesterday":
+        log_date = today - timedelta(days=1)
+    else:
+        log_date = st.date_input("Pick date", value=today, key=f"date_{fid}")
+    ma, mb = st.columns(2)
+    cat  = ma.selectbox("Category", live_cats,  key=f"cat_{fid}")
+    mode = mb.selectbox("Mode",     live_modes, key=f"mode_{fid}")
+    note = st.text_input("Note (optional)", value="", placeholder="Merchant, tag...",
+                          key=f"note_{fid}")
+    col1, col2 = st.columns(2)
+    if col1.button("Save & Add More", type="primary", use_container_width=True):
+        if not amt or amt <= 0:
+            st.warning("Please enter a valid amount.")
+            return
+        now_ts   = datetime.now(TZ).timestamp()
+        last_ts  = st.session_state.get("last_save_ts", 0)
+        last_amt = st.session_state.get("last_save_amt", None)
+        last_cat = st.session_state.get("last_save_cat", None)
+        if (now_ts - last_ts) < 3 and last_amt == amt and last_cat == cat:
+            st.warning("Duplicate detected — same amount & category within 3 seconds.")
+            return
+        final_dt = f"{log_date.strftime('%Y-%m-%d')} {datetime.now(TZ).strftime('%H:%M:%S')}"
+        save_expense({"Date": final_dt, "Amount": amt, "Category": cat,
+                      "Mode": mode, "Note": note.strip()})
+        st.session_state.update({
+            "last_save_ts": now_ts, "last_save_amt": amt, "last_save_cat": cat,
+            "last_log": {"amt": amt, "cat": cat}, "form_id": fid + 1,
+        })
+        st.rerun()
+    if col2.button("Finish", use_container_width=True):
+        st.session_state.show_modal = False
+        for k in ["last_log","last_save_ts","last_save_amt","last_save_cat"]:
+            st.session_state.pop(k, None)
+        st.rerun()
+
 if st.session_state.show_modal:
-    @st.dialog("Quick Log")
-    def log_modal():
-        if "form_id" not in st.session_state:
-            st.session_state.form_id = 0
-        if "last_log" in st.session_state:
-            ll = st.session_state.last_log
-            st.success(f"Logged: Rs.{ll['amt']:,.0f} under {ll['cat']}")
-        live_cats  = sorted(st.session_state.cat_df["Category"].dropna().tolist()) \
-                     if not st.session_state.cat_df.empty else []
-        live_modes = st.session_state.modes_df["Mode"].dropna().tolist() \
-                     if not st.session_state.modes_df.empty else DEFAULT_MODES
-        fid = st.session_state.form_id
-        amt = st.number_input("Amount (Rs.)", min_value=0.0, value=None,
-                               placeholder="Enter amount", key=f"amt_{fid}")
-        if amt and amt > LARGE_AMT_WARNING:
-            st.warning(f"Rs.{amt:,.0f} is unusually large — double-check before saving.")
-        date_choice = st.radio("Date", ["Today","Yesterday","Pick a date"],
-                                horizontal=True, key=f"ds_{fid}")
-        if date_choice == "Today":
-            log_date = today
-        elif date_choice == "Yesterday":
-            log_date = today - timedelta(days=1)
-        else:
-            log_date = st.date_input("Pick date", value=today, key=f"date_{fid}")
-        ma, mb = st.columns(2)
-        cat  = ma.selectbox("Category", live_cats,  key=f"cat_{fid}")
-        mode = mb.selectbox("Mode",     live_modes, key=f"mode_{fid}")
-        note = st.text_input("Note (optional)", value="", placeholder="Merchant, tag...",
-                              key=f"note_{fid}")
-        col1, col2 = st.columns(2)
-        if col1.button("Save & Add More", type="primary", use_container_width=True):
-            if not amt or amt <= 0:
-                st.warning("Please enter a valid amount.")
-                return
-            now_ts   = datetime.now(TZ).timestamp()
-            last_ts  = st.session_state.get("last_save_ts", 0)
-            last_amt = st.session_state.get("last_save_amt", None)
-            last_cat = st.session_state.get("last_save_cat", None)
-            if (now_ts - last_ts) < 3 and last_amt == amt and last_cat == cat:
-                st.warning("Duplicate detected — same amount & category within 3 seconds.")
-                return
-            final_dt = f"{log_date.strftime('%Y-%m-%d')} {datetime.now(TZ).strftime('%H:%M:%S')}"
-            save_expense({"Date": final_dt, "Amount": amt, "Category": cat,
-                          "Mode": mode, "Note": note.strip()})
-            st.session_state.update({
-                "last_save_ts": now_ts, "last_save_amt": amt, "last_save_cat": cat,
-                "last_log": {"amt": amt, "cat": cat}, "form_id": fid + 1,
-            })
-            st.rerun()
-        if col2.button("Finish", use_container_width=True):
-            st.session_state.show_modal = False
-            for k in ["last_log","last_save_ts","last_save_amt","last_save_cat"]:
-                st.session_state.pop(k, None)
-            st.rerun()
-
     log_modal()
-
+    
 with stylable_container(key="fab", css_styles="""
 button {
     position: fixed; bottom: 32px; right: 24px;
