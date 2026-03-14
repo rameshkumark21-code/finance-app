@@ -188,6 +188,38 @@ _CSS = (
     ".stAlert{border-radius:10px!important}"
     "[data-testid='stMultiSelect'] span{background:#1a2035!important;color:#7c9eff!important;"
     "border-radius:5px!important;font-size:.74rem!important}"
+    # Period pills — radio styled as pill bar
+    "div[data-testid='stRadio']>div{display:flex;gap:6px;flex-wrap:wrap}"
+    "div[data-testid='stRadio'] label{background:#1a1a24;border:1px solid #2a2a3a;"
+    "border-radius:20px;padding:5px 14px;cursor:pointer;font-size:.78rem;color:#8888aa;"
+    "transition:all .15s}"
+    "div[data-testid='stRadio'] label:has(input:checked){background:rgba(240,165,0,.13);"
+    "border-color:#f0a500!important;color:#f0a500!important;font-weight:600}"
+    "div[data-testid='stRadio'] [data-testid='stWidgetLabel']{display:none}"
+    # Hero card
+    ".hero-card{background:#13131a;border:1px solid #2a2a3a;border-radius:16px;"
+    "padding:20px 20px;margin-bottom:10px}"
+    ".hero-amount{font-size:2.3rem;font-weight:700;letter-spacing:-1.5px;color:#e8e8f0;"
+    "font-family:'JetBrains Mono',monospace!important;margin-top:4px}"
+    ".hero-row{display:flex;justify-content:space-between;align-items:flex-end}"
+    ".hero-today-val{font-size:1.15rem;font-weight:700;color:#f0a500;text-align:right;"
+    "font-family:'JetBrains Mono',monospace!important}"
+    ".hero-today-lbl{font-size:.65rem;color:#444460;text-transform:uppercase;"
+    "letter-spacing:1px;text-align:right;margin-bottom:3px}"
+    # Monthly bar chart
+    ".monthly-bar-row{display:flex;align-items:center;margin-bottom:5px;gap:8px}"
+    ".monthly-bar-lbl{font-size:.7rem;color:#444460;width:44px;flex-shrink:0;text-align:right}"
+    ".monthly-bar-amt{font-size:.7rem;color:#f0a500;white-space:nowrap;margin-left:4px;"
+    "font-family:'JetBrains Mono',monospace!important}"
+    # Suggestion chip for review
+    ".sug-chip-row{background:rgba(240,165,0,.07);border:1px solid rgba(240,165,0,.25);"
+    "border-radius:10px;padding:8px 12px;margin-bottom:8px;display:flex;"
+    "align-items:center;justify-content:space-between}"
+    ".sug-chip-label{font-size:.72rem;color:#888;margin-bottom:2px}"
+    ".sug-chip-val{font-size:.88rem;font-weight:600;color:#f0a500}"
+    # Queue preview
+    ".queue-pill{display:inline-block;background:#0f0f15;border:1px solid #2a2a3a;"
+    "border-radius:20px;padding:3px 12px;font-size:.72rem;color:#444460;margin-bottom:10px}"
     "</style>"
 )
 st.markdown(_CSS, unsafe_allow_html=True)
@@ -979,19 +1011,29 @@ tab_home, tab_cat_view, tab_search, tab_rec, tab_analytics, tab_review, tab_mana
 # TAB 1 — HOME
 # ==============================================================================
 with tab_home:
-    hc1, hc2, hc3 = st.columns([5, 1, 1])
+    hc1, hc2, hc3 = st.columns([6, 1, 1])
     hc1.markdown(
         "<span style='font-size:1.4rem;font-weight:700;color:#e8e8f0;letter-spacing:-.5px'>"
         "Fin<span style='color:#f0a500'>Track</span></span>",
         unsafe_allow_html=True
     )
-    if hc2.button("Lock", use_container_width=True):
-        st.session_state.pin_unlocked = False
-        st.session_state.pin_input    = ""
-        st.session_state.pin_error    = ""
-        st.rerun()
-    if hc3.button("Refresh", use_container_width=True):
-        hard_refresh()
+    with stylable_container(key="lock_btn", css_styles="""
+        button{background:#1a1a24!important;border:1px solid #2a2a3a!important;
+        border-radius:8px!important;color:#888!important;font-size:.9rem!important;
+        padding:0 6px!important}
+    """):
+        if hc2.button("🔒", key="lock_icon", use_container_width=True):
+            st.session_state.pin_unlocked = False
+            st.session_state.pin_input    = ""
+            st.session_state.pin_error    = ""
+            st.rerun()
+    with stylable_container(key="refresh_btn", css_styles="""
+        button{background:#1a1a24!important;border:1px solid #2a2a3a!important;
+        border-radius:8px!important;color:#888!important;font-size:.9rem!important;
+        padding:0 6px!important}
+    """):
+        if hc3.button("↻", key="refresh_icon", use_container_width=True):
+            hard_refresh()
 
     if df.empty:
         st.markdown(
@@ -1003,9 +1045,12 @@ with tab_home:
         all_months = sorted(
             df["Date"].dropna().dt.to_period("M").unique().astype(str).tolist(), reverse=True
         )
-        sel_month  = st.selectbox("Period", all_months, index=0, label_visibility="collapsed")
-        sel_period = pd.Period(sel_month, freq="M")
-        prev_period= sel_period - 1
+        # ── Period pills (last 6 months) ──────────────────────────────────────
+        pill_months = all_months[:6]
+        sel_month   = st.radio("home_period", pill_months, horizontal=True,
+                               label_visibility="collapsed", index=0)
+        sel_period  = pd.Period(sel_month, freq="M")
+        prev_period = sel_period - 1
         filt = df[df["Date"].dt.to_period("M") == sel_period].copy()
         prev = df[df["Date"].dt.to_period("M") == prev_period].copy()
 
@@ -1020,28 +1065,27 @@ with tab_home:
         else:
             trend_html = '<span class="trend-flat">First month on record</span>'
 
-        # ── Tile row: Today spend + Monthly total ─────────────────────────────
-        tc1, tc2 = st.columns(2)
+        # ── Hero balance card ──────────────────────────────────────────────────
         if sel_month == curr_ym:
             today_total = df[df["Date"].dt.date == today]["Amount"].sum()
-            tc1.markdown(
-                f'<div class="tile"><div class="tile-accent" style="background:#f0a500"></div>'
-                f'<div class="tile-label">Spent Today</div>'
-                f'<div class="tile-value">Rs.{today_total:,.0f}</div></div>',
-                unsafe_allow_html=True
+            today_block = (
+                f'<div>'
+                f'<div class="hero-today-lbl">Today</div>'
+                f'<div class="hero-today-val">Rs.{today_total:,.0f}</div>'
+                f'</div>'
             )
         else:
-            tc1.markdown(
-                f'<div class="tile"><div class="tile-accent" style="background:#2a2a3a"></div>'
-                f'<div class="tile-label">Period</div>'
-                f'<div class="tile-value" style="font-size:1.1rem;padding-top:6px">{sel_month}</div></div>',
-                unsafe_allow_html=True
-            )
-        tc2.markdown(
-            f'<div class="tile"><div class="tile-accent" style="background:#5e72e4"></div>'
-            f'<div class="tile-label">Total Spend</div>'
-            f'<div class="tile-value">Rs.{month_total:,.0f}</div>'
-            f'<div class="tile-sub">{trend_html}</div></div>',
+            today_block = ""
+        st.markdown(
+            f'<div class="hero-card">'
+            f'<div style="font-size:.68rem;text-transform:uppercase;letter-spacing:1.4px;'
+            f'color:#444460;font-weight:700">Total Spend</div>'
+            f'<div class="hero-row">'
+            f'<div><div class="hero-amount">Rs.{month_total:,.0f}</div>'
+            f'<div style="font-size:.78rem;margin-top:6px">{trend_html}</div></div>'
+            f'{today_block}'
+            f'</div>'
+            f'</div>',
             unsafe_allow_html=True
         )
 
@@ -1493,15 +1537,18 @@ with tab_analytics:
         all_months_a = sorted(
             df["Date"].dropna().dt.to_period("M").unique().astype(str).tolist(), reverse=True
         )
-        an_opts = ["Last 3 months","Last 6 months","Last 12 months"] + all_months_a
-        an_sel  = st.selectbox("Analyse period", an_opts, index=0, label_visibility="collapsed")
+        # ── Period pills ──────────────────────────────────────────────────────
+        an_range_opts = ["3M", "6M", "12M"]
+        an_pill_opts  = an_range_opts + all_months_a[:3]
+        an_sel = st.radio("analytics_period", an_pill_opts, horizontal=True,
+                          label_visibility="collapsed", index=0)
 
         now_per = pd.Period(curr_ym, freq="M")
-        if an_sel == "Last 3 months":
+        if an_sel == "3M":
             an_df = df[df["Date"].dt.to_period("M") > (now_per - 3)]
-        elif an_sel == "Last 6 months":
+        elif an_sel == "6M":
             an_df = df[df["Date"].dt.to_period("M") > (now_per - 6)]
-        elif an_sel == "Last 12 months":
+        elif an_sel == "12M":
             an_df = df[df["Date"].dt.to_period("M") > (now_per - 12)]
         else:
             an_period = pd.Period(an_sel, freq="M")
@@ -1516,13 +1563,42 @@ with tab_analytics:
         st.markdown(build_heatmap_html(df), unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
+        # ── MONTHLY SPEND BAR CHART ───────────────────────────────────────────
+        if not an_df.empty:
+            mo_totals = (
+                an_df.groupby(an_df["Date"].dt.to_period("M"))["Amount"]
+                .sum()
+                .sort_index()
+            )
+            if len(mo_totals) > 1:
+                mx_mo = float(mo_totals.max()) or 1.0
+                bars_html = ""
+                for period, val in mo_totals.items():
+                    bar_pct = val / mx_mo * 100
+                    bars_html += (
+                        f'<div class="monthly-bar-row">'
+                        f'<span class="monthly-bar-lbl">{str(period)[-5:]}</span>'
+                        f'<div style="flex:1;background:#1a1a24;border-radius:4px;height:14px;overflow:hidden">'
+                        f'<div style="width:{bar_pct:.1f}%;height:14px;border-radius:4px;background:#f0a500"></div>'
+                        f'</div>'
+                        f'<span class="monthly-bar-amt">Rs.{val:,.0f}</span>'
+                        f'</div>'
+                    )
+                st.markdown(
+                    f'<div class="analytics-card">'
+                    f'<div class="analytics-title">Monthly Spend</div>'
+                    f'{bars_html}'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
+
         # ── BUDGET vs ACTUAL ──────────────────────────────────────────────────
         budgets_a = settings_df[
             settings_df["Budget"].notna() &
             (settings_df["Budget"].astype(str).str.strip() != "")
         ].copy() if not settings_df.empty else pd.DataFrame()
 
-        if not budgets_a.empty and an_sel in all_months_a:
+        if not budgets_a.empty and an_sel not in ("3M", "6M", "12M"):
             st.markdown('<div class="analytics-card">', unsafe_allow_html=True)
             st.markdown('<div class="analytics-title">Budget vs Actual</div>', unsafe_allow_html=True)
             for _, brow in budgets_a.iterrows():
@@ -1550,7 +1626,7 @@ with tab_analytics:
             st.markdown('</div>', unsafe_allow_html=True)
 
         # ── CATEGORY TREND vs 3-MONTH AVG ─────────────────────────────────────
-        if an_sel in all_months_a:
+        if an_sel not in ("3M", "6M", "12M"):
             an_period   = pd.Period(an_sel, freq="M")
             prev3_start = an_period - 3
             prev3_df    = df[(df["Date"].dt.to_period("M") > prev3_start) &
@@ -1719,7 +1795,12 @@ with tab_review:
                 st.toast(f"Approved {count_approved} transactions!")
                 st.rerun()
 
-        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+        # ── Queue preview ─────────────────────────────────────────────────────
+        st.markdown(
+            f'<div class="queue-pill">📋 {n_groups} merchant group{"s" if n_groups != 1 else ""} in queue · {n_pend} transaction{"s" if n_pend != 1 else ""}</div>',
+            unsafe_allow_html=True
+        )
+        st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
 
         for _, grp_row in merchant_list.iterrows():
             merchant    = grp_row["_merchant"]
@@ -1772,6 +1853,17 @@ with tab_review:
 
             grp_key = merchant.replace(" ","_").replace(".","")[:30]
 
+            # ── Suggestion chip ───────────────────────────────────────────────
+            if sug_cat and sug_cat not in ("", "nan"):
+                st.markdown(
+                    f'<div class="sug-chip-row">'
+                    f'<div><div class="sug-chip-label">💡 Suggested category</div>'
+                    f'<div class="sug-chip-val">{sug_cat}</div></div>'
+                    f'<div style="font-size:.68rem;color:#444460">pre-selected below</div>'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
+
             default_opts = ["-- New category --"] + live_categories
             if sug_cat and sug_cat in live_categories:
                 default_idx = live_categories.index(sug_cat) + 1
@@ -1799,6 +1891,13 @@ with tab_review:
             else:
                 final_cat = sel_cat
 
+            # ── Remember rule toggle ──────────────────────────────────────────
+            rem_key = f"rem_{grp_key}"
+            remember_rule = st.toggle(
+                f"Remember rule for {merchant[:25]}",
+                value=True, key=rem_key
+            )
+
             col_approve, col_skip, col_split_btn = st.columns(3)
 
             if col_approve.button(
@@ -1809,7 +1908,7 @@ with tab_review:
                     approve_merchant_group(
                         grp_indices, final_cat,
                         create_new_cat=is_new_cat,
-                        merchant_name=merchant
+                        merchant_name=merchant if remember_rule else ""
                     )
                     st.toast(f"Approved {count} · {merchant} → {final_cat}")
                     if grp_recur:
