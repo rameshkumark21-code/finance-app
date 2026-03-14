@@ -1269,8 +1269,7 @@ with tab_search:
                     '<div class="msg">No data to search yet.</div></div>', unsafe_allow_html=True)
     else:
         st.markdown('<p class="sec-head">Filters</p>', unsafe_allow_html=True)
-        keyword = st.text_input("Keyword", placeholder="Search across category, note, mode...",
-                                label_visibility="collapsed")
+        keyword = st.text_input("Keyword", placeholder="Search across category, note, mode...", label_visibility="collapsed")
         dr1, dr2 = st.columns(2)
         min_date  = df["Date"].min().date() if not df.empty else date(2020, 1, 1)
         max_date  = max(df["Date"].max().date() if not df.empty else today, today)
@@ -1279,9 +1278,7 @@ with tab_search:
         fm1, fm2  = st.columns(2)
 # Convert all unique values to strings to allow sorting mixed types (int/str)
 cat_options = sorted([str(x) for x in df["Category"].dropna().unique()])
-sel_cats = fm1.multiselect("Categories", 
-                            options=cat_options, 
-                            placeholder="All categories")
+sel_cats = fm1.multiselect("Categories", options=cat_options, placeholder="All categories")
 
 mode_options = sorted([str(x) for x in df["Mode"].dropna().unique()])
 sel_modes = fm2.multiselect("Modes", options=mode_options, placeholder="All modes")
