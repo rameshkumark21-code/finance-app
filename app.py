@@ -517,7 +517,7 @@ def detect_anomalies(pending_df_a, expenses_df_a):
 def detect_duplicates(pending_df_d):
     if pending_df_d.empty:
         return set()
-_rs = pending_df_d["Review_Status"].astype(str) if "Review_Status" in pending_df_d.columns else pd.Series("", index=pending_df_d.index)
+    _rs = pending_df_d["Review_Status"].astype(str) if "Review_Status" in pending_df_d.columns else pd.Series("", index=pending_df_d.index)
     active = pending_df_d[_rs == "pending"].copy()
     if active.empty:
         return set()
