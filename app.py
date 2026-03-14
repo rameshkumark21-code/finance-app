@@ -537,7 +537,7 @@ def detect_duplicates(pending_df_d):
 def detect_recurring_merchants(pending_df_r, expenses_df_r):
     if pending_df_r.empty or expenses_df_r.empty:
         return set()
-_rs = pending_df_r["Review_Status"].astype(str) if "Review_Status" in pending_df_r.columns else pd.Series("", index=pending_df_r.index)
+    _rs = pending_df_r["Review_Status"].astype(str) if "Review_Status" in pending_df_r.columns else pd.Series("", index=pending_df_r.index)
     active = pending_df_r[_rs == "pending"].copy()
     if active.empty:
         return set()
