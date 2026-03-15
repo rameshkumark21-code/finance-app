@@ -29,48 +29,251 @@ KEY_PULSE_ON        = "Weekly_Pulse_Enabled"
 # ==============================================================================
 st.set_page_config(page_title="FinTrack Pro", page_icon="₹", layout="centered")
 
-# ==============================================================================
-# 2. UPDATED MOBILE-FIRST CSS
-# ==============================================================================
-_CSS = """
-<style>
-    /* Prevent horizontal scrolling on mobile */
-    .stApp { max-width: 100vw; overflow-x: hidden; }
-
-    /* Force all columns to stack vertically on mobile */
-    @media (max-width: 768px) {
-        [data-testid="column"] {
-            width: 100% !important;
-            flex: 1 1 100% !important;
-            min-width: 100% !important;
-            margin-bottom: 15px;
-        }
-        /* Mobile-friendly font sizes */
-        h1 { font-size: 1.6rem !important; }
-        .stMetric label { font-size: 0.8rem !important; }
-        .stMetric div { font-size: 1.2rem !important; }
-    }
-
-    /* Responsive Nav Wrap */
-    .nav-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        justify-content: flex-start;
-        padding-bottom: 20px;
-    }
-</style>
-"""
+_CSS = (
+    "<link href='https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700"
+    "&family=JetBrains+Mono:wght@400;500&display=swap' rel='stylesheet'>"
+    "<style>"
+    "html,body,*{font-family:'Sora',sans-serif!important}"
+    ".stApp{background-color:#0a0a0f;color:#e8e8f0}"
+    "[data-testid='stHeader']{background:transparent}"
+    "h1,h2,h3,h4{letter-spacing:-0.3px;color:#e8e8f0}"
+    # Tighten Streamlit block gap globally
+    "[data-testid='stVerticalBlock']>div{gap:0!important}"
+    "div.block-container{padding-top:0.6rem!important;padding-bottom:4rem!important;"
+    "padding-left:1rem!important;padding-right:1rem!important}"
+    # ── Bottom navigation bar ─────────────────────────────────────────────
+    ".bnav-wrap{position:fixed;bottom:0;left:0;right:0;z-index:9998;"
+    "background:#0d0d14;border-top:1px solid #222230;height:60px;"
+    "display:flex;align-items:stretch}"
+    ".bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;"
+    "justify-content:center;gap:1px;padding:5px 2px;font-size:.57rem;"
+    "font-weight:500;color:#44445a;letter-spacing:.2px;text-transform:uppercase;cursor:pointer}"
+    ".bnav-item.active{color:#f0a500}"
+    ".bnav-icon{font-size:1.22rem;line-height:1.15}"
+    # ── MyMoney-style summary / balance header ─────────────────────────────
+    ".mm-header{background:#13131a;border:1px solid #2a2a3a;border-radius:14px;"
+    "padding:12px 16px;margin-bottom:10px}"
+    ".mm-balance{text-align:center;font-size:1rem;font-weight:600;color:#888;"
+    "letter-spacing:.3px;margin-bottom:8px}"
+    ".mm-balance b{color:#e8e8f0;font-family:'JetBrains Mono',monospace!important}"
+    ".mm-stats{display:flex;justify-content:center;gap:36px}"
+    ".mm-stat{text-align:center}"
+    ".mm-stat-lbl{font-size:.59rem;text-transform:uppercase;letter-spacing:1.2px;"
+    "color:#444460;font-weight:700;margin-bottom:2px}"
+    ".mm-stat-val{font-size:.88rem;font-weight:700;"
+    "font-family:'JetBrains Mono',monospace!important}"
+    ".mm-exp{color:#f75676}"
+    ".mm-inc{color:#2dce89}"
+    # Core tiles — tighter
+    ".tile{background:#13131a;border:1px solid #2a2a3a;border-radius:12px;padding:10px 14px;margin-bottom:6px}"
+    ".tile-accent{height:3px;border-radius:2px 2px 0 0;margin-bottom:8px}"
+    ".tile-label{color:#444460;font-size:.65rem;text-transform:uppercase;letter-spacing:1.4px;font-weight:600}"
+    ".tile-value{font-size:1.5rem;font-weight:700;margin-top:2px;letter-spacing:-.8px;color:#e8e8f0;"
+    "font-family:'JetBrains Mono',monospace!important}"
+    ".tile-sub{font-size:.75rem;margin-top:2px}"
+    ".trend-up{color:#f75676;font-weight:600}"
+    ".trend-down{color:#2dce89;font-weight:600}"
+    ".trend-flat{color:#444460}"
+    # Progress bars — thinner
+    ".prog-wrap{margin-top:6px}"
+    ".prog-track{background:#22222f;border-radius:4px;height:5px;overflow:hidden}"
+    ".prog-fill{height:5px;border-radius:4px;transition:width .6s ease}"
+    ".prog-meta{display:flex;justify-content:space-between;margin-top:3px;font-size:.65rem;color:#444460}"
+    # Section headings — less vertical space
+    ".sec-head{font-size:.63rem;text-transform:uppercase;letter-spacing:1.6px;color:#444460;"
+    "font-weight:700;margin:10px 0 5px}"
+    # Category rows — tighter
+    ".cat-row{display:flex;align-items:center;justify-content:space-between;"
+    "padding:6px 10px;border-radius:8px;margin-bottom:3px;background:#13131a;border:1px solid #1e1e28}"
+    ".cat-name{font-size:.82rem;font-weight:500;color:#ccc;flex:1}"
+    ".cat-bar-wrap{width:52px;height:3px;background:#22222f;border-radius:2px;margin:0 8px;flex-shrink:0}"
+    ".cat-bar-fill{height:3px;border-radius:2px;background:#f0a500}"
+    ".cat-amt{font-size:.82rem;font-weight:600;color:#e8e8f0;white-space:nowrap;"
+    "font-family:'JetBrains Mono',monospace!important}"
+    # Budget rows — compact inline
+    ".budget-row{padding:6px 10px;border-radius:8px;background:#13131a;"
+    "border:1px solid #1e1e28;margin-bottom:3px}"
+    ".budget-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}"
+    ".budget-name{font-size:.8rem;font-weight:600;color:#ccc}"
+    ".budget-nums{font-size:.72rem;color:#444460;font-family:'JetBrains Mono',monospace!important}"
+    # Recurring cards
+    ".rec-card{background:#13131a;border:1px solid #2a2a3a;border-radius:10px;"
+    "padding:10px 12px;margin-bottom:4px}"
+    ".rec-fired{border-left:3px solid #2dce89}"
+    ".rec-pending{border-left:3px solid #f0a500}"
+    ".rec-title{font-size:.88rem;font-weight:600;color:#e0e0e0}"
+    ".rec-meta{font-size:.72rem;color:#444460;margin-top:2px;font-family:'JetBrains Mono',monospace!important}"
+    # Category list rows
+    ".catlist-row{font-size:.86rem;font-weight:500;color:#ccc;padding:7px 0;border-bottom:1px solid #1a1a24}"
+    # Empty states
+    ".empty-box{text-align:center;padding:32px 20px;color:#444460}"
+    ".empty-box .ico{font-size:1.8rem;margin-bottom:8px}"
+    ".empty-box .msg{font-size:.84rem;line-height:1.5}"
+    # Category hero
+    ".cat-hero{background:#13131a;border:1px solid #2a2a3a;border-radius:12px;"
+    "padding:12px 14px;margin-bottom:5px}"
+    ".cat-hero-name{font-size:.95rem;font-weight:700;color:#e8e8f0}"
+    ".cat-hero-meta{font-size:.7rem;color:#444460;margin-top:2px}"
+    ".cat-hero-amt{font-size:1.1rem;font-weight:700;color:#f0a500;white-space:nowrap;"
+    "font-family:'JetBrains Mono',monospace!important}"
+    # Search cards
+    ".srch-card{background:#13131a;border:1px solid #2a2a3a;border-radius:10px;"
+    "padding:10px 13px;margin-bottom:4px}"
+    ".srch-top{display:flex;justify-content:space-between;align-items:center}"
+    ".srch-cat{font-size:.86rem;font-weight:700;color:#e0e0e0}"
+    ".srch-amt{font-size:.9rem;font-weight:700;color:#f0a500;white-space:nowrap;"
+    "font-family:'JetBrains Mono',monospace!important}"
+    ".srch-meta{font-size:.7rem;color:#444460;margin-top:2px}"
+    ".srch-note{font-size:.72rem;color:#8888aa;margin-top:2px;font-style:italic}"
+    # Chips / badges
+    ".chip{display:inline-block;background:#1a2035;color:#7c9eff;border-radius:5px;"
+    "font-size:.63rem;font-weight:600;padding:1px 5px;margin-right:3px;letter-spacing:.3px}"
+    # Review cards
+    ".review-card{background:#13131a;border:1px solid #2a1f05;border-left:3px solid #f0a500;"
+    "border-radius:12px;padding:12px 14px;margin-bottom:8px}"
+    ".review-card-amt{font-size:1.1rem;font-weight:700;color:#e8e8f0;letter-spacing:-.5px;"
+    "font-family:'JetBrains Mono',monospace!important}"
+    ".review-card-txn{font-size:.86rem;font-weight:500;color:#ccc;margin-top:3px}"
+    ".review-card-meta{font-size:.7rem;color:#444460;margin-top:4px;line-height:1.5}"
+    ".review-badge-remarks{display:inline-block;background:#0f2a1a;color:#86efac;"
+    "border-radius:5px;font-size:.63rem;font-weight:600;padding:1px 6px;margin-right:3px}"
+    ".review-badge-tags{display:inline-block;background:#0f1a2a;color:#93c5fd;"
+    "border-radius:5px;font-size:.63rem;font-weight:600;padding:1px 6px;margin-right:3px}"
+    ".review-badge-sug{display:inline-block;background:#2a1f05;color:#f0a500;"
+    "border-radius:5px;font-size:.63rem;font-weight:600;padding:1px 6px}"
+    # Intel badges
+    ".badge-anomaly{display:inline-block;background:#1f0505;color:#f75676;"
+    "border-radius:5px;font-size:.63rem;font-weight:700;padding:1px 6px;margin-right:3px}"
+    ".badge-dup{display:inline-block;background:#1f1005;color:#fb923c;"
+    "border-radius:5px;font-size:.63rem;font-weight:700;padding:1px 6px;margin-right:3px}"
+    ".badge-recur{display:inline-block;background:#050f1a;color:#60a5fa;"
+    "border-radius:5px;font-size:.63rem;font-weight:700;padding:1px 6px;margin-right:3px}"
+    ".badge-intel{display:inline-block;background:#0a1a0a;color:#4ade80;"
+    "border-radius:5px;font-size:.63rem;font-weight:700;padding:1px 6px;margin-right:3px}"
+    # Anomaly panel — tighter
+    ".anomaly-panel{background:#100505;border:1px solid #200a0a;border-left:3px solid #f75676;"
+    "border-radius:10px;padding:8px 12px;margin-bottom:8px}"
+    ".anomaly-panel-title{font-size:.68rem;font-weight:700;color:#f75676;margin-bottom:5px;"
+    "text-transform:uppercase;letter-spacing:1px}"
+    ".anomaly-item{display:flex;justify-content:space-between;align-items:center;"
+    "padding:3px 0;font-size:.75rem;border-bottom:1px solid #180808}"
+    # ImportLog table
+    ".log-row{display:flex;justify-content:space-between;align-items:center;"
+    "padding:6px 12px;border-bottom:1px solid #1a1a24;font-size:.76rem}"
+    ".log-ok{color:#2dce89;font-weight:600}"
+    ".log-err{color:#f75676;font-weight:600}"
+    ".log-num{color:#e8e8f0;font-weight:600;font-family:'JetBrains Mono',monospace!important}"
+    ".log-dim{color:#444460}"
+    # Sync panel
+    ".sync-card{background:#13131a;border:1px solid #2a2a3a;border-radius:12px;"
+    "padding:14px 16px;margin-bottom:10px}"
+    ".sync-title{font-size:.9rem;font-weight:700;color:#e8e8f0;margin-bottom:4px}"
+    ".sync-meta{font-size:.74rem;color:#444460}"
+    # Filter panel
+    ".filter-panel{background:#0f0f15;border:1px solid #2a2a3a;border-radius:12px;"
+    "padding:12px 14px;margin-bottom:10px}"
+    # Analytics cards
+    ".analytics-card{background:#13131a;border:1px solid #2a2a3a;border-radius:12px;"
+    "padding:14px 16px;margin-bottom:10px}"
+    ".analytics-title{font-size:.63rem;text-transform:uppercase;letter-spacing:1.4px;"
+    "color:#444460;font-weight:700;margin-bottom:10px}"
+    ".heatmap-wrap{overflow-x:auto;padding:2px 0}"
+    ".dow-row{display:flex;align-items:center;margin-bottom:4px;gap:6px}"
+    ".dow-label{font-size:.68rem;color:#444460;width:26px;flex-shrink:0;text-align:right}"
+    ".dow-bar-fill{height:13px;border-radius:3px;min-width:3px}"
+    ".dow-bar-amt{font-size:.65rem;color:#444460;white-space:nowrap;"
+    "font-family:'JetBrains Mono',monospace!important}"
+    ".merchant-rank-row{display:flex;align-items:center;justify-content:space-between;"
+    "padding:6px 0;border-bottom:1px solid #1a1a24}"
+    ".merchant-rank-name{font-size:.8rem;color:#ccc;flex:1}"
+    ".merchant-rank-bar{height:3px;border-radius:2px;background:#f0a500;margin:0 8px;flex-shrink:0}"
+    ".merchant-rank-amt{font-size:.82rem;font-weight:600;color:#f0a500;white-space:nowrap;"
+    "font-family:'JetBrains Mono',monospace!important}"
+    # Split form
+    ".split-row{background:#0a0a05;border:1px solid #2a2a10;border-left:2px solid #f0a500;"
+    "border-radius:8px;padding:8px 12px;margin-bottom:6px}"
+    # Dialog
+    "div[data-testid='stDialog']{background:#0f0f15!important;border:1px solid #2a2a3a!important;"
+    "border-radius:18px!important}"
+    "[data-testid='stTextInput'] input,[data-testid='stNumberInput'] input"
+    "{background:#1a1a24!important;border:1px solid #2a2a3a!important;"
+    "border-radius:8px!important;color:#e8e8f0!important}"
+    "[data-testid='stSelectbox']>div>div{background:#1a1a24!important;"
+    "border:1px solid #2a2a3a!important;border-radius:8px!important}"
+    "[data-testid='stExpander']{background:#13131a!important;border:1px solid #2a2a3a!important;"
+    "border-radius:8px!important;margin-bottom:4px}"
+    "[data-testid='stExpander'] summary{font-size:.83rem!important;font-weight:500!important;"
+    "color:#ccc!important}"
+    "[data-testid='stForm']{border:1px solid #2a2a3a!important;border-radius:10px!important;"
+    "padding:10px!important;background:#0f0f15!important}"
+    ".stAlert{border-radius:8px!important}"
+    "[data-testid='stMultiSelect'] span{background:#1a2035!important;color:#7c9eff!important;"
+    "border-radius:4px!important;font-size:.7rem!important}"
+    # Hero card — tighter
+    ".hero-card{background:#13131a;border:1px solid #2a2a3a;border-radius:14px;"
+    "padding:14px 16px;margin-bottom:8px}"
+    ".hero-amount{font-size:2rem;font-weight:700;letter-spacing:-1.2px;color:#e8e8f0;"
+    "font-family:'JetBrains Mono',monospace!important;margin-top:2px}"
+    ".hero-row{display:flex;justify-content:space-between;align-items:flex-end}"
+    ".hero-today-val{font-size:1.05rem;font-weight:700;color:#f0a500;text-align:right;"
+    "font-family:'JetBrains Mono',monospace!important}"
+    ".hero-today-lbl{font-size:.6rem;color:#444460;text-transform:uppercase;"
+    "letter-spacing:1px;text-align:right;margin-bottom:2px}"
+    # Mini-tile pair (savings + hdfc side by side)
+    ".mini-tile{background:#13131a;border:1px solid #1e1e28;border-radius:10px;"
+    "padding:8px 10px}"
+    ".mini-tile-lbl{font-size:.6rem;color:#444460;text-transform:uppercase;letter-spacing:1px;font-weight:600}"
+    ".mini-tile-val{font-size:1rem;font-weight:700;letter-spacing:-.5px;"
+    "font-family:'JetBrains Mono',monospace!important;margin-top:1px}"
+    ".mini-tile-sub{font-size:.65rem;color:#444460;margin-top:2px}"
+    # Monthly bar chart
+    ".monthly-bar-row{display:flex;align-items:center;margin-bottom:4px;gap:6px}"
+    ".monthly-bar-lbl{font-size:.65rem;color:#444460;width:40px;flex-shrink:0;text-align:right}"
+    ".monthly-bar-amt{font-size:.65rem;color:#f0a500;white-space:nowrap;margin-left:3px;"
+    "font-family:'JetBrains Mono',monospace!important}"
+    # Suggestion chip for review
+    ".sug-chip-row{background:rgba(240,165,0,.07);border:1px solid rgba(240,165,0,.2);"
+    "border-radius:8px;padding:6px 10px;margin-bottom:6px;display:flex;"
+    "align-items:center;justify-content:space-between}"
+    ".sug-chip-label{font-size:.65rem;color:#888;margin-bottom:1px}"
+    ".sug-chip-val{font-size:.84rem;font-weight:600;color:#f0a500}"
+    # Queue preview
+    ".queue-pill{display:inline-block;background:#0f0f15;border:1px solid #2a2a3a;"
+    "border-radius:20px;padding:2px 10px;font-size:.68rem;color:#444460;margin-bottom:8px}"
+    # Compact txn rows
+    ".txn-row{display:flex;align-items:center;justify-content:space-between;"
+    "padding:7px 0;border-bottom:1px solid #1a1a24}"
+    ".txn-amt{font-size:.9rem;font-weight:700;color:#e8e8f0;white-space:nowrap;"
+    "font-family:'JetBrains Mono',monospace!important;min-width:70px}"
+    ".txn-cat{font-size:.8rem;font-weight:600;color:#ccc}"
+    ".txn-meta{font-size:.65rem;color:#444460;margin-top:1px}"
+    ".txn-note{font-size:.65rem;color:#8888aa;font-style:italic}"
+    "</style>"
+)
 st.markdown(_CSS, unsafe_allow_html=True)
 
-# ── View mode ───────────────────────────────────────────────────────────────
+# ── Mobile / Desktop view mode ──────────────────────────────────────────────
 if "view_mode" not in st.session_state:
     st.session_state.view_mode = "mobile"
+
 if st.session_state.view_mode == "desktop":
-    st.markdown('<style>div.block-container{max-width:820px!important;'
-                'margin:0 auto!important;padding-left:1.5rem!important;'
-                'padding-right:1.5rem!important}</style>',
-                unsafe_allow_html=True)
+    st.markdown("""<style>
+    div.block-container{padding-left:2rem!important;padding-right:2rem!important;
+        max-width:860px!important;margin:0 auto!important}
+    .hero-amount{font-size:2.6rem!important}
+    .tile-value{font-size:1.8rem!important}
+    .cat-row{padding:9px 14px!important;margin-bottom:5px!important}
+    .cat-name{font-size:.9rem!important}
+    .cat-amt{font-size:.9rem!important}
+    .budget-row{padding:10px 14px!important;margin-bottom:6px!important}
+    .sec-head{margin:16px 0 8px!important;font-size:.68rem!important}
+    .txn-cat{font-size:.88rem!important}
+    .txn-meta{font-size:.72rem!important}
+    .rec-card{padding:12px 14px!important;margin-bottom:6px!important}
+    .analytics-card{padding:16px 18px!important}
+    .mini-tile{padding:12px 14px!important}
+    .mini-tile-val{font-size:1.2rem!important}
+    </style>""", unsafe_allow_html=True)
 
 
 # ==============================================================================
@@ -849,83 +1052,62 @@ if not st.session_state.pending_df.empty and "Review_Status" in st.session_state
 review_label = f"⚠️ {pending_count}" if pending_count > 0 else "Review"
 
 # ══════════════════════════════════════════════════════════════════════════════
-# PAGE ROUTING + GLOBAL HEADER + NAV PILLS
+# BOTTOM-NAV ROUTING  (replaces st.tabs)
 # ══════════════════════════════════════════════════════════════════════════════
-if "page" not in st.session_state:
-    st.session_state.page = "records"
-page = st.session_state.page
+if "active_tab" not in st.session_state:
+    st.session_state.active_tab = "records"
+active_tab = st.session_state.active_tab
 
-# ── Global header bar ─────────────────────────────────────────────────────────
-with stylable_container(key="ghead", css_styles="""
+# ── Persistent top-bar (always visible on every tab) ───────────────────────
+with stylable_container(key="topbar", css_styles="""
     button{
-        background:#0d0d18!important;border:1px solid #1e1e2e!important;
-        border-radius:9px!important;color:#555!important;font-size:.82rem!important;
-        padding:0!important;height:30px!important;min-height:30px!important;
-        max-height:30px!important;width:30px!important;line-height:1!important;
+        background:#1a1a24!important;border:1px solid #2a2a3a!important;
+        border-radius:8px!important;color:#666!important;
+        font-size:.82rem!important;padding:0!important;line-height:1!important;
+        height:32px!important;min-height:32px!important;max-height:32px!important;
     }
 """):
-    _gh1, _gh2, _gh3, _gh4 = st.columns([5, 1, 1, 1])
-    _gh1.markdown(
-        "<div style='font-size:1.3rem;font-weight:800;color:#e8e8f0;letter-spacing:-1px;"
-        "padding:2px 0'>Fin<span style='color:#f0a500'>Track</span> Pro</div>",
+    _tb1, _tb2, _tb3, _tb4 = st.columns([5, 1, 1, 1])
+    _tb1.markdown(
+        "<span style='font-size:1.4rem;font-weight:700;color:#e8e8f0;letter-spacing:-.5px'>"
+        "Fin<span style='color:#f0a500'>Track</span> Pro</span>",
         unsafe_allow_html=True
     )
     _vm = st.session_state.view_mode
-    if _gh2.button("🖥" if _vm == "mobile" else "📱", key="vm_btn"):
+    if _tb2.button("🖥" if _vm == "mobile" else "📱", key="view_mode_btn"):
         st.session_state.view_mode = "desktop" if _vm == "mobile" else "mobile"
         st.rerun()
-    if _gh3.button("🔒", key="lock_icon"):
+    if _tb3.button("🔒", key="lock_icon", use_container_width=True):
         st.session_state.pin_unlocked = False
         st.session_state.pin_input    = ""
         st.session_state.pin_error    = ""
         st.rerun()
-    if _gh4.button("↻", key="refresh_icon"):
+    if _tb4.button("↻", key="refresh_icon", use_container_width=True):
         hard_refresh()
 
-# ── Balance summary header ────────────────────────────────────────────────────
-_hdr_exp = df[df["Date"].dt.to_period("M") == pd.Period(curr_ym, freq="M")]["Amount"].sum() if not df.empty else 0.0
-_hdr_inc = float(get_app_setting(KEY_INCOME, "0") or "0")
-_hdr_bal = _hdr_inc - _hdr_exp if _hdr_inc > 0 else None
-_bal_lbl  = f"[ All Accounts &nbsp;<b>Rs.{_hdr_bal:,.0f}</b> balance ]" if _hdr_bal is not None else f"[ Spent this month &nbsp;<b>Rs.{_hdr_exp:,.0f}</b> ]"
-_inc_row  = (f'<div class="bal-stat"><div class="bal-lbl">Income so far</div>'
-             f'<div class="bal-val bal-inc">Rs.{_hdr_inc:,.0f}</div></div>') if _hdr_inc > 0 else ""
+# ── MyMoney-style balance / summary header ─────────────────────────────────
+_hdr_exp  = df[df["Date"].dt.to_period("M") == pd.Period(curr_ym, freq="M")]["Amount"].sum() if not df.empty else 0.0
+_hdr_inc  = float(get_app_setting(KEY_INCOME, "0") or "0")
+_hdr_bal  = _hdr_inc - _hdr_exp if _hdr_inc > 0 else None
+_hdr_lbl  = f"[ All Accounts &nbsp; Rs.{_hdr_bal:,.0f} balance ]" if _hdr_bal is not None else f"[ Rs.{_hdr_exp:,.0f} this month ]"
+_inc_html = (f'<div class="mm-stat"><div class="mm-stat-lbl">Income so far</div>'
+             f'<div class="mm-stat-val mm-inc">Rs.{_hdr_inc:,.0f}</div></div>') if _hdr_inc > 0 else ""
 st.markdown(
-    f'<div class="bal-card">'
-    f'<div class="bal-main">{_bal_lbl}</div>'
-    f'<div class="bal-row">'
-    f'<div class="bal-stat"><div class="bal-lbl">Expense so far</div>'
-    f'<div class="bal-val bal-exp">Rs.{_hdr_exp:,.0f}</div></div>'
-    f'{_inc_row}'
+    f'<div class="mm-header">'
+    f'<div class="mm-balance">{_hdr_lbl}</div>'
+    f'<div class="mm-stats">'
+    f'<div class="mm-stat"><div class="mm-stat-lbl">Expense so far</div>'
+    f'<div class="mm-stat-val mm-exp">Rs.{_hdr_exp:,.0f}</div></div>'
+    f'{_inc_html}'
     f'</div></div>',
     unsafe_allow_html=True
 )
 
-# ==============================================================================
-# 4. NAVIGATION (Responsive Fix)
-# ==============================================================================
-_PAGES = ["🏠", "📈", "📅", "💳", "🎯", "⚙️", "🛠️"]
-_LABELS = ["Home", "Analytics", "Logs", "Cards", "Goals", "Settings", "Admin"]
-
-if "page" not in st.session_state:
-    st.session_state.page = 0
-
-# This container allows buttons to move to a new line if the screen is too narrow
-with stylable_container(
-    key="nav_bar",
-    css_styles="{ display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }"
-):
-    for i, icon in enumerate(_PAGES):
-        label = f"{icon} {_LABELS[i]}"
-        is_active = (st.session_state.page == i)
-        if st.button(label, key=f"nav_{i}", type="primary" if is_active else "secondary"):
-            st.session_state.page = i
-            st.rerun()
-
 
 # ==============================================================================
-# PAGE: RECORDS
+# RECORDS TAB — hero card, budgets, categories, recent transactions
 # ==============================================================================
-if page == "records":
+if active_tab == "records":
     if df.empty:
         st.markdown(
             "<div class='empty-box'><div class='ico'>💸</div>"
@@ -1161,41 +1343,41 @@ if page == "records":
             st.markdown('<div class="empty-box"><div class="ico">📊</div>'
                         '<div class="msg">No data for this period.</div></div>', unsafe_allow_html=True)
 
-        # ── Pending review shortcut ─────────────────────────────────────────────
+        # ── Pending review shortcut ───────────────────────────────────────────
         if pending_count > 0:
             _rv1, _rv2 = st.columns([3, 1])
             _rv1.markdown(
-                f'<div class="card-sm card-amber" style="border-left:3px solid #f0a500;padding:9px 12px">'
-                f'<span style="font-size:.83rem;color:#f0a500;font-weight:600">'
-                f'⚠️ {pending_count} transaction{"s" if pending_count>1 else ""} need review</span>'
+                f'<div style="background:#100a00;border:1px solid #2a1a00;border-left:3px solid #f0a500;'
+                f'border-radius:10px;padding:7px 12px;display:flex;align-items:center">'
+                f'<span style="font-size:.82rem;color:#f0a500;font-weight:600">'
+                f'⚠️ {pending_count} txn{"s" if pending_count>1 else ""} pending review</span>'
                 f'</div>',
                 unsafe_allow_html=True
             )
             with _rv2:
-                with stylable_container(key="rev_shrtcut", css_styles="""
-                    button{background:#2a1f00!important;border:1px solid rgba(240,165,0,.4)!important;
-                    border-radius:10px!important;color:#f0a500!important;font-size:.76rem!important;
-                    font-weight:700!important;height:42px!important;min-height:42px!important}
+                with stylable_container(key="rev_link", css_styles="""
+                    button{background:#2a1f00!important;border:1px solid #f0a500!important;
+                    border-radius:8px!important;color:#f0a500!important;font-size:.76rem!important;
+                    font-weight:700!important;height:38px!important;min-height:38px!important}
                 """):
-                    if st.button("Review", key="rev_goto", use_container_width=True):
-                        st.session_state.page = "review"
+                    if st.button("Review →", key="review_shortcut", use_container_width=True):
+                        st.session_state.active_tab = "review"
                         st.rerun()
 
-        # ── Recent transactions ─────────────────────────────────────────────────
+        # ── Recent transactions ───────────────────────────────────────────────
         st.markdown('<p class="sec-head">Recent Transactions</p>', unsafe_allow_html=True)
         _sq1, _sq2 = st.columns([5, 1])
         with _sq1:
-            search_q = st.text_input("search_home",
-                                     placeholder="Filter by category, note, mode...",
+            search_q = st.text_input("search_home", placeholder="Filter by category, note, mode...",
                                      label_visibility="collapsed")
         with _sq2:
-            with stylable_container(key="srch_goto", css_styles="""
-                button{background:#0d0d18!important;border:1px solid #1e1e2e!important;
-                border-radius:9px!important;color:#666!important;font-size:.76rem!important;
+            with stylable_container(key="go_srch_btn", css_styles="""
+                button{background:#1a1a24!important;border:1px solid #2a2a3a!important;
+                border-radius:8px!important;color:#888!important;font-size:.78rem!important;
                 height:38px!important;min-height:38px!important}
             """):
-                if st.button("🔍 All", key="srch_goto_btn", use_container_width=True):
-                    st.session_state.page = "search"
+                if st.button("🔍 More", key="go_search", use_container_width=True):
+                    st.session_state.active_tab = "search"
                     st.rerun()
         txn_df = filt.copy()
         if search_q.strip():
@@ -1216,11 +1398,16 @@ if page == "records":
 
 
 # ==============================================================================
-# PAGE: ANALYSIS — part 1: category breakdown
+# ANALYSIS TAB — part 1: category breakdown
 # ==============================================================================
-if page == "analysis":
-    st.markdown("<div style='font-size:1.1rem;font-weight:700;color:#e8e8f0;margin-bottom:6px'>Analysis</div>",
-                unsafe_allow_html=True)
+if active_tab == "analysis":
+    st.markdown(
+        "<span style='font-size:1.2rem;font-weight:700;color:#e8e8f0'>Analysis</span>",
+        unsafe_allow_html=True
+    )
+    st.markdown('<p class="sec-head">Category Breakdown — All Time</p>', unsafe_allow_html=True)
+    if False:  # placeholder label
+        pass
     if df.empty:
         st.markdown('<div class="empty-box"><div class="ico">🏷️</div>'
                     '<div class="msg">No data yet.</div></div>', unsafe_allow_html=True)
@@ -1314,11 +1501,13 @@ if page == "analysis":
 
 
 # ==============================================================================
-# PAGE: SEARCH
+# SEARCH TAB
 # ==============================================================================
-if page == "search":
-    st.markdown("<div style='font-size:1.1rem;font-weight:700;color:#e8e8f0;margin-bottom:6px'>Search & Filter</div>",
-                unsafe_allow_html=True)
+if active_tab == "search":
+    st.markdown(
+        "<span style='font-size:1.2rem;font-weight:700;color:#e8e8f0'>Search & Filter</span>",
+        unsafe_allow_html=True
+    )
     if df.empty:
         st.markdown('<div class="empty-box"><div class="ico">🔍</div>'
                     '<div class="msg">No data to search yet.</div></div>', unsafe_allow_html=True)
@@ -1431,12 +1620,83 @@ if page == "search":
 
 
 # ==============================================================================
-# PAGE: BUDGETS — recurring rules
+# BUDGETS TAB — budget planner + recurring rules
 # ==============================================================================
-if page == "budgets":
-    st.markdown("<div style='font-size:1.1rem;font-weight:700;color:#e8e8f0;margin-bottom:6px'>Budgets & Recurring</div>",
-                unsafe_allow_html=True)
-    st.markdown('<p class="sec-head">Recurring Auto-Log Rules</p>', unsafe_allow_html=True)
+if active_tab == "budgets":
+    st.markdown(
+        "<span style='font-size:1.2rem;font-weight:700;color:#e8e8f0'>Budgets & Recurring</span>",
+        unsafe_allow_html=True
+    )
+    # ── Budget Planner ────────────────────────────────────────────────────
+    st.markdown('<p class="sec-head">Budget Planner — ' + curr_ym + '</p>', unsafe_allow_html=True)
+    _bp_filt = df[df["Date"].dt.to_period("M") == pd.Period(curr_ym, freq="M")].copy() if not df.empty else pd.DataFrame()
+    _bp_budgets = st.session_state.settings_df[
+        st.session_state.settings_df["Budget"].notna() &
+        (st.session_state.settings_df["Budget"].astype(str).str.strip() != "")
+    ].copy() if not st.session_state.settings_df.empty else pd.DataFrame()
+    _bp_total  = _bp_budgets["Budget"].apply(lambda v: float(v) if str(v).strip() not in ("","nan") else 0).sum() if not _bp_budgets.empty else 0.0
+    _bp_spent  = _bp_filt["Amount"].sum() if not _bp_filt.empty else 0.0
+    _bpc1, _bpc2 = st.columns(2)
+    _bpc1.markdown(f'<div class="tile"><div class="tile-accent" style="background:#5e72e4"></div>'
+                   f'<div class="tile-label">Total Budget</div>'
+                   f'<div class="tile-value" style="font-size:1.3rem">Rs.{_bp_total:,.0f}</div></div>',
+                   unsafe_allow_html=True)
+    _bpc2.markdown(f'<div class="tile"><div class="tile-accent" style="background:#f75676"></div>'
+                   f'<div class="tile-label">Total Spent</div>'
+                   f'<div class="tile-value" style="font-size:1.3rem;color:#f75676">Rs.{_bp_spent:,.0f}</div></div>',
+                   unsafe_allow_html=True)
+    if not _bp_budgets.empty:
+        st.markdown(f'<p class="sec-head">Budgeted categories: {curr_ym}</p>', unsafe_allow_html=True)
+        for _, _bprow in _bp_budgets.iterrows():
+            _bpcat   = _bprow["Category"]
+            _bplimit = float(_bprow.get("Budget", 0) or 0)
+            if _bplimit <= 0: continue
+            _bpspent = _bp_filt[_bp_filt["Category"] == _bpcat]["Amount"].sum() if not _bp_filt.empty else 0.0
+            _bppct   = min(_bpspent / _bplimit * 100, 110)
+            _bprem   = max(_bplimit - _bpspent, 0)
+            _bpcol   = "#2dce89" if _bpspent/_bplimit < 0.75 else ("#f0a500" if _bpspent <= _bplimit else "#f75676")
+            _bpover  = '<span style="color:#f75676;font-size:.7rem"> *Limit exceeded</span>' if _bpspent > _bplimit else ""
+            st.markdown(
+                f'<div class="budget-row">'
+                f'<div class="budget-header">'
+                f'<span class="budget-name">{_bpcat}</span>'
+                f'<span style="background:{_bpcol};color:#000;font-size:.7rem;font-weight:700;'
+                f'padding:1px 7px;border-radius:4px">Rs.{_bplimit:,.0f}</span></div>'
+                f'<div style="font-size:.72rem;color:#888;margin-bottom:4px">'
+                f'Spent: <span style="color:#f75676">Rs.{_bpspent:,.0f}</span>'
+                f' &nbsp;·&nbsp; Remaining: <span style="color:{_bpcol}">Rs.{_bprem:,.0f}</span></div>'
+                f'<div class="prog-track"><div class="prog-fill" style="width:{min(_bppct,100):.1f}%;background:{_bpcol}"></div></div>'
+                f'{_bpover}</div>',
+                unsafe_allow_html=True
+            )
+        # Not budgeted
+        _all_cats_bp = sorted(st.session_state.cat_df["Category"].dropna().tolist()) if not st.session_state.cat_df.empty else []
+        _budgeted_set = set(_bp_budgets["Category"].tolist())
+        _unbudgeted_bp = [c for c in _all_cats_bp if c not in _budgeted_set]
+        if _unbudgeted_bp:
+            st.markdown('<p class="sec-head">Not budgeted this month</p>', unsafe_allow_html=True)
+            for _ubc in _unbudgeted_bp:
+                _ubc1, _ubc2 = st.columns([3, 1])
+                _ubc1.markdown(f'<div class="catlist-row">{_ubc}</div>', unsafe_allow_html=True)
+                with _ubc2:
+                    with stylable_container(key=f"sbtn_{_ubc[:12]}", css_styles="""
+                        button{background:#0d1a0d!important;border:1px solid #2dce89!important;
+                        border-radius:6px!important;color:#2dce89!important;font-size:.65rem!important;
+                        font-weight:700!important;height:28px!important;min-height:28px!important}
+                    """):
+                        if st.button("SET BUDGET", key=f"sb_{_ubc[:14]}", use_container_width=True):
+                            st.session_state[f"_sbdg_{_ubc}"] = True
+                            st.rerun()
+                if st.session_state.get(f"_sbdg_{_ubc}", False):
+                    with st.form(f"sbf_{_ubc[:12]}"):
+                        _nba = st.number_input(f"Budget for {_ubc} (Rs.)", min_value=0.0, step=500.0)
+                        if st.form_submit_button("Save", type="primary"):
+                            _nr = pd.DataFrame([{"Category": _ubc, "Budget": _nba, "Is_Recurring": False, "Day_of_Month": "", "Last_Fired": ""}])
+                            save_settings(pd.concat([st.session_state.settings_df, _nr], ignore_index=True))
+                            st.session_state.pop(f"_sbdg_{_ubc}", None)
+                            st.rerun()
+
+    st.markdown('<p class="sec-head">Recurring Rules</p>', unsafe_allow_html=True)
     with st.expander("Create New Rule"):
         with st.form("new_rec"):
             rc1, rc2 = st.columns(2)
@@ -1493,8 +1753,11 @@ if page == "budgets":
                 pass
 
 
-# ── PAGE: ANALYSIS — part 2: analytics charts (continuation) ─────────────────
-if page == "analysis":
+# ── ANALYSIS TAB — part 2: charts & analytics (continued) ──────────────────
+if active_tab == "analysis":
+    st.markdown('<p class="sec-head">Analytics & Charts</p>', unsafe_allow_html=True)
+    if False:
+        pass
     if df.empty:
         st.markdown('<div class="empty-box"><div class="ico">📈</div>'
                     '<div class="msg">No data yet. Sync transactions to unlock analytics.</div></div>',
@@ -1702,11 +1965,23 @@ if page == "analysis":
 
 
 # ==============================================================================
-# PAGE: REVIEW
+# REVIEW TAB
 # ==============================================================================
-if page == "review":
-    st.markdown("<div style='font-size:1.1rem;font-weight:700;color:#e8e8f0;margin-bottom:6px'>Pending Review</div>",
-                unsafe_allow_html=True)
+if active_tab == "review":
+    _rb1, _rb2 = st.columns([1, 4])
+    with _rb1:
+        with stylable_container(key="back_rec", css_styles="""
+            button{background:#1a1a24!important;border:1px solid #2a2a3a!important;
+            border-radius:8px!important;color:#888!important;font-size:.75rem!important;
+            height:32px!important;min-height:32px!important}
+        """):
+            if st.button("← Back", key="back_to_rec"):
+                st.session_state.active_tab = "records"
+                st.rerun()
+    _rb2.markdown(
+        "<span style='font-size:1.2rem;font-weight:700;color:#e8e8f0'>Pending Review</span>",
+        unsafe_allow_html=True
+    )
 
     pend_all = st.session_state.pending_df.copy() if not st.session_state.pending_df.empty else pd.DataFrame()
 
@@ -1993,11 +2268,13 @@ if page == "review":
 
 
 # ==============================================================================
-# PAGE: ACCOUNTS / SETTINGS
+# ACCOUNTS / SETTINGS TAB
 # ==============================================================================
-if page == "accounts":
-    st.markdown("<div style='font-size:1.1rem;font-weight:700;color:#e8e8f0;margin-bottom:6px'>Settings & Accounts</div>",
-                unsafe_allow_html=True)
+if active_tab == "accounts":
+    st.markdown(
+        "<span style='font-size:1.2rem;font-weight:700;color:#e8e8f0'>Settings & Accounts</span>",
+        unsafe_allow_html=True
+    )
 
     # ── FINANCIAL SETTINGS ───────────────────────────────────────────────────
     st.markdown('<p class="sec-head">Financial Settings</p>', unsafe_allow_html=True)
@@ -2324,192 +2601,151 @@ if page == "accounts":
 
 
 # ==============================================================================
-# PAGE: CATEGORIES — manage categories, modes, PIN
+# CATEGORIES TAB
 # ==============================================================================
-if page == "categories":
-    st.markdown("<div style='font-size:1.1rem;font-weight:700;color:#e8e8f0;margin-bottom:6px'>Categories</div>",
-                unsafe_allow_html=True)
-    _ctexp = df[df["Date"].dt.to_period("M") == pd.Period(curr_ym, freq="M")]["Amount"].sum() if not df.empty else 0.0
-    _ctinc = float(get_app_setting(KEY_INCOME, "0") or "0")
-    _ctbal = _ctinc - _ctexp if _ctinc > 0 else None
+if active_tab == "categories":
     st.markdown(
-        f'<div class="bal-card">'
-        f'<div class="bal-main">[ <b>Rs.{_ctexp:,.0f}</b> expense this month &nbsp;·&nbsp; '
+        "<span style='font-size:1.2rem;font-weight:700;color:#e8e8f0'>Categories</span>",
+        unsafe_allow_html=True
+    )
+    # Summary tile
+    _ct_exp = df[df["Date"].dt.to_period("M") == pd.Period(curr_ym, freq="M")]["Amount"].sum() if not df.empty else 0.0
+    _ct_inc = float(get_app_setting(KEY_INCOME, "0") or "0")
+    st.markdown(
+        f'<div class="mm-header">'
+        f'<div class="mm-balance">[ <b>Rs.{_ct_exp:,.0f}</b> expense so far &nbsp;|&nbsp; '
         f'<b>{len(st.session_state.cat_df)}</b> categories ]</div>'
-        f'<div class="bal-row">'
-        f'<div class="bal-stat"><div class="bal-lbl">Expense so far</div>'
-        f'<div class="bal-val bal-exp">Rs.{_ctexp:,.0f}</div></div>'
-        + (f'<div class="bal-stat"><div class="bal-lbl">Income set</div>'
-           f'<div class="bal-val bal-inc">Rs.{_ctinc:,.0f}</div></div>' if _ctinc > 0 else "")
+        f'<div class="mm-stats">'
+        f'<div class="mm-stat"><div class="mm-stat-lbl">Expense so far</div>'
+        f'<div class="mm-stat-val mm-exp">Rs.{_ct_exp:,.0f}</div></div>'
+        + (f'<div class="mm-stat"><div class="mm-stat-lbl">Income so far</div>'
+           f'<div class="mm-stat-val mm-inc">Rs.{_ct_inc:,.0f}</div></div>' if _ct_inc > 0 else "")
         + f'</div></div>',
         unsafe_allow_html=True
     )
-    # ── Expense categories ─────────────────────────────────────────────────────
+
+    # ── Income categories note ────────────────────────────────────────────
+    st.markdown('<p class="sec-head">Income Categories</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<div style="color:#888;font-size:.76rem;padding:6px 10px;background:#0a140a;'
+        'border-radius:8px;border:1px solid #1a2a1a;margin-bottom:6px">'
+        '💡 Add income sources here to track them alongside expenses.</div>',
+        unsafe_allow_html=True
+    )
+
+    # ── Expense categories ────────────────────────────────────────────────
     st.markdown('<p class="sec-head">Expense Categories</p>', unsafe_allow_html=True)
-    with st.form("catpg_add"):
-        _cpf1, _cpf2 = st.columns([4, 1])
-        _cpnew = _cpf1.text_input("New", label_visibility="collapsed", placeholder="e.g. Dining Out")
-        if _cpf2.form_submit_button("+ Add", use_container_width=True):
-            if _cpnew.strip():
-                save_categories(pd.concat([st.session_state.cat_df,
-                                           pd.DataFrame([{"Category": _cpnew.strip()}])],
-                                           ignore_index=True))
+    with st.form("cat_tab_add"):
+        _ctf1, _ctf2 = st.columns([4, 1])
+        _ct_new = _ctf1.text_input("New", label_visibility="collapsed", placeholder="e.g. Dining Out")
+        if _ctf2.form_submit_button("+ Add", use_container_width=True):
+            if _ct_new.strip():
+                save_categories(pd.concat([st.session_state.cat_df, pd.DataFrame([{'Category': _ct_new.strip()}])], ignore_index=True))
                 st.rerun()
             else:
                 st.warning("Name cannot be empty.")
+
     if st.session_state.cat_df.empty:
         st.markdown('<div class="empty-box"><div class="ico">🏷️</div>'
                     '<div class="msg">No categories yet.</div></div>', unsafe_allow_html=True)
     else:
-        for _cpi, _cprow in st.session_state.cat_df.iterrows():
-            _csp = df[df["Category"] == _cprow["Category"]]["Amount"].sum() if not df.empty else 0.0
-            _cp1, _cp2 = st.columns([5, 1])
-            _cp1.markdown(
+        for _cti, _ctrow in st.session_state.cat_df.iterrows():
+            _ct_spent = df[df["Category"] == _ctrow["Category"]]["Amount"].sum() if not df.empty else 0.0
+            _cc1, _cc2 = st.columns([5, 1])
+            _cc1.markdown(
                 f'<div style="display:flex;justify-content:space-between;align-items:center;'
-                f'padding:8px 0;border-bottom:1px solid #111120">'
-                f'<span style="font-size:.86rem;font-weight:500;color:#ccc">{_cprow["Category"]}</span>'
-                f'<span style="font-size:.76rem;color:#f0a500;font-family:JetBrains Mono,monospace">'
-                f'Rs.{_csp:,.0f}</span></div>',
+                f'padding:7px 0;border-bottom:1px solid #1a1a24">'
+                f'<span style="font-size:.86rem;font-weight:500;color:#ccc">{_ctrow["Category"]}</span>'
+                f'<span style="font-size:.76rem;color:#f0a500;font-family:\'JetBrains Mono\',monospace">'
+                f'Rs.{_ct_spent:,.0f}</span></div>',
                 unsafe_allow_html=True
             )
-            _cpk = f"cpg_{_cpi}"
-            if _cpk not in st.session_state: st.session_state[_cpk] = False
-            if not st.session_state[_cpk]:
-                if _cp2.button("···", key=f"cpgo_{_cpi}", use_container_width=True):
-                    st.session_state[_cpk] = True; st.rerun()
+            _ctk = f"ct_del_{_cti}"
+            if _ctk not in st.session_state: st.session_state[_ctk] = False
+            if not st.session_state[_ctk]:
+                if _cc2.button("···", key=f"ct_opt_{_cti}", use_container_width=True):
+                    st.session_state[_ctk] = True
+                    st.rerun()
             else:
-                _cy2, _cn2 = _cp2.columns(2)
-                if _cy2.button("Del", key=f"cpgy_{_cpi}"):
-                    save_categories(st.session_state.cat_df.drop(_cpi).reset_index(drop=True))
-                    st.session_state[_cpk] = False; st.rerun()
-                if _cn2.button("✕", key=f"cpgn_{_cpi}"):
-                    st.session_state[_cpk] = False; st.rerun()
+                _yc, _nc = _cc2.columns(2)
+                if _yc.button("Del", key=f"ct_y_{_cti}"):
+                    save_categories(st.session_state.cat_df.drop(_cti).reset_index(drop=True))
+                    st.session_state[_ctk] = False
+                    st.rerun()
+                if _nc.button("✕", key=f"ct_n_{_cti}"):
+                    st.session_state[_ctk] = False
+                    st.rerun()
 
-    # ── Payment modes ──────────────────────────────────────────────────────────
-    st.markdown('<p class="sec-head">Payment Modes</p>', unsafe_allow_html=True)
-    with st.form("modepg_add"):
-        _mpf1, _mpf2 = st.columns([4, 1])
-        _mpnew = _mpf1.text_input("New mode", label_visibility="collapsed", placeholder="e.g. GPay")
-        if _mpf2.form_submit_button("+ Add", use_container_width=True):
-            if _mpnew.strip():
-                save_modes(pd.concat([st.session_state.modes_df,
-                                      pd.DataFrame([{"Mode": _mpnew.strip()}])],
-                                      ignore_index=True))
-                st.rerun()
-    if not st.session_state.modes_df.empty:
-        for _mpi, _mprow in st.session_state.modes_df.iterrows():
-            _mp1, _mp2 = st.columns([5, 1])
-            _mp1.markdown(f'<div class="catlist-row">{_mprow["Mode"]}</div>', unsafe_allow_html=True)
-            _mpk = f"mpg_{_mpi}"
-            if _mpk not in st.session_state: st.session_state[_mpk] = False
-            if not st.session_state[_mpk]:
-                if _mp2.button("Del", key=f"mpgo_{_mpi}", use_container_width=True):
-                    st.session_state[_mpk] = True; st.rerun()
-            else:
-                _my2, _mn2 = _mp2.columns(2)
-                if _my2.button("Y", key=f"mpgy_{_mpi}"):
-                    save_modes(st.session_state.modes_df.drop(_mpi).reset_index(drop=True))
-                    st.session_state[_mpk] = False; st.rerun()
-                if _mn2.button("N", key=f"mpgn_{_mpi}"):
-                    st.session_state[_mpk] = False; st.rerun()
-
-    # ── Security ──────────────────────────────────────────────────────────────
+    # ── Security section ──────────────────────────────────────────────────
     st.markdown('<p class="sec-head">Security — Change PIN</p>', unsafe_allow_html=True)
-    with st.form("catpg_pin"):
-        _ppa, _ppb, _ppc = st.columns(3)
-        _p_cur = _ppa.text_input("Current", type="password", max_chars=4, placeholder="****")
-        _p_new = _ppb.text_input("New PIN", type="password", max_chars=4, placeholder="****")
-        _p_cnf = _ppc.text_input("Confirm", type="password", max_chars=4, placeholder="****")
+    with st.form("cat_pin_form"):
+        _cpa, _cpb, _cpc = st.columns(3)
+        _c_cur = _cpa.text_input("Current", type="password", max_chars=4, placeholder="****")
+        _c_new = _cpb.text_input("New PIN", type="password", max_chars=4, placeholder="****")
+        _c_cnf = _cpc.text_input("Confirm", type="password", max_chars=4, placeholder="****")
         if st.form_submit_button("Update PIN", type="primary"):
-            if _p_cur != st.session_state.active_pin:
+            if _c_cur != st.session_state.active_pin:
                 st.error("Current PIN is incorrect.")
-            elif not _p_new.isdigit() or len(_p_new) != 4:
-                st.error("New PIN must be 4 digits.")
-            elif _p_new != _p_cnf:
-                st.error("PINs do not match.")
+            elif not _c_new.isdigit() or len(_c_new) != 4:
+                st.error("New PIN must be exactly 4 digits.")
+            elif _c_new != _c_cnf:
+                st.error("New PINs do not match.")
             else:
-                save_pin(_p_new); st.success("PIN updated!")
+                save_pin(_c_new)
+                st.success("PIN updated!")
 
 
 # ==============================================================================
-# PAGE: BUDGETS — budget planner section (shown before recurring rules)
+# BOTTOM NAVIGATION BAR
+# Visual HTML layer + transparent Streamlit buttons overlaid on top
 # ==============================================================================
-if page == "budgets":
-    _bpnow = pd.Period(curr_ym, freq="M")
-    _bpflt = df[df["Date"].dt.to_period("M") == _bpnow].copy() if not df.empty else pd.DataFrame()
-    _bpdfs = st.session_state.settings_df[
-        st.session_state.settings_df["Budget"].notna() &
-        (st.session_state.settings_df["Budget"].astype(str).str.strip() != "")
-    ].copy() if not st.session_state.settings_df.empty else pd.DataFrame()
-    _bptot = _bpdfs["Budget"].apply(lambda v: float(v) if str(v).strip() not in ("","nan") else 0).sum() if not _bpdfs.empty else 0.0
-    _bpspt = _bpflt["Amount"].sum() if not _bpflt.empty else 0.0
-    # Balance card
-    st.markdown(
-        f'<div class="bal-card">'
-        f'<div class="bal-main">[ Budget Planner &nbsp;·&nbsp; {curr_ym} ]</div>'
-        f'<div class="bal-row">'
-        f'<div class="bal-stat"><div class="bal-lbl">Total Budget</div>'
-        f'<div class="bal-val" style="color:#5e72e4">Rs.{_bptot:,.0f}</div></div>'
-        f'<div class="bal-stat"><div class="bal-lbl">Total Spent</div>'
-        f'<div class="bal-val bal-exp">Rs.{_bpspt:,.0f}</div></div>'
-        f'</div></div>',
-        unsafe_allow_html=True
-    )
-    if _bpdfs.empty:
-        st.markdown('<div class="empty-box"><div class="ico">💰</div>'
-                    '<div class="msg">No budgets set.<br>Set budgets for your categories below.</div></div>',
-                    unsafe_allow_html=True)
-    else:
-        st.markdown(f'<p class="sec-head">Budgeted categories — {curr_ym}</p>', unsafe_allow_html=True)
-        for _, _bpr in _bpdfs.iterrows():
-            _bpcat  = _bpr["Category"]
-            _bplim  = float(_bpr.get("Budget",0) or 0)
-            if _bplim <= 0: continue
-            _bpsp   = _bpflt[_bpflt["Category"] == _bpcat]["Amount"].sum() if not _bpflt.empty else 0.0
-            _bppct  = _bpsp / _bplim * 100
-            _bprem  = max(_bplim - _bpsp, 0)
-            _bpcol  = "#2dce89" if _bppct < 75 else ("#f0a500" if _bpsp <= _bplim else "#f75676")
-            _bpover = '<span style="color:#f75676;font-size:.68rem"> *Limit exceeded</span>' if _bpsp > _bplim else ""
-            st.markdown(
-                f'<div class="budget-row">'
-                f'<div class="budget-header">'
-                f'<span class="budget-name">{_bpcat}</span>'
-                f'<span style="background:{_bpcol};color:#000;font-size:.68rem;font-weight:700;'
-                f'padding:2px 8px;border-radius:6px">Rs.{_bplim:,.0f}</span></div>'
-                f'<div style="font-size:.7rem;color:#555;margin-bottom:5px">'
-                f'Limit: Rs.{_bplim:,.0f} &nbsp;·&nbsp; '
-                f'Spent: <span style="color:#f75676">Rs.{_bpsp:,.0f}</span> &nbsp;·&nbsp; '
-                f'Remaining: <span style="color:{_bpcol}">Rs.{_bprem:,.0f}</span></div>'
-                f'<div class="prog-track"><div class="prog-fill" style="width:{min(_bppct,100):.1f}%;'
-                f'background:{_bpcol}"></div></div>'
-                f'{_bpover}</div>',
-                unsafe_allow_html=True
-            )
-    # Not budgeted this month
-    _all_cats_bp = sorted(st.session_state.cat_df["Category"].dropna().tolist()) if not st.session_state.cat_df.empty else []
-    _budgeted_bp = set(_bpdfs["Category"].tolist()) if not _bpdfs.empty else set()
-    _unb_bp      = [c for c in _all_cats_bp if c not in _budgeted_bp]
-    if _unb_bp:
-        st.markdown('<p class="sec-head">Not budgeted this month</p>', unsafe_allow_html=True)
-        for _ub in _unb_bp:
-            _ub1, _ub2 = st.columns([3, 1])
-            _ub1.markdown(f'<div class="catlist-row">{_ub}</div>', unsafe_allow_html=True)
-            with _ub2:
-                with stylable_container(key=f"sbb_{_ub[:12]}", css_styles="""
-                    button{background:#0a1a0a!important;border:1px solid rgba(45,206,137,.4)!important;
-                    border-radius:8px!important;color:#2dce89!important;font-size:.62rem!important;
-                    font-weight:700!important;height:28px!important;min-height:28px!important}
-                """):
-                    if st.button("SET BUDGET", key=f"sb_{_ub[:14]}", use_container_width=True):
-                        st.session_state[f"_sbdg_{_ub}"] = True; st.rerun()
-            if st.session_state.get(f"_sbdg_{_ub}", False):
-                with st.form(f"sbf_{_ub[:12]}"):
-                    _nba = st.number_input(f"Budget for {_ub} (Rs.)", min_value=0.0, step=500.0)
-                    if st.form_submit_button("Save Budget", type="primary"):
-                        _nr = pd.DataFrame([{"Category": _ub, "Budget": _nba,
-                                             "Is_Recurring": False, "Day_of_Month": "", "Last_Fired": ""}])
-                        save_settings(pd.concat([st.session_state.settings_df, _nr], ignore_index=True))
-                        st.session_state.pop(f"_sbdg_{_ub}", None); st.rerun()
+_pend_sfx = f" ⚠{pending_count}" if pending_count > 0 else ""
+_NAV_ITEMS = [
+    ("records",    "📋", "Records" + _pend_sfx),
+    ("analysis",   "📊", "Analysis"),
+    ("budgets",    "💰", "Budgets"),
+    ("accounts",   "⚙️",  "Settings"),
+    ("categories", "🏷️", "Categories"),
+]
+# active highlight: records nav also lights up for search/review sub-pages
+_is_records_active = active_tab in ("records", "search", "review")
+
+_nav_html = '<div class="bnav-wrap">'
+for _ntid, _nico, _nlbl in _NAV_ITEMS:
+    _is_act = (_ntid == "records" and _is_records_active) or (_ntid == active_tab and not _is_records_active) or (_ntid == active_tab)
+    _act_cls = " active" if _is_act else ""
+    _nav_html += (f'<div class="bnav-item{_act_cls}">'
+                  f'<span class="bnav-icon">{_nico}</span>'
+                  f'<span>{_nlbl}</span></div>')
+_nav_html += '</div>'
+st.markdown(_nav_html, unsafe_allow_html=True)
+
+# Transparent clickable overlay buttons
+_bnav_cols = st.columns(5)
+for _bc, (_ntid, _nico, _nlbl) in zip(_bnav_cols, _NAV_ITEMS):
+    with _bc:
+        with stylable_container(key=f"nav_{_ntid}", css_styles="""
+            button{
+                background:transparent!important;
+                border:none!important;
+                color:transparent!important;
+                font-size:1px!important;
+                line-height:1px!important;
+                height:60px!important;
+                min-height:60px!important;
+                width:100%!important;
+                position:fixed!important;
+                bottom:0!important;
+                z-index:10000!important;
+                padding:0!important;
+                margin:0!important;
+                border-radius:0!important;
+                opacity:0!important;
+            }
+        """):
+            if st.button("nav", key=f"navbtn_{_ntid}"):
+                st.session_state.active_tab = _ntid
+                st.rerun()
 
 
 # ==============================================================================
@@ -2578,7 +2814,7 @@ if st.session_state.show_modal:
 
 with stylable_container(key="fab", css_styles="""
 button {
-    position: fixed; bottom: 32px; right: 24px;
+    position: fixed; bottom: 72px; right: 24px;
     width: 60px; height: 60px; border-radius: 50%;
     background: #f0a500; color: #000; font-size: 34px;
     z-index: 9999; border: none;
