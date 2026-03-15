@@ -165,6 +165,28 @@ button[kind="secondary"] {
     font-size: 0.75rem !important;
     padding: 4px 10px !important;
 }
+
+/* Global button fix */
+button, [data-testid="stButton"] button {
+    color: #111 !important;          /* dark text */
+    background-color: #fff !important; /* light background */
+    border: 1px solid #ccc !important;
+    font-weight: 600 !important;
+}
+
+/* Dropdown fix */
+[data-testid="stSelectbox"] > div > div {
+    color: #111 !important;
+    background-color: #fff !important;
+    border: 1px solid #ccc !important;
+}
+
+/* Form inputs */
+input, textarea, select {
+    color: #111 !important;
+    background-color: #fff !important;
+    border: 1px solid #ccc !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -174,7 +196,6 @@ button[kind="secondary"] {
 # ─────────────────────────────────────────────
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-@st.cache_data(ttl=30)
 def load_all_data():
     try:
         e  = conn.read(worksheet="Expenses")
@@ -207,7 +228,6 @@ def load_all_data():
             pd.DataFrame(columns=["Key","Value"]),
         )
 
-@st.cache_data(ttl=30)
 def load_pin():
     try:
         sec = conn.read(worksheet="Security", usecols=[0], nrows=1)
@@ -656,6 +676,21 @@ if "🏠 Home" in page:
     else:
         st.markdown('<div class="card" style="color:#999;font-size:0.8rem">No transactions this month.</div>', unsafe_allow_html=True)
 
+    def budget_editor():
+    st.markdown('<div class="sec-hd">Category Budgets</div>', unsafe_allow_html=True)
+    if st.session_state.settings_df.empty:
+        st.info("No categories found.")
+        return
+    edited = st.data_editor(
+        st.session_state.settings_df,
+        num_rows="dynamic",
+        use_container_width=True,
+        key="budget_editor"
+    )
+    if st.button("💾 Save Budgets"):
+        save_settings(edited)
+        st.success("Budgets updated.")
+
     # ── Top 5 categories — Quarterly ─────────────────
     st.markdown(f'<div class="sec-hd">Top Categories — Q{curr_q}</div>', unsafe_allow_html=True)
     if not qtr_df.empty:
@@ -1044,6 +1079,18 @@ elif "⚙️ Manage" in page:
                     st.session_state.sync_result = {"status":"error","message":str(e)}
                 hard_refresh()
 
+    def import_rules_editor():
+    st.markdown('<div class="sec-hd">Import Rules</div>', unsafe_allow_html=True)
+    edited = st.data_editor(
+        st.session_state.import_rules,
+        num_rows="dynamic",
+        use_container_width=True,
+        key="rules_editor"
+    )
+    if st.button("💾 Save Rules"):
+        save_import_rules(edited)
+        st.success("Import rules updated.")
+
     # ── Import Log ──────────────────────────────────
     st.markdown('<div class="sec-hd">Import Log</div>', unsafe_allow_html=True)
     if import_log_df.empty:
@@ -1191,6 +1238,8 @@ def log_modal():
 
 if st.session_state.show_modal:
     log_modal()
+
+
 
 # FAB button (fixed bottom-right)
 st.markdown("""
