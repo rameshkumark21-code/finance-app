@@ -34,236 +34,225 @@ _CSS = (
     "&family=JetBrains+Mono:wght@400;500&display=swap' rel='stylesheet'>"
     "<style>"
     "html,body,*{font-family:'Sora',sans-serif!important}"
-    ".stApp{background:#07070d;color:#e8e8f0}"
-    "[data-testid='stHeader']{background:transparent!important;height:0!important}"
+    ".stApp{background:#080810;color:#e8e8f0}"
+    "[data-testid='stHeader']{background:transparent!important}"
+    "[data-testid='stToolbar']{display:none!important}"
     "h1,h2,h3,h4{letter-spacing:-0.3px;color:#e8e8f0}"
     "[data-testid='stVerticalBlock']>div{gap:0!important}"
-    "div.block-container{padding-top:0.5rem!important;padding-bottom:2rem!important;"
-    "padding-left:1rem!important;padding-right:1rem!important}"
-    # ── Sidebar ───────────────────────────────────────────────────────────────
-    "[data-testid='stSidebar']{background:linear-gradient(180deg,#0d0d16 0%,#0a0a12 100%)!important;"
-    "border-right:1px solid #1e1e2e!important;min-width:62px!important;max-width:62px!important}"
-    "[data-testid='stSidebar'] [data-testid='stVerticalBlock']{gap:0!important}"
-    "[data-testid='stSidebarUserContent']{padding:0!important}"
-    ".sb-logo{padding:14px 0 10px;text-align:center;border-bottom:1px solid #1a1a28;margin-bottom:6px}"
-    ".sb-logo-txt{font-size:1.15rem;font-weight:800;letter-spacing:-1px;color:#e8e8f0;line-height:1}"
-    ".sb-logo-sub{font-size:.52rem;color:#444460;letter-spacing:2px;text-transform:uppercase;margin-top:2px}"
-    ".nav-btn-wrap{padding:3px 6px}"
-    ".nav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;"
-    "gap:3px;padding:9px 4px;border-radius:10px;cursor:pointer;margin-bottom:2px;"
-    "transition:background .15s,color .15s}"
-    ".nav-item:hover{background:#1a1a2a}"
-    ".nav-item.active{background:rgba(240,165,0,.13);border:1px solid rgba(240,165,0,.18)}"
-    ".nav-ico{font-size:1.15rem;line-height:1}"
-    ".nav-lbl{font-size:.48rem;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:#444460}"
-    ".nav-item.active .nav-lbl{color:#f0a500}"
-    ".nav-badge{background:#f75676;color:#fff;font-size:.45rem;font-weight:700;"
-    "border-radius:8px;padding:1px 4px;margin-top:-2px}"
-    ".sb-divider{height:1px;background:#1a1a28;margin:6px 8px}"
-    ".sb-bottom{position:absolute;bottom:10px;left:0;right:0;padding:0 6px}"
-    # ── Card system ───────────────────────────────────────────────────────────
-    ".card{background:linear-gradient(145deg,#111118,#0e0e16);border:1px solid #1e1e2e;"
+    "div.block-container{padding-top:0.4rem!important;padding-bottom:3rem!important;"
+    "padding-left:0.9rem!important;padding-right:0.9rem!important}"
+    # ── Global header ─────────────────────────────────────────────────────────
+    ".g-header{display:flex;justify-content:space-between;align-items:center;"
+    "padding:8px 2px 10px;margin-bottom:0}"
+    ".g-title{font-size:1.3rem;font-weight:800;color:#e8e8f0;letter-spacing:-1px}"
+    ".g-title span{color:#f0a500}"
+    # ── Balance card ──────────────────────────────────────────────────────────
+    ".bal-card{background:linear-gradient(135deg,#0f0f1a 0%,#0c0c18 100%);"
+    "border:1px solid #1e1e30;border-radius:16px;padding:14px 16px;margin-bottom:10px;"
+    "text-align:center}"
+    ".bal-main{font-size:.85rem;font-weight:500;color:#555570;margin-bottom:8px;letter-spacing:.3px}"
+    ".bal-main b{color:#e8e8f0;font-family:'JetBrains Mono',monospace!important;font-size:.95rem}"
+    ".bal-row{display:flex;justify-content:center;gap:28px}"
+    ".bal-stat{text-align:center}"
+    ".bal-lbl{font-size:.58rem;text-transform:uppercase;letter-spacing:1.2px;color:#333355;font-weight:700;margin-bottom:2px}"
+    ".bal-val{font-size:.9rem;font-weight:700;font-family:'JetBrains Mono',monospace!important}"
+    ".bal-exp{color:#f75676}"
+    ".bal-inc{color:#2dce89}"
+    # ── Navigation pill row ───────────────────────────────────────────────────
+    ".nav-row-wrap [data-testid='stHorizontalBlock']{"
+    "overflow-x:auto!important;flex-wrap:nowrap!important;"
+    "-webkit-overflow-scrolling:touch!important;"
+    "scrollbar-width:none!important;gap:4px!important;padding-bottom:2px!important}"
+    ".nav-row-wrap [data-testid='stHorizontalBlock']::-webkit-scrollbar{display:none!important}"
+    # ── Cards ─────────────────────────────────────────────────────────────────
+    ".card{background:linear-gradient(145deg,#0f0f1a,#0c0c17);border:1px solid #1e1e2e;"
     "border-radius:16px;padding:14px 16px;margin-bottom:8px;"
-    "box-shadow:0 4px 24px rgba(0,0,0,.35)}"
-    ".card-sm{background:#0f0f17;border:1px solid #1a1a28;border-radius:12px;padding:10px 13px;margin-bottom:6px}"
-    ".card-glow-amber{box-shadow:0 0 0 1px rgba(240,165,0,.15),0 4px 20px rgba(240,165,0,.07)!important}"
-    ".card-glow-red{box-shadow:0 0 0 1px rgba(247,86,118,.15),0 4px 20px rgba(247,86,118,.07)!important}"
-    ".card-glow-green{box-shadow:0 0 0 1px rgba(45,206,137,.15),0 4px 20px rgba(45,206,137,.07)!important}"
+    "box-shadow:0 4px 20px rgba(0,0,0,.4)}"
+    ".card-sm{background:#0d0d16;border:1px solid #191928;border-radius:12px;"
+    "padding:10px 13px;margin-bottom:6px}"
+    ".card-amber{border-color:rgba(240,165,0,.25)!important;"
+    "box-shadow:0 0 0 1px rgba(240,165,0,.1),0 4px 16px rgba(240,165,0,.06)!important}"
+    ".card-red{border-color:rgba(247,86,118,.22)!important}"
+    ".card-green{border-color:rgba(45,206,137,.22)!important}"
     # ── Hero spend card ───────────────────────────────────────────────────────
-    ".hero-card{background:linear-gradient(135deg,#12111a 0%,#0f1020 100%);"
-    "border:1px solid #2a2a3e;border-radius:18px;padding:18px 18px 14px;margin-bottom:10px;"
-    "box-shadow:0 8px 32px rgba(0,0,0,.4)}"
+    ".hero-card{background:linear-gradient(135deg,#0f0f1e 0%,#0c0e1c 100%);"
+    "border:1px solid #1e2038;border-radius:18px;padding:18px 18px 14px;margin-bottom:10px;"
+    "box-shadow:0 8px 32px rgba(0,0,0,.45)}"
     ".hero-amount{font-size:2.1rem;font-weight:700;letter-spacing:-1.5px;color:#e8e8f0;"
-    "font-family:JetBrains Mono,monospace!important;margin-top:4px}"
+    "font-family:'JetBrains Mono',monospace!important;margin-top:4px}"
     ".hero-row{display:flex;justify-content:space-between;align-items:flex-end}"
     ".hero-today-val{font-size:1.05rem;font-weight:700;color:#f0a500;text-align:right;"
-    "font-family:JetBrains Mono,monospace!important}"
-    ".hero-today-lbl{font-size:.58rem;color:#444460;text-transform:uppercase;"
+    "font-family:'JetBrains Mono',monospace!important}"
+    ".hero-today-lbl{font-size:.58rem;color:#333355;text-transform:uppercase;"
     "letter-spacing:1.2px;text-align:right;margin-bottom:3px}"
-    # ── Stat tiles ────────────────────────────────────────────────────────────
-    ".tile{background:linear-gradient(145deg,#111118,#0e0e16);border:1px solid #1e1e2e;"
+    # ── Tiles ─────────────────────────────────────────────────────────────────
+    ".tile{background:linear-gradient(145deg,#0f0f1a,#0c0c17);border:1px solid #1e1e2e;"
     "border-radius:14px;padding:11px 14px;margin-bottom:6px}"
     ".tile-accent{height:3px;border-radius:2px;margin-bottom:8px}"
-    ".tile-label{color:#444460;font-size:.6rem;text-transform:uppercase;letter-spacing:1.5px;font-weight:600}"
+    ".tile-label{color:#333355;font-size:.6rem;text-transform:uppercase;letter-spacing:1.5px;font-weight:600}"
     ".tile-value{font-size:1.45rem;font-weight:700;margin-top:3px;letter-spacing:-.8px;color:#e8e8f0;"
-    "font-family:JetBrains Mono,monospace!important}"
-    ".tile-sub{font-size:.72rem;margin-top:3px;color:#555570}"
+    "font-family:'JetBrains Mono',monospace!important}"
+    ".tile-sub{font-size:.72rem;margin-top:3px;color:#444460}"
     ".trend-up{color:#f75676;font-weight:600}"
     ".trend-down{color:#2dce89;font-weight:600}"
-    ".trend-flat{color:#444460}"
+    ".trend-flat{color:#333355}"
     # ── Mini tiles ────────────────────────────────────────────────────────────
-    ".mini-tile{background:#0f0f17;border:1px solid #1a1a28;border-radius:12px;padding:9px 12px}"
-    ".mini-tile-lbl{font-size:.58rem;color:#444460;text-transform:uppercase;letter-spacing:1.1px;font-weight:600}"
-    ".mini-tile-val{font-size:1.02rem;font-weight:700;letter-spacing:-.5px;"
-    "font-family:JetBrains Mono,monospace!important;margin-top:2px}"
-    ".mini-tile-sub{font-size:.63rem;color:#444460;margin-top:2px}"
+    ".mini-tile{background:#0d0d16;border:1px solid #191928;border-radius:12px;padding:9px 12px}"
+    ".mini-tile-lbl{font-size:.58rem;color:#333355;text-transform:uppercase;letter-spacing:1.1px;font-weight:600}"
+    ".mini-tile-val{font-size:1rem;font-weight:700;letter-spacing:-.5px;"
+    "font-family:'JetBrains Mono',monospace!important;margin-top:2px}"
+    ".mini-tile-sub{font-size:.63rem;color:#333355;margin-top:2px}"
     # ── Progress bars ─────────────────────────────────────────────────────────
     ".prog-wrap{margin-top:6px}"
-    ".prog-track{background:#1a1a26;border-radius:6px;height:6px;overflow:hidden}"
+    ".prog-track{background:#161620;border-radius:6px;height:6px;overflow:hidden}"
     ".prog-fill{height:6px;border-radius:6px;transition:width .5s ease}"
-    ".prog-meta{display:flex;justify-content:space-between;margin-top:3px;font-size:.63rem;color:#444460}"
+    ".prog-meta{display:flex;justify-content:space-between;margin-top:3px;font-size:.63rem;color:#333355}"
     # ── Section heads ─────────────────────────────────────────────────────────
-    ".sec-head{font-size:.6rem;text-transform:uppercase;letter-spacing:2px;color:#3a3a55;"
-    "font-weight:700;margin:14px 0 6px;padding-left:2px}"
-    # ── Summary header bar (MyMoney style) ────────────────────────────────────
-    ".mm-header{background:linear-gradient(135deg,#0f1020,#111018);border:1px solid #1e2040;"
-    "border-radius:16px;padding:13px 16px;margin-bottom:10px}"
-    ".mm-balance{text-align:center;font-size:.95rem;font-weight:600;color:#666;margin-bottom:9px;letter-spacing:.3px}"
-    ".mm-balance b{color:#e8e8f0;font-family:JetBrains Mono,monospace!important}"
-    ".mm-stats{display:flex;justify-content:center;gap:32px}"
-    ".mm-stat{text-align:center}"
-    ".mm-stat-lbl{font-size:.57rem;text-transform:uppercase;letter-spacing:1.3px;color:#333355;font-weight:700;margin-bottom:2px}"
-    ".mm-stat-val{font-size:.9rem;font-weight:700;font-family:JetBrains Mono,monospace!important}"
-    ".mm-exp{color:#f75676}"
-    ".mm-inc{color:#2dce89}"
+    ".sec-head{font-size:.6rem;text-transform:uppercase;letter-spacing:2px;color:#2a2a42;"
+    "font-weight:700;margin:14px 0 7px;padding-left:2px}"
     # ── Category rows ─────────────────────────────────────────────────────────
     ".cat-row{display:flex;align-items:center;justify-content:space-between;"
-    "padding:8px 12px;border-radius:10px;margin-bottom:4px;"
-    "background:#0f0f17;border:1px solid #1a1a28}"
-    ".cat-name{font-size:.82rem;font-weight:500;color:#ccc;flex:1}"
-    ".cat-bar-wrap{width:48px;height:3px;background:#1e1e2a;border-radius:2px;margin:0 8px;flex-shrink:0}"
+    "padding:9px 12px;border-radius:10px;margin-bottom:4px;background:#0d0d16;border:1px solid #191928}"
+    ".cat-name{font-size:.83rem;font-weight:500;color:#ccc;flex:1}"
+    ".cat-bar-wrap{width:48px;height:3px;background:#191928;border-radius:2px;margin:0 8px;flex-shrink:0}"
     ".cat-bar-fill{height:3px;border-radius:2px;background:#f0a500}"
-    ".cat-amt{font-size:.82rem;font-weight:600;color:#e8e8f0;white-space:nowrap;"
-    "font-family:JetBrains Mono,monospace!important}"
+    ".cat-amt{font-size:.83rem;font-weight:600;color:#e8e8f0;white-space:nowrap;"
+    "font-family:'JetBrains Mono',monospace!important}"
     # ── Budget rows ───────────────────────────────────────────────────────────
-    ".budget-row{padding:10px 13px;border-radius:12px;background:#0f0f17;"
-    "border:1px solid #1a1a28;margin-bottom:6px}"
+    ".budget-row{padding:11px 14px;border-radius:12px;background:#0d0d16;"
+    "border:1px solid #191928;margin-bottom:7px}"
     ".budget-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}"
-    ".budget-name{font-size:.82rem;font-weight:600;color:#ccc}"
-    ".budget-nums{font-size:.7rem;color:#444460;font-family:JetBrains Mono,monospace!important}"
+    ".budget-name{font-size:.83rem;font-weight:600;color:#ccc}"
+    ".budget-nums{font-size:.7rem;color:#333355;font-family:'JetBrains Mono',monospace!important}"
     # ── Recurring cards ───────────────────────────────────────────────────────
-    ".rec-card{background:#0f0f17;border:1px solid #1e1e2e;border-radius:12px;"
-    "padding:11px 13px;margin-bottom:5px}"
+    ".rec-card{background:#0d0d16;border:1px solid #1e1e2e;border-radius:12px;"
+    "padding:11px 14px;margin-bottom:5px}"
     ".rec-fired{border-left:3px solid #2dce89}"
     ".rec-pending{border-left:3px solid #f0a500}"
     ".rec-title{font-size:.88rem;font-weight:600;color:#e0e0e0}"
-    ".rec-meta{font-size:.7rem;color:#444460;margin-top:2px;font-family:JetBrains Mono,monospace!important}"
-    # ── Category list ─────────────────────────────────────────────────────────
-    ".catlist-row{font-size:.86rem;font-weight:500;color:#ccc;padding:8px 0;border-bottom:1px solid #13131e}"
+    ".rec-meta{font-size:.7rem;color:#333355;margin-top:2px;"
+    "font-family:'JetBrains Mono',monospace!important}"
+    # ── Category list rows ────────────────────────────────────────────────────
+    ".catlist-row{font-size:.86rem;font-weight:500;color:#ccc;padding:8px 0;"
+    "border-bottom:1px solid #111120}"
     # ── Empty states ──────────────────────────────────────────────────────────
-    ".empty-box{text-align:center;padding:40px 20px;color:#2a2a40}"
-    ".empty-box .ico{font-size:2rem;margin-bottom:10px;opacity:.5}"
-    ".empty-box .msg{font-size:.84rem;line-height:1.6;color:#444460}"
-    # ── Category hero cards ───────────────────────────────────────────────────
-    ".cat-hero{background:#0f0f17;border:1px solid #1e1e2e;border-radius:14px;"
+    ".empty-box{text-align:center;padding:40px 20px}"
+    ".empty-box .ico{font-size:2rem;margin-bottom:10px;opacity:.4}"
+    ".empty-box .msg{font-size:.84rem;line-height:1.6;color:#333355}"
+    # ── Cat hero ──────────────────────────────────────────────────────────────
+    ".cat-hero{background:#0d0d16;border:1px solid #1e1e2e;border-radius:14px;"
     "padding:13px 15px;margin-bottom:6px}"
     ".cat-hero-name{font-size:.95rem;font-weight:700;color:#e8e8f0}"
-    ".cat-hero-meta{font-size:.68rem;color:#444460;margin-top:2px}"
+    ".cat-hero-meta{font-size:.68rem;color:#333355;margin-top:2px}"
     ".cat-hero-amt{font-size:1.1rem;font-weight:700;color:#f0a500;white-space:nowrap;"
-    "font-family:JetBrains Mono,monospace!important}"
+    "font-family:'JetBrains Mono',monospace!important}"
     # ── Chips ─────────────────────────────────────────────────────────────────
-    ".chip{display:inline-block;background:#111828;color:#7c9eff;border-radius:5px;"
+    ".chip{display:inline-block;background:#101828;color:#7c9eff;border-radius:5px;"
     "font-size:.62rem;font-weight:600;padding:1px 6px;margin-right:3px;letter-spacing:.3px}"
     # ── Review cards ──────────────────────────────────────────────────────────
-    ".review-card{background:#0f0f17;border:1px solid #2a1f08;border-left:3px solid #f0a500;"
+    ".review-card{background:#0d0d16;border:1px solid #2a1f08;border-left:3px solid #f0a500;"
     "border-radius:14px;padding:13px 15px;margin-bottom:10px}"
-    ".review-card-amt{font-size:1.05rem;font-weight:700;color:#e8e8f0;letter-spacing:-.5px;"
-    "font-family:JetBrains Mono,monospace!important}"
     ".review-badge-sug{display:inline-block;background:#2a1f05;color:#f0a500;"
     "border-radius:5px;font-size:.62rem;font-weight:600;padding:1px 6px}"
-    # ── Intel/status badges ───────────────────────────────────────────────────
-    ".badge-anomaly{display:inline-block;background:#1a0505;color:#f75676;"
+    # ── Badges ────────────────────────────────────────────────────────────────
+    ".badge-anomaly{display:inline-block;background:#150505;color:#f75676;"
     "border-radius:5px;font-size:.62rem;font-weight:700;padding:1px 6px;margin-right:3px}"
-    ".badge-dup{display:inline-block;background:#1a0e05;color:#fb923c;"
+    ".badge-dup{display:inline-block;background:#150e05;color:#fb923c;"
     "border-radius:5px;font-size:.62rem;font-weight:700;padding:1px 6px;margin-right:3px}"
-    ".badge-recur{display:inline-block;background:#040f1a;color:#60a5fa;"
+    ".badge-recur{display:inline-block;background:#040e18;color:#60a5fa;"
     "border-radius:5px;font-size:.62rem;font-weight:700;padding:1px 6px;margin-right:3px}"
-    ".badge-intel{display:inline-block;background:#041a08;color:#4ade80;"
+    ".badge-intel{display:inline-block;background:#041408;color:#4ade80;"
     "border-radius:5px;font-size:.62rem;font-weight:700;padding:1px 6px;margin-right:3px}"
     # ── Anomaly panel ─────────────────────────────────────────────────────────
-    ".anomaly-panel{background:#0d0303;border:1px solid #1a0808;border-left:3px solid #f75676;"
+    ".anomaly-panel{background:#0a0305;border:1px solid #180808;border-left:3px solid #f75676;"
     "border-radius:12px;padding:10px 13px;margin-bottom:10px}"
     ".anomaly-panel-title{font-size:.67rem;font-weight:700;color:#f75676;margin-bottom:6px;"
     "text-transform:uppercase;letter-spacing:1.2px}"
     ".anomaly-item{display:flex;justify-content:space-between;align-items:center;"
-    "padding:4px 0;font-size:.75rem;border-bottom:1px solid #140606}"
+    "padding:4px 0;font-size:.75rem;border-bottom:1px solid #100505}"
     # ── Import log ────────────────────────────────────────────────────────────
     ".log-row{display:flex;justify-content:space-between;align-items:center;"
-    "padding:7px 13px;border-bottom:1px solid #13131e;font-size:.75rem;"
-    "background:#0a0a10;margin-bottom:1px;border-radius:6px}"
+    "padding:7px 12px;border-bottom:1px solid #111120;font-size:.75rem}"
     ".log-ok{color:#2dce89;font-weight:600}"
     ".log-err{color:#f75676;font-weight:600}"
-    ".log-num{color:#e8e8f0;font-weight:600;font-family:JetBrains Mono,monospace!important}"
-    ".log-dim{color:#444460}"
+    ".log-num{color:#e8e8f0;font-weight:600;font-family:'JetBrains Mono',monospace!important}"
+    ".log-dim{color:#333355}"
     # ── Sync card ─────────────────────────────────────────────────────────────
-    ".sync-card{background:#0f0f17;border:1px solid #1e1e2e;border-radius:14px;"
+    ".sync-card{background:#0d0d16;border:1px solid #1e1e2e;border-radius:14px;"
     "padding:15px 17px;margin-bottom:10px}"
     ".sync-title{font-size:.9rem;font-weight:700;color:#e8e8f0;margin-bottom:4px}"
-    ".sync-meta{font-size:.73rem;color:#444460}"
+    ".sync-meta{font-size:.73rem;color:#333355}"
     # ── Analytics cards ───────────────────────────────────────────────────────
-    ".analytics-card{background:#0f0f17;border:1px solid #1e1e2e;border-radius:14px;"
+    ".analytics-card{background:#0d0d16;border:1px solid #1e1e2e;border-radius:14px;"
     "padding:15px 17px;margin-bottom:10px}"
     ".analytics-title{font-size:.6rem;text-transform:uppercase;letter-spacing:1.5px;"
-    "color:#333355;font-weight:700;margin-bottom:12px}"
+    "color:#2a2a42;font-weight:700;margin-bottom:12px}"
     ".heatmap-wrap{overflow-x:auto;padding:2px 0}"
     ".dow-row{display:flex;align-items:center;margin-bottom:5px;gap:7px}"
-    ".dow-label{font-size:.67rem;color:#444460;width:26px;flex-shrink:0;text-align:right}"
+    ".dow-label{font-size:.67rem;color:#333355;width:26px;flex-shrink:0;text-align:right}"
     ".dow-bar-fill{height:14px;border-radius:4px;min-width:3px}"
-    ".dow-bar-amt{font-size:.64rem;color:#444460;white-space:nowrap;"
-    "font-family:JetBrains Mono,monospace!important}"
+    ".dow-bar-amt{font-size:.64rem;color:#333355;white-space:nowrap;"
+    "font-family:'JetBrains Mono',monospace!important}"
     ".merchant-rank-row{display:flex;align-items:center;justify-content:space-between;"
-    "padding:7px 0;border-bottom:1px solid #13131e}"
+    "padding:7px 0;border-bottom:1px solid #111120}"
     ".merchant-rank-name{font-size:.8rem;color:#ccc;flex:1}"
     ".merchant-rank-bar{height:3px;border-radius:2px;background:#f0a500;margin:0 8px;flex-shrink:0}"
     ".merchant-rank-amt{font-size:.82rem;font-weight:600;color:#f0a500;white-space:nowrap;"
-    "font-family:JetBrains Mono,monospace!important}"
-    # ── Split form ────────────────────────────────────────────────────────────
-    ".split-row{background:#0a0a07;border:1px solid #2a2a10;border-left:2px solid #f0a500;"
-    "border-radius:8px;padding:9px 13px;margin-bottom:7px}"
-    # ── Dialog / form / widget overrides ─────────────────────────────────────
-    "div[data-testid='stDialog']{background:#0d0d16!important;border:1px solid #1e1e2e!important;"
-    "border-radius:20px!important}"
-    "[data-testid='stTextInput'] input,[data-testid='stNumberInput'] input"
-    "{background:#0f0f18!important;border:1px solid #1e1e2e!important;"
-    "border-radius:9px!important;color:#e8e8f0!important}"
-    "[data-testid='stSelectbox']>div>div{background:#0f0f18!important;"
-    "border:1px solid #1e1e2e!important;border-radius:9px!important}"
-    "[data-testid='stExpander']{background:#0d0d14!important;border:1px solid #1a1a28!important;"
-    "border-radius:10px!important;margin-bottom:5px}"
-    "[data-testid='stExpander'] summary{font-size:.83rem!important;font-weight:500!important;color:#aaa!important}"
-    "[data-testid='stForm']{border:1px solid #1a1a28!important;border-radius:12px!important;"
-    "padding:12px!important;background:#0b0b12!important}"
-    ".stAlert{border-radius:10px!important}"
-    "[data-testid='stMultiSelect'] span{background:#111828!important;color:#7c9eff!important;"
-    "border-radius:5px!important;font-size:.7rem!important}"
+    "font-family:'JetBrains Mono',monospace!important}"
     # ── Sug chip ──────────────────────────────────────────────────────────────
-    ".sug-chip-row{background:rgba(240,165,0,.06);border:1px solid rgba(240,165,0,.18);"
+    ".sug-chip-row{background:rgba(240,165,0,.05);border:1px solid rgba(240,165,0,.18);"
     "border-radius:10px;padding:7px 11px;margin-bottom:7px;display:flex;"
     "align-items:center;justify-content:space-between}"
-    ".sug-chip-label{font-size:.63rem;color:#666;margin-bottom:2px}"
+    ".sug-chip-label{font-size:.63rem;color:#555;margin-bottom:2px}"
     ".sug-chip-val{font-size:.86rem;font-weight:600;color:#f0a500}"
     # ── Queue pill ────────────────────────────────────────────────────────────
     ".queue-pill{display:inline-block;background:#0b0b14;border:1px solid #1e1e2e;"
-    "border-radius:20px;padding:3px 11px;font-size:.67rem;color:#444460;margin-bottom:9px}"
-    # ── Compact txn rows ──────────────────────────────────────────────────────
+    "border-radius:20px;padding:3px 11px;font-size:.67rem;color:#333355;margin-bottom:9px}"
+    # ── Txn rows ──────────────────────────────────────────────────────────────
     ".txn-row{display:flex;align-items:center;justify-content:space-between;"
-    "padding:8px 0;border-bottom:1px solid #13131e}"
+    "padding:8px 0;border-bottom:1px solid #111120}"
     ".txn-amt{font-size:.9rem;font-weight:700;color:#e8e8f0;white-space:nowrap;"
-    "font-family:JetBrains Mono,monospace!important;min-width:70px}"
-    ".txn-cat{font-size:.82rem;font-weight:600;color:#ccc}"
-    ".txn-meta{font-size:.63rem;color:#3a3a55;margin-top:2px}"
-    ".txn-note{font-size:.63rem;color:#666688;font-style:italic}"
-    # ── Monthly bar ───────────────────────────────────────────────────────────
+    "font-family:'JetBrains Mono',monospace!important;min-width:70px}"
+    ".txn-cat{font-size:.83rem;font-weight:600;color:#ccc}"
+    ".txn-meta{font-size:.63rem;color:#2a2a42;margin-top:2px}"
+    ".txn-note{font-size:.63rem;color:#555570;font-style:italic}"
+    # ── Monthly bars ──────────────────────────────────────────────────────────
     ".monthly-bar-row{display:flex;align-items:center;margin-bottom:5px;gap:7px}"
-    ".monthly-bar-lbl{font-size:.64rem;color:#444460;width:42px;flex-shrink:0;text-align:right}"
+    ".monthly-bar-lbl{font-size:.64rem;color:#333355;width:42px;flex-shrink:0;text-align:right}"
     ".monthly-bar-amt{font-size:.64rem;color:#f0a500;white-space:nowrap;margin-left:4px;"
-    "font-family:JetBrains Mono,monospace!important}"
-    # ── Filter panel ──────────────────────────────────────────────────────────
-    ".filter-panel{background:#0b0b12;border:1px solid #1a1a28;border-radius:14px;"
-    "padding:13px 15px;margin-bottom:10px}"
-    # ── Pill buttons ──────────────────────────────────────────────────────────
-    ".pill-row{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}"
+    "font-family:'JetBrains Mono',monospace!important}"
+    # ── Split form ────────────────────────────────────────────────────────────
+    ".split-row{background:#09090e;border:1px solid #2a2a10;border-left:2px solid #f0a500;"
+    "border-radius:8px;padding:9px 13px;margin-bottom:7px}"
+    # ── Widgets ───────────────────────────────────────────────────────────────
+    "div[data-testid='stDialog']{background:#0c0c15!important;border:1px solid #1e1e2e!important;"
+    "border-radius:20px!important}"
+    "[data-testid='stTextInput'] input,[data-testid='stNumberInput'] input"
+    "{background:#0d0d17!important;border:1px solid #1e1e2e!important;"
+    "border-radius:9px!important;color:#e8e8f0!important}"
+    "[data-testid='stSelectbox']>div>div{background:#0d0d17!important;"
+    "border:1px solid #1e1e2e!important;border-radius:9px!important}"
+    "[data-testid='stExpander']{background:#0b0b14!important;border:1px solid #191928!important;"
+    "border-radius:10px!important;margin-bottom:5px}"
+    "[data-testid='stExpander'] summary{font-size:.83rem!important;font-weight:500!important;"
+    "color:#aaa!important}"
+    "[data-testid='stForm']{border:1px solid #191928!important;border-radius:12px!important;"
+    "padding:12px!important;background:#090912!important}"
+    ".stAlert{border-radius:10px!important}"
+    "[data-testid='stMultiSelect'] span{background:#101828!important;color:#7c9eff!important;"
+    "border-radius:5px!important;font-size:.7rem!important}"
     "</style>"
 )
 st.markdown(_CSS, unsafe_allow_html=True)
 
 
-# ── View mode (mobile/desktop) ─────────────────────────────────────────────
+# ── View mode ───────────────────────────────────────────────────────────────
 if "view_mode" not in st.session_state:
     st.session_state.view_mode = "mobile"
 if st.session_state.view_mode == "desktop":
-    st.markdown('<style>div.block-container{max-width:860px!important;margin:0 auto!important;'
-                'padding-left:2rem!important;padding-right:2rem!important}</style>',
+    st.markdown('<style>div.block-container{max-width:820px!important;'
+                'margin:0 auto!important;padding-left:1.5rem!important;'
+                'padding-right:1.5rem!important}</style>',
                 unsafe_allow_html=True)
 
 
@@ -941,8 +930,9 @@ if not st.session_state.pin_unlocked:
     with col:
         st.markdown(
             "<div style='text-align:center;margin-bottom:6px'>"
-            "<span style='font-size:1.6rem;font-weight:800;color:#e8e8f0;letter-spacing:-1px'>"
-            "Fin<span style='color:#f0a500'>Track</span> Pro</span></div>",
+            "<span style='font-size:1.5rem;font-weight:700;color:#e8e8f0;"
+            "font-family:\"Sora\",sans-serif;letter-spacing:-.5px'>Fin"
+            "<span style='color:#f0a500'>Track</span> Pro</span></div>",
             unsafe_allow_html=True
         )
         st.markdown(
@@ -1042,13 +1032,59 @@ if not st.session_state.pending_df.empty and "Review_Status" in st.session_state
 review_label = f"⚠️ {pending_count}" if pending_count > 0 else "Review"
 
 # ══════════════════════════════════════════════════════════════════════════════
-# SIDEBAR NAVIGATION
+# PAGE ROUTING + GLOBAL HEADER + NAV PILLS
 # ══════════════════════════════════════════════════════════════════════════════
 if "page" not in st.session_state:
     st.session_state.page = "records"
 page = st.session_state.page
 
-_NAV_PAGES = [
+# ── Global header bar ─────────────────────────────────────────────────────────
+with stylable_container(key="ghead", css_styles="""
+    button{
+        background:#0d0d18!important;border:1px solid #1e1e2e!important;
+        border-radius:9px!important;color:#555!important;font-size:.82rem!important;
+        padding:0!important;height:30px!important;min-height:30px!important;
+        max-height:30px!important;width:30px!important;line-height:1!important;
+    }
+"""):
+    _gh1, _gh2, _gh3, _gh4 = st.columns([5, 1, 1, 1])
+    _gh1.markdown(
+        "<div style='font-size:1.3rem;font-weight:800;color:#e8e8f0;letter-spacing:-1px;"
+        "padding:2px 0'>Fin<span style='color:#f0a500'>Track</span> Pro</div>",
+        unsafe_allow_html=True
+    )
+    _vm = st.session_state.view_mode
+    if _gh2.button("🖥" if _vm == "mobile" else "📱", key="vm_btn"):
+        st.session_state.view_mode = "desktop" if _vm == "mobile" else "mobile"
+        st.rerun()
+    if _gh3.button("🔒", key="lock_icon"):
+        st.session_state.pin_unlocked = False
+        st.session_state.pin_input    = ""
+        st.session_state.pin_error    = ""
+        st.rerun()
+    if _gh4.button("↻", key="refresh_icon"):
+        hard_refresh()
+
+# ── Balance summary header ────────────────────────────────────────────────────
+_hdr_exp = df[df["Date"].dt.to_period("M") == pd.Period(curr_ym, freq="M")]["Amount"].sum() if not df.empty else 0.0
+_hdr_inc = float(get_app_setting(KEY_INCOME, "0") or "0")
+_hdr_bal = _hdr_inc - _hdr_exp if _hdr_inc > 0 else None
+_bal_lbl  = f"[ All Accounts &nbsp;<b>Rs.{_hdr_bal:,.0f}</b> balance ]" if _hdr_bal is not None else f"[ Spent this month &nbsp;<b>Rs.{_hdr_exp:,.0f}</b> ]"
+_inc_row  = (f'<div class="bal-stat"><div class="bal-lbl">Income so far</div>'
+             f'<div class="bal-val bal-inc">Rs.{_hdr_inc:,.0f}</div></div>') if _hdr_inc > 0 else ""
+st.markdown(
+    f'<div class="bal-card">'
+    f'<div class="bal-main">{_bal_lbl}</div>'
+    f'<div class="bal-row">'
+    f'<div class="bal-stat"><div class="bal-lbl">Expense so far</div>'
+    f'<div class="bal-val bal-exp">Rs.{_hdr_exp:,.0f}</div></div>'
+    f'{_inc_row}'
+    f'</div></div>',
+    unsafe_allow_html=True
+)
+
+# ── Navigation pills (scrollable horizontal row) ──────────────────────────────
+_PAGES = [
     ("records",    "📋", "Records"),
     ("analysis",   "📊", "Analysis"),
     ("search",     "🔍", "Search"),
@@ -1058,100 +1094,49 @@ _NAV_PAGES = [
     ("categories", "🏷️", "Categ."),
 ]
 
-with st.sidebar:
-    # Logo
-    st.markdown(
-        "<div class='sb-logo'>"
-        "<div class='sb-logo-txt'>Fin<span style='color:#f0a500'>T</span></div>"
-        "<div class='sb-logo-sub'>Pro</div>"
-        "</div>",
-        unsafe_allow_html=True
-    )
+with stylable_container(key="nav_row_outer", css_styles="""
+    div[data-testid="stHorizontalBlock"] {
+        overflow-x: auto !important;
+        flex-wrap: nowrap !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: none !important;
+        gap: 4px !important;
+        padding-bottom: 2px !important;
+    }
+    div[data-testid="stHorizontalBlock"]::-webkit-scrollbar { display: none !important; }
+"""):
+    _nav_cols = st.columns(len(_PAGES))
+    for _nc, (_pid, _pico, _plbl) in zip(_nav_cols, _PAGES):
+        _is_act = (page == _pid)
+        _badge  = f" {pending_count}" if (_pid == "review" and pending_count > 0) else ""
+        _lbl_disp = f"{_pico} {_plbl}{_badge}"
+        with _nc:
+            with stylable_container(key=f"np_{_pid}", css_styles=f"""
+                button{{
+                    background:{'rgba(240,165,0,.12)' if _is_act else '#0d0d18'}!important;
+                    border:1px solid {'rgba(240,165,0,.4)' if _is_act else '#191928'}!important;
+                    border-radius:20px!important;
+                    color:{'#f0a500' if _is_act else '#555570'}!important;
+                    font-size:.68rem!important;
+                    font-weight:{'700' if _is_act else '400'}!important;
+                    height:30px!important;
+                    min-height:30px!important;
+                    padding:0 4px!important;
+                    white-space:nowrap!important;
+                    line-height:30px!important;
+                }}
+            """):
+                if st.button(_lbl_disp, key=f"nav_{_pid}", use_container_width=True):
+                    st.session_state.page = _pid
+                    st.rerun()
 
-    # Nav items
-    for _pid, _pico, _plbl in _NAV_PAGES:
-        _is_active = (page == _pid)
-        _badge = f"<div class='nav-badge'>{pending_count}</div>" if (_pid == "review" and pending_count > 0) else ""
-        _act_cls = " active" if _is_active else ""
-        st.markdown(
-            f"<div class='nav-btn-wrap'>"
-            f"<div class='nav-item{_act_cls}' id='nav_{_pid}'>"
-            f"<span class='nav-ico'>{_pico}</span>"
-            f"<span class='nav-lbl'>{_plbl}</span>"
-            f"{_badge}</div></div>",
-            unsafe_allow_html=True
-        )
-        with stylable_container(key=f"sb_{_pid}", css_styles="""
-            button{
-                background:transparent!important;border:none!important;
-                color:transparent!important;font-size:1px!important;
-                line-height:1px!important;height:52px!important;min-height:52px!important;
-                width:100%!important;margin-top:-54px!important;
-                border-radius:10px!important;z-index:10!important;opacity:0!important;
-            }
-        """):
-            if st.button(".", key=f"navclick_{_pid}"):
-                st.session_state.page = _pid
-                st.rerun()
-
-    st.markdown("<div class='sb-divider'></div>", unsafe_allow_html=True)
-
-    # Lock + Refresh at bottom
-    _sb_lock, _sb_ref = st.columns(2)
-    with stylable_container(key="sb_lock_btn", css_styles="""
-        button{background:#111118!important;border:1px solid #1e1e2e!important;
-        border-radius:8px!important;color:#555!important;font-size:.8rem!important;
-        height:32px!important;min-height:32px!important;width:100%!important}
-    """):
-        if _sb_lock.button("🔒", key="sb_lock"):
-            st.session_state.pin_unlocked = False
-            st.session_state.pin_input    = ""
-            st.session_state.pin_error    = ""
-            st.rerun()
-    with stylable_container(key="sb_ref_btn", css_styles="""
-        button{background:#111118!important;border:1px solid #1e1e2e!important;
-        border-radius:8px!important;color:#555!important;font-size:.8rem!important;
-        height:32px!important;min-height:32px!important;width:100%!important}
-    """):
-        if _sb_ref.button("↻", key="sb_refresh"):
-            hard_refresh()
-
-    _vm = st.session_state.view_mode
-    with stylable_container(key="sb_vm_btn", css_styles="""
-        button{background:transparent!important;border:none!important;
-        color:#333355!important;font-size:.55rem!important;font-weight:600!important;
-        height:24px!important;min-height:24px!important;width:100%!important;
-        text-transform:uppercase;letter-spacing:.8px}
-    """):
-        if st.button("🖥 Desktop" if _vm == "mobile" else "📱 Mobile", key="sb_viewmode"):
-            st.session_state.view_mode = "desktop" if _vm == "mobile" else "mobile"
-            st.rerun()
-
-# ── MyMoney-style balance header (always visible, above content) ───────────────
-_hdr_exp = df[df["Date"].dt.to_period("M") == pd.Period(curr_ym, freq="M")]["Amount"].sum() if not df.empty else 0.0
-_hdr_inc = float(get_app_setting(KEY_INCOME, "0") or "0")
-_hdr_bal = _hdr_inc - _hdr_exp if _hdr_inc > 0 else None
-_bal_disp = f"[ <b>Rs.{_hdr_bal:,.0f}</b> balance this month ]" if _hdr_bal is not None else f"[ <b>Rs.{_hdr_exp:,.0f}</b> spent this month ]"
-_inc_blk  = (f'<div class="mm-stat"><div class="mm-stat-lbl">Income so far</div>'
-             f'<div class="mm-stat-val mm-inc">Rs.{_hdr_inc:,.0f}</div></div>') if _hdr_inc > 0 else ""
-st.markdown(
-    f'<div class="mm-header">'
-    f'<div class="mm-balance">{_bal_disp}</div>'
-    f'<div class="mm-stats">'
-    f'<div class="mm-stat"><div class="mm-stat-lbl">Expense so far</div>'
-    f'<div class="mm-stat-val mm-exp">Rs.{_hdr_exp:,.0f}</div></div>'
-    f'{_inc_blk}'
-    f'</div></div>',
-    unsafe_allow_html=True
-)
+st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
 
 
 # ==============================================================================
 # PAGE: RECORDS
 # ==============================================================================
 if page == "records":
-    st.markdown("<div style='font-size:1.25rem;font-weight:700;color:#e8e8f0;letter-spacing:-.3px;margin-bottom:8px'>"
-                "Fin<span style='color:#f0a500'>Track</span> Pro</div>", unsafe_allow_html=True)
     if df.empty:
         st.markdown(
             "<div class='empty-box'><div class='ico'>💸</div>"
@@ -1387,10 +1372,42 @@ if page == "records":
             st.markdown('<div class="empty-box"><div class="ico">📊</div>'
                         '<div class="msg">No data for this period.</div></div>', unsafe_allow_html=True)
 
-        # ── Recent transactions ───────────────────────────────────────────────
+        # ── Pending review shortcut ─────────────────────────────────────────────
+        if pending_count > 0:
+            _rv1, _rv2 = st.columns([3, 1])
+            _rv1.markdown(
+                f'<div class="card-sm card-amber" style="border-left:3px solid #f0a500;padding:9px 12px">'
+                f'<span style="font-size:.83rem;color:#f0a500;font-weight:600">'
+                f'⚠️ {pending_count} transaction{"s" if pending_count>1 else ""} need review</span>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
+            with _rv2:
+                with stylable_container(key="rev_shrtcut", css_styles="""
+                    button{background:#2a1f00!important;border:1px solid rgba(240,165,0,.4)!important;
+                    border-radius:10px!important;color:#f0a500!important;font-size:.76rem!important;
+                    font-weight:700!important;height:42px!important;min-height:42px!important}
+                """):
+                    if st.button("Review", key="rev_goto", use_container_width=True):
+                        st.session_state.page = "review"
+                        st.rerun()
+
+        # ── Recent transactions ─────────────────────────────────────────────────
         st.markdown('<p class="sec-head">Recent Transactions</p>', unsafe_allow_html=True)
-        search_q = st.text_input("search_home", placeholder="Filter by category, mode or note...",
-                                 label_visibility="collapsed")
+        _sq1, _sq2 = st.columns([5, 1])
+        with _sq1:
+            search_q = st.text_input("search_home",
+                                     placeholder="Filter by category, note, mode...",
+                                     label_visibility="collapsed")
+        with _sq2:
+            with stylable_container(key="srch_goto", css_styles="""
+                button{background:#0d0d18!important;border:1px solid #1e1e2e!important;
+                border-radius:9px!important;color:#666!important;font-size:.76rem!important;
+                height:38px!important;min-height:38px!important}
+            """):
+                if st.button("🔍 All", key="srch_goto_btn", use_container_width=True):
+                    st.session_state.page = "search"
+                    st.rerun()
         txn_df = filt.copy()
         if search_q.strip():
             q    = search_q.strip()
@@ -1410,12 +1427,11 @@ if page == "records":
 
 
 # ==============================================================================
-# PAGE: ANALYSIS (category breakdown)
+# PAGE: ANALYSIS — part 1: category breakdown
 # ==============================================================================
 if page == "analysis":
-    st.markdown("<div style='font-size:1.25rem;font-weight:700;color:#e8e8f0;margin-bottom:8px'>Analysis</div>",
+    st.markdown("<div style='font-size:1.1rem;font-weight:700;color:#e8e8f0;margin-bottom:6px'>Analysis</div>",
                 unsafe_allow_html=True)
-    if False: pass  # placeholder
     if df.empty:
         st.markdown('<div class="empty-box"><div class="ico">🏷️</div>'
                     '<div class="msg">No data yet.</div></div>', unsafe_allow_html=True)
@@ -1512,7 +1528,7 @@ if page == "analysis":
 # PAGE: SEARCH
 # ==============================================================================
 if page == "search":
-    st.markdown("<div style='font-size:1.25rem;font-weight:700;color:#e8e8f0;margin-bottom:8px'>Search & Filter</div>",
+    st.markdown("<div style='font-size:1.1rem;font-weight:700;color:#e8e8f0;margin-bottom:6px'>Search & Filter</div>",
                 unsafe_allow_html=True)
     if df.empty:
         st.markdown('<div class="empty-box"><div class="ico">🔍</div>'
@@ -1626,10 +1642,10 @@ if page == "search":
 
 
 # ==============================================================================
-# PAGE: BUDGETS & RECURRING
+# PAGE: BUDGETS — recurring rules
 # ==============================================================================
 if page == "budgets":
-    st.markdown("<div style='font-size:1.25rem;font-weight:700;color:#e8e8f0;margin-bottom:8px'>Budgets & Recurring</div>",
+    st.markdown("<div style='font-size:1.1rem;font-weight:700;color:#e8e8f0;margin-bottom:6px'>Budgets & Recurring</div>",
                 unsafe_allow_html=True)
     st.markdown('<p class="sec-head">Recurring Auto-Log Rules</p>', unsafe_allow_html=True)
     with st.expander("Create New Rule"):
@@ -1688,10 +1704,8 @@ if page == "budgets":
                 pass
 
 
-# ── ANALYSIS PAGE: charts (continuation) ──────────────────────────────────
+# ── PAGE: ANALYSIS — part 2: analytics charts (continuation) ─────────────────
 if page == "analysis":
-    st.markdown('<p class="sec-head">Analytics & Charts</p>', unsafe_allow_html=True)
-    if False: pass
     if df.empty:
         st.markdown('<div class="empty-box"><div class="ico">📈</div>'
                     '<div class="msg">No data yet. Sync transactions to unlock analytics.</div></div>',
@@ -1902,7 +1916,7 @@ if page == "analysis":
 # PAGE: REVIEW
 # ==============================================================================
 if page == "review":
-    st.markdown("<div style='font-size:1.25rem;font-weight:700;color:#e8e8f0;margin-bottom:8px'>Pending Review</div>",
+    st.markdown("<div style='font-size:1.1rem;font-weight:700;color:#e8e8f0;margin-bottom:6px'>Pending Review</div>",
                 unsafe_allow_html=True)
 
     pend_all = st.session_state.pending_df.copy() if not st.session_state.pending_df.empty else pd.DataFrame()
@@ -2193,7 +2207,7 @@ if page == "review":
 # PAGE: ACCOUNTS / SETTINGS
 # ==============================================================================
 if page == "accounts":
-    st.markdown("<div style='font-size:1.25rem;font-weight:700;color:#e8e8f0;margin-bottom:8px'>Settings & Accounts</div>",
+    st.markdown("<div style='font-size:1.1rem;font-weight:700;color:#e8e8f0;margin-bottom:6px'>Settings & Accounts</div>",
                 unsafe_allow_html=True)
 
     # ── FINANCIAL SETTINGS ───────────────────────────────────────────────────
@@ -2521,34 +2535,36 @@ if page == "accounts":
 
 
 # ==============================================================================
-# PAGE: CATEGORIES
+# PAGE: CATEGORIES — manage categories, modes, PIN
 # ==============================================================================
 if page == "categories":
-    st.markdown("<div style='font-size:1.25rem;font-weight:700;color:#e8e8f0;margin-bottom:8px'>Categories</div>",
+    st.markdown("<div style='font-size:1.1rem;font-weight:700;color:#e8e8f0;margin-bottom:6px'>Categories</div>",
                 unsafe_allow_html=True)
-    _ct_exp = df[df["Date"].dt.to_period("M") == pd.Period(curr_ym, freq="M")]["Amount"].sum() if not df.empty else 0.0
-    _ct_inc = float(get_app_setting(KEY_INCOME, "0") or "0")
-    # Summary card
+    _ctexp = df[df["Date"].dt.to_period("M") == pd.Period(curr_ym, freq="M")]["Amount"].sum() if not df.empty else 0.0
+    _ctinc = float(get_app_setting(KEY_INCOME, "0") or "0")
+    _ctbal = _ctinc - _ctexp if _ctinc > 0 else None
     st.markdown(
-        f'<div class="mm-header">'
-        f'<div class="mm-balance">[ <b>Rs.{_ct_exp:,.0f}</b> expense &nbsp;·&nbsp; '
+        f'<div class="bal-card">'
+        f'<div class="bal-main">[ <b>Rs.{_ctexp:,.0f}</b> expense this month &nbsp;·&nbsp; '
         f'<b>{len(st.session_state.cat_df)}</b> categories ]</div>'
-        f'<div class="mm-stats">'
-        f'<div class="mm-stat"><div class="mm-stat-lbl">This month</div>'
-        f'<div class="mm-stat-val mm-exp">Rs.{_ct_exp:,.0f}</div></div>'
-        + (f'<div class="mm-stat"><div class="mm-stat-lbl">Income set</div>'
-           f'<div class="mm-stat-val mm-inc">Rs.{_ct_inc:,.0f}</div></div>' if _ct_inc > 0 else "")
+        f'<div class="bal-row">'
+        f'<div class="bal-stat"><div class="bal-lbl">Expense so far</div>'
+        f'<div class="bal-val bal-exp">Rs.{_ctexp:,.0f}</div></div>'
+        + (f'<div class="bal-stat"><div class="bal-lbl">Income set</div>'
+           f'<div class="bal-val bal-inc">Rs.{_ctinc:,.0f}</div></div>' if _ctinc > 0 else "")
         + f'</div></div>',
         unsafe_allow_html=True
     )
+    # ── Expense categories ─────────────────────────────────────────────────────
     st.markdown('<p class="sec-head">Expense Categories</p>', unsafe_allow_html=True)
-    with st.form("cat_page_add"):
-        _ctf1, _ctf2 = st.columns([4, 1])
-        _ct_new = _ctf1.text_input("New category", label_visibility="collapsed", placeholder="e.g. Dining Out")
-        if _ctf2.form_submit_button("+ Add", use_container_width=True):
-            if _ct_new.strip():
+    with st.form("catpg_add"):
+        _cpf1, _cpf2 = st.columns([4, 1])
+        _cpnew = _cpf1.text_input("New", label_visibility="collapsed", placeholder="e.g. Dining Out")
+        if _cpf2.form_submit_button("+ Add", use_container_width=True):
+            if _cpnew.strip():
                 save_categories(pd.concat([st.session_state.cat_df,
-                                           pd.DataFrame([{"Category": _ct_new.strip()}])], ignore_index=True))
+                                           pd.DataFrame([{"Category": _cpnew.strip()}])],
+                                           ignore_index=True))
                 st.rerun()
             else:
                 st.warning("Name cannot be empty.")
@@ -2556,149 +2572,153 @@ if page == "categories":
         st.markdown('<div class="empty-box"><div class="ico">🏷️</div>'
                     '<div class="msg">No categories yet.</div></div>', unsafe_allow_html=True)
     else:
-        for _cti, _ctrow in st.session_state.cat_df.iterrows():
-            _ct_sp = df[df["Category"] == _ctrow["Category"]]["Amount"].sum() if not df.empty else 0.0
-            _cc1, _cc2 = st.columns([5, 1])
-            _cc1.markdown(
+        for _cpi, _cprow in st.session_state.cat_df.iterrows():
+            _csp = df[df["Category"] == _cprow["Category"]]["Amount"].sum() if not df.empty else 0.0
+            _cp1, _cp2 = st.columns([5, 1])
+            _cp1.markdown(
                 f'<div style="display:flex;justify-content:space-between;align-items:center;'
-                f'padding:8px 0;border-bottom:1px solid #13131e">'
-                f'<span style="font-size:.86rem;font-weight:500;color:#ccc">{_ctrow["Category"]}</span>'
+                f'padding:8px 0;border-bottom:1px solid #111120">'
+                f'<span style="font-size:.86rem;font-weight:500;color:#ccc">{_cprow["Category"]}</span>'
                 f'<span style="font-size:.76rem;color:#f0a500;font-family:JetBrains Mono,monospace">'
-                f'Rs.{_ct_sp:,.0f}</span></div>',
+                f'Rs.{_csp:,.0f}</span></div>',
                 unsafe_allow_html=True
             )
-            _ctk = f"ct_{_cti}"
-            if _ctk not in st.session_state: st.session_state[_ctk] = False
-            if not st.session_state[_ctk]:
-                if _cc2.button("···", key=f"cto_{_cti}", use_container_width=True):
-                    st.session_state[_ctk] = True; st.rerun()
+            _cpk = f"cpg_{_cpi}"
+            if _cpk not in st.session_state: st.session_state[_cpk] = False
+            if not st.session_state[_cpk]:
+                if _cp2.button("···", key=f"cpgo_{_cpi}", use_container_width=True):
+                    st.session_state[_cpk] = True; st.rerun()
             else:
-                _yc, _nc = _cc2.columns(2)
-                if _yc.button("Del", key=f"cty_{_cti}"):
-                    save_categories(st.session_state.cat_df.drop(_cti).reset_index(drop=True))
-                    st.session_state[_ctk] = False; st.rerun()
-                if _nc.button("✕", key=f"ctn_{_cti}"):
-                    st.session_state[_ctk] = False; st.rerun()
+                _cy2, _cn2 = _cp2.columns(2)
+                if _cy2.button("Del", key=f"cpgy_{_cpi}"):
+                    save_categories(st.session_state.cat_df.drop(_cpi).reset_index(drop=True))
+                    st.session_state[_cpk] = False; st.rerun()
+                if _cn2.button("✕", key=f"cpgn_{_cpi}"):
+                    st.session_state[_cpk] = False; st.rerun()
 
+    # ── Payment modes ──────────────────────────────────────────────────────────
     st.markdown('<p class="sec-head">Payment Modes</p>', unsafe_allow_html=True)
-    with st.form("mode_page_add"):
-        _mf1, _mf2 = st.columns([4, 1])
-        _m_new = _mf1.text_input("New mode", label_visibility="collapsed", placeholder="e.g. GPay")
-        if _mf2.form_submit_button("+ Add", use_container_width=True):
-            if _m_new.strip():
+    with st.form("modepg_add"):
+        _mpf1, _mpf2 = st.columns([4, 1])
+        _mpnew = _mpf1.text_input("New mode", label_visibility="collapsed", placeholder="e.g. GPay")
+        if _mpf2.form_submit_button("+ Add", use_container_width=True):
+            if _mpnew.strip():
                 save_modes(pd.concat([st.session_state.modes_df,
-                                      pd.DataFrame([{"Mode": _m_new.strip()}])], ignore_index=True))
+                                      pd.DataFrame([{"Mode": _mpnew.strip()}])],
+                                      ignore_index=True))
                 st.rerun()
     if not st.session_state.modes_df.empty:
-        for _mi, _mrow in st.session_state.modes_df.iterrows():
-            _mc1, _mc2 = st.columns([5, 1])
-            _mc1.markdown(f'<div class="catlist-row">{_mrow["Mode"]}</div>', unsafe_allow_html=True)
-            _mk = f"md_{_mi}"
-            if _mk not in st.session_state: st.session_state[_mk] = False
-            if not st.session_state[_mk]:
-                if _mc2.button("Del", key=f"mdo_{_mi}", use_container_width=True):
-                    st.session_state[_mk] = True; st.rerun()
+        for _mpi, _mprow in st.session_state.modes_df.iterrows():
+            _mp1, _mp2 = st.columns([5, 1])
+            _mp1.markdown(f'<div class="catlist-row">{_mprow["Mode"]}</div>', unsafe_allow_html=True)
+            _mpk = f"mpg_{_mpi}"
+            if _mpk not in st.session_state: st.session_state[_mpk] = False
+            if not st.session_state[_mpk]:
+                if _mp2.button("Del", key=f"mpgo_{_mpi}", use_container_width=True):
+                    st.session_state[_mpk] = True; st.rerun()
             else:
-                _my, _mn = _mc2.columns(2)
-                if _my.button("Y", key=f"mdy_{_mi}"):
-                    save_modes(st.session_state.modes_df.drop(_mi).reset_index(drop=True))
-                    st.session_state[_mk] = False; st.rerun()
-                if _mn.button("N", key=f"mdn_{_mi}"):
-                    st.session_state[_mk] = False; st.rerun()
+                _my2, _mn2 = _mp2.columns(2)
+                if _my2.button("Y", key=f"mpgy_{_mpi}"):
+                    save_modes(st.session_state.modes_df.drop(_mpi).reset_index(drop=True))
+                    st.session_state[_mpk] = False; st.rerun()
+                if _mn2.button("N", key=f"mpgn_{_mpi}"):
+                    st.session_state[_mpk] = False; st.rerun()
 
+    # ── Security ──────────────────────────────────────────────────────────────
     st.markdown('<p class="sec-head">Security — Change PIN</p>', unsafe_allow_html=True)
-    with st.form("cat_pin"):
-        _cpa, _cpb, _cpc = st.columns(3)
-        _c_cur = _cpa.text_input("Current", type="password", max_chars=4, placeholder="****")
-        _c_new = _cpb.text_input("New PIN", type="password", max_chars=4, placeholder="****")
-        _c_cnf = _cpc.text_input("Confirm", type="password", max_chars=4, placeholder="****")
+    with st.form("catpg_pin"):
+        _ppa, _ppb, _ppc = st.columns(3)
+        _p_cur = _ppa.text_input("Current", type="password", max_chars=4, placeholder="****")
+        _p_new = _ppb.text_input("New PIN", type="password", max_chars=4, placeholder="****")
+        _p_cnf = _ppc.text_input("Confirm", type="password", max_chars=4, placeholder="****")
         if st.form_submit_button("Update PIN", type="primary"):
-            if _c_cur != st.session_state.active_pin:
+            if _p_cur != st.session_state.active_pin:
                 st.error("Current PIN is incorrect.")
-            elif not _c_new.isdigit() or len(_c_new) != 4:
+            elif not _p_new.isdigit() or len(_p_new) != 4:
                 st.error("New PIN must be 4 digits.")
-            elif _c_new != _c_cnf:
+            elif _p_new != _p_cnf:
                 st.error("PINs do not match.")
             else:
-                save_pin(_c_new); st.success("PIN updated!")
+                save_pin(_p_new); st.success("PIN updated!")
 
 
 # ==============================================================================
-# PAGE: BUDGETS — budget planner tiles + recurring rules (inline, no tab wrap)
+# PAGE: BUDGETS — budget planner section (shown before recurring rules)
 # ==============================================================================
 if page == "budgets":
-    _bp_per  = pd.Period(curr_ym, freq="M")
-    _bp_filt = df[df["Date"].dt.to_period("M") == _bp_per].copy() if not df.empty else pd.DataFrame()
-    _bp_defs = st.session_state.settings_df[
+    _bpnow = pd.Period(curr_ym, freq="M")
+    _bpflt = df[df["Date"].dt.to_period("M") == _bpnow].copy() if not df.empty else pd.DataFrame()
+    _bpdfs = st.session_state.settings_df[
         st.session_state.settings_df["Budget"].notna() &
         (st.session_state.settings_df["Budget"].astype(str).str.strip() != "")
     ].copy() if not st.session_state.settings_df.empty else pd.DataFrame()
-    _bp_tot  = _bp_defs["Budget"].apply(lambda v: float(v) if str(v).strip() not in ("","nan") else 0).sum() if not _bp_defs.empty else 0.0
-    _bp_spt  = _bp_filt["Amount"].sum() if not _bp_filt.empty else 0.0
-    # Summary header
+    _bptot = _bpdfs["Budget"].apply(lambda v: float(v) if str(v).strip() not in ("","nan") else 0).sum() if not _bpdfs.empty else 0.0
+    _bpspt = _bpflt["Amount"].sum() if not _bpflt.empty else 0.0
+    # Balance card
     st.markdown(
-        f'<div class="mm-header">'
-        f'<div class="mm-balance">[ Budget Planner &nbsp;·&nbsp; {curr_ym} ]</div>'
-        f'<div class="mm-stats">'
-        f'<div class="mm-stat"><div class="mm-stat-lbl">Total Budget</div>'
-        f'<div class="mm-stat-val" style="color:#5e72e4">Rs.{_bp_tot:,.0f}</div></div>'
-        f'<div class="mm-stat"><div class="mm-stat-lbl">Total Spent</div>'
-        f'<div class="mm-stat-val mm-exp">Rs.{_bp_spt:,.0f}</div></div>'
+        f'<div class="bal-card">'
+        f'<div class="bal-main">[ Budget Planner &nbsp;·&nbsp; {curr_ym} ]</div>'
+        f'<div class="bal-row">'
+        f'<div class="bal-stat"><div class="bal-lbl">Total Budget</div>'
+        f'<div class="bal-val" style="color:#5e72e4">Rs.{_bptot:,.0f}</div></div>'
+        f'<div class="bal-stat"><div class="bal-lbl">Total Spent</div>'
+        f'<div class="bal-val bal-exp">Rs.{_bpspt:,.0f}</div></div>'
         f'</div></div>',
         unsafe_allow_html=True
     )
-    if _bp_defs.empty:
+    if _bpdfs.empty:
         st.markdown('<div class="empty-box"><div class="ico">💰</div>'
-                    '<div class="msg">No budgets set yet.<br>Add categories in Settings, then set budgets below.</div></div>',
+                    '<div class="msg">No budgets set.<br>Set budgets for your categories below.</div></div>',
                     unsafe_allow_html=True)
     else:
-        st.markdown(f'<p class="sec-head">Budgeted — {curr_ym}</p>', unsafe_allow_html=True)
-        for _, _bprow in _bp_defs.iterrows():
-            _bpcat   = _bprow["Category"]
-            _bplimit = float(_bprow.get("Budget", 0) or 0)
-            if _bplimit <= 0: continue
-            _bpspent = _bp_filt[_bp_filt["Category"] == _bpcat]["Amount"].sum() if not _bp_filt.empty else 0.0
-            _bppct   = _bpspent / _bplimit * 100
-            _bprem   = max(_bplimit - _bpspent, 0)
-            _bpcol   = "#2dce89" if _bppct < 75 else ("#f0a500" if _bpspent <= _bplimit else "#f75676")
-            _bpover  = '<span style="color:#f75676;font-size:.68rem"> *Limit exceeded</span>' if _bpspent > _bplimit else ""
+        st.markdown(f'<p class="sec-head">Budgeted categories — {curr_ym}</p>', unsafe_allow_html=True)
+        for _, _bpr in _bpdfs.iterrows():
+            _bpcat  = _bpr["Category"]
+            _bplim  = float(_bpr.get("Budget",0) or 0)
+            if _bplim <= 0: continue
+            _bpsp   = _bpflt[_bpflt["Category"] == _bpcat]["Amount"].sum() if not _bpflt.empty else 0.0
+            _bppct  = _bpsp / _bplim * 100
+            _bprem  = max(_bplim - _bpsp, 0)
+            _bpcol  = "#2dce89" if _bppct < 75 else ("#f0a500" if _bpsp <= _bplim else "#f75676")
+            _bpover = '<span style="color:#f75676;font-size:.68rem"> *Limit exceeded</span>' if _bpsp > _bplim else ""
             st.markdown(
                 f'<div class="budget-row">'
                 f'<div class="budget-header">'
                 f'<span class="budget-name">{_bpcat}</span>'
                 f'<span style="background:{_bpcol};color:#000;font-size:.68rem;font-weight:700;'
-                f'padding:2px 8px;border-radius:6px">(Jan, {curr_ym[-2:]}) &nbsp;Rs.{_bplimit:,.0f}</span></div>'
-                f'<div style="font-size:.7rem;color:#666;margin-bottom:5px">'
-                f'Limit: Rs.{_bplimit:,.0f} &nbsp;·&nbsp; '
-                f'Spent: <span style="color:#f75676">Rs.{_bpspent:,.0f}</span> &nbsp;·&nbsp; '
+                f'padding:2px 8px;border-radius:6px">Rs.{_bplim:,.0f}</span></div>'
+                f'<div style="font-size:.7rem;color:#555;margin-bottom:5px">'
+                f'Limit: Rs.{_bplim:,.0f} &nbsp;·&nbsp; '
+                f'Spent: <span style="color:#f75676">Rs.{_bpsp:,.0f}</span> &nbsp;·&nbsp; '
                 f'Remaining: <span style="color:{_bpcol}">Rs.{_bprem:,.0f}</span></div>'
-                f'<div class="prog-track"><div class="prog-fill" style="width:{min(_bppct,100):.1f}%;background:{_bpcol}"></div></div>'
+                f'<div class="prog-track"><div class="prog-fill" style="width:{min(_bppct,100):.1f}%;'
+                f'background:{_bpcol}"></div></div>'
                 f'{_bpover}</div>',
                 unsafe_allow_html=True
             )
-    # Not budgeted
-    _all_cats_b = sorted(st.session_state.cat_df["Category"].dropna().tolist()) if not st.session_state.cat_df.empty else []
-    _budgeted_set_b = set(_bp_defs["Category"].tolist()) if not _bp_defs.empty else set()
-    _unb = [c for c in _all_cats_b if c not in _budgeted_set_b]
-    if _unb:
+    # Not budgeted this month
+    _all_cats_bp = sorted(st.session_state.cat_df["Category"].dropna().tolist()) if not st.session_state.cat_df.empty else []
+    _budgeted_bp = set(_bpdfs["Category"].tolist()) if not _bpdfs.empty else set()
+    _unb_bp      = [c for c in _all_cats_bp if c not in _budgeted_bp]
+    if _unb_bp:
         st.markdown('<p class="sec-head">Not budgeted this month</p>', unsafe_allow_html=True)
-        for _ub in _unb:
+        for _ub in _unb_bp:
             _ub1, _ub2 = st.columns([3, 1])
             _ub1.markdown(f'<div class="catlist-row">{_ub}</div>', unsafe_allow_html=True)
             with _ub2:
                 with stylable_container(key=f"sbb_{_ub[:12]}", css_styles="""
-                    button{background:#0a1a0a!important;border:1px solid #2dce89!important;
-                    border-radius:8px!important;color:#2dce89!important;font-size:.65rem!important;
-                    font-weight:700!important;height:30px!important;min-height:30px!important}
+                    button{background:#0a1a0a!important;border:1px solid rgba(45,206,137,.4)!important;
+                    border-radius:8px!important;color:#2dce89!important;font-size:.62rem!important;
+                    font-weight:700!important;height:28px!important;min-height:28px!important}
                 """):
                     if st.button("SET BUDGET", key=f"sb_{_ub[:14]}", use_container_width=True):
                         st.session_state[f"_sbdg_{_ub}"] = True; st.rerun()
             if st.session_state.get(f"_sbdg_{_ub}", False):
                 with st.form(f"sbf_{_ub[:12]}"):
                     _nba = st.number_input(f"Budget for {_ub} (Rs.)", min_value=0.0, step=500.0)
-                    if st.form_submit_button("Save", type="primary"):
-                        _nr = pd.DataFrame([{"Category": _ub, "Budget": _nba, "Is_Recurring": False,
-                                             "Day_of_Month": "", "Last_Fired": ""}])
+                    if st.form_submit_button("Save Budget", type="primary"):
+                        _nr = pd.DataFrame([{"Category": _ub, "Budget": _nba,
+                                             "Is_Recurring": False, "Day_of_Month": "", "Last_Fired": ""}])
                         save_settings(pd.concat([st.session_state.settings_df, _nr], ignore_index=True))
                         st.session_state.pop(f"_sbdg_{_ub}", None); st.rerun()
 
@@ -2769,7 +2789,7 @@ if st.session_state.show_modal:
 
 with stylable_container(key="fab", css_styles="""
 button {
-    position: fixed; bottom: 28px; right: 22px;
+    position: fixed; bottom: 32px; right: 24px;
     width: 60px; height: 60px; border-radius: 50%;
     background: #f0a500; color: #000; font-size: 34px;
     z-index: 9999; border: none;
