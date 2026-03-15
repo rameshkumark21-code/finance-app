@@ -1,5 +1,5 @@
 streamlit
 pandas
-pytz
 streamlit-gsheets-connection
+pytz
 requests
