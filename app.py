@@ -41,15 +41,29 @@ _CSS = (
     "[data-testid='stVerticalBlock']>div{gap:0!important}"
     "div.block-container{padding-top:0.6rem!important;padding-bottom:4rem!important;"
     "padding-left:1rem!important;padding-right:1rem!important}"
-    # Tabs — scrollable on mobile
-    ".stTabs [data-baseweb='tab-list']{gap:0;background:transparent;border-bottom:1px solid #2a2a3a;"
-    "overflow-x:auto!important;flex-wrap:nowrap!important;-webkit-overflow-scrolling:touch;"
-    "scrollbar-width:none}"
-    ".stTabs [data-baseweb='tab-list']::-webkit-scrollbar{display:none}"
-    ".stTabs [data-baseweb='tab']{height:38px;background:transparent;border-radius:8px 8px 0 0;"
-    "padding:0 10px;color:#444460;font-size:.75rem;font-weight:500;white-space:nowrap;flex-shrink:0}"
-    ".stTabs [aria-selected='true']{background:transparent!important;color:#f0f0f0!important;"
-    "border-bottom:2px solid #f0a500!important;font-weight:600!important}"
+    # ── Bottom navigation bar ─────────────────────────────────────────────
+    ".bnav-wrap{position:fixed;bottom:0;left:0;right:0;z-index:9998;"
+    "background:#0d0d14;border-top:1px solid #222230;height:60px;"
+    "display:flex;align-items:stretch}"
+    ".bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;"
+    "justify-content:center;gap:1px;padding:5px 2px;font-size:.57rem;"
+    "font-weight:500;color:#44445a;letter-spacing:.2px;text-transform:uppercase;cursor:pointer}"
+    ".bnav-item.active{color:#f0a500}"
+    ".bnav-icon{font-size:1.22rem;line-height:1.15}"
+    # ── MyMoney-style summary / balance header ─────────────────────────────
+    ".mm-header{background:#13131a;border:1px solid #2a2a3a;border-radius:14px;"
+    "padding:12px 16px;margin-bottom:10px}"
+    ".mm-balance{text-align:center;font-size:1rem;font-weight:600;color:#888;"
+    "letter-spacing:.3px;margin-bottom:8px}"
+    ".mm-balance b{color:#e8e8f0;font-family:'JetBrains Mono',monospace!important}"
+    ".mm-stats{display:flex;justify-content:center;gap:36px}"
+    ".mm-stat{text-align:center}"
+    ".mm-stat-lbl{font-size:.59rem;text-transform:uppercase;letter-spacing:1.2px;"
+    "color:#444460;font-weight:700;margin-bottom:2px}"
+    ".mm-stat-val{font-size:.88rem;font-weight:700;"
+    "font-family:'JetBrains Mono',monospace!important}"
+    ".mm-exp{color:#f75676}"
+    ".mm-inc{color:#2dce89}"
     # Core tiles — tighter
     ".tile{background:#13131a;border:1px solid #2a2a3a;border-radius:12px;padding:10px 14px;margin-bottom:6px}"
     ".tile-accent{height:3px;border-radius:2px 2px 0 0;margin-bottom:8px}"
@@ -1037,58 +1051,63 @@ if not st.session_state.pending_df.empty and "Review_Status" in st.session_state
 
 review_label = f"⚠️ {pending_count}" if pending_count > 0 else "Review"
 
-# ── View mode toggle ──────────────────────────────────────────────────────────
-_vm = st.session_state.view_mode
-_tog_label = "🖥 Desktop" if _vm == "mobile" else "📱 Mobile"
-_tog_col, _ = st.columns([1, 4])
-with _tog_col:
-    with stylable_container(key="view_toggle", css_styles="""
-        button{background:#1a1a24!important;border:1px solid #2a2a3a!important;
-        border-radius:8px!important;color:#888!important;font-size:.72rem!important;
-        padding:3px 8px!important;height:26px!important;min-height:26px!important}
-    """):
-        if st.button(_tog_label, key="view_mode_btn"):
-            st.session_state.view_mode = "desktop" if _vm == "mobile" else "mobile"
-            st.rerun()
+# ══════════════════════════════════════════════════════════════════════════════
+# BOTTOM-NAV ROUTING  (replaces st.tabs)
+# ══════════════════════════════════════════════════════════════════════════════
+if "active_tab" not in st.session_state:
+    st.session_state.active_tab = "records"
+active_tab = st.session_state.active_tab
 
-tab_home, tab_cat_view, tab_search, tab_rec, tab_analytics, tab_review, tab_manage = st.tabs([
-    "🏠 Home", "📊 Categ.", "🔍 Search", "🔄 Recur.", "📈 Analytics", review_label, "⚙️ Manage"
-])
+# ── Persistent top-bar (always visible on every tab) ───────────────────────
+with stylable_container(key="topbar", css_styles="""
+    button{
+        background:#1a1a24!important;border:1px solid #2a2a3a!important;
+        border-radius:8px!important;color:#666!important;
+        font-size:.82rem!important;padding:0!important;line-height:1!important;
+        height:32px!important;min-height:32px!important;max-height:32px!important;
+    }
+"""):
+    _tb1, _tb2, _tb3, _tb4 = st.columns([5, 1, 1, 1])
+    _tb1.markdown(
+        "<span style='font-size:1.4rem;font-weight:700;color:#e8e8f0;letter-spacing:-.5px'>"
+        "Fin<span style='color:#f0a500'>Track</span> Pro</span>",
+        unsafe_allow_html=True
+    )
+    _vm = st.session_state.view_mode
+    if _tb2.button("🖥" if _vm == "mobile" else "📱", key="view_mode_btn"):
+        st.session_state.view_mode = "desktop" if _vm == "mobile" else "mobile"
+        st.rerun()
+    if _tb3.button("🔒", key="lock_icon", use_container_width=True):
+        st.session_state.pin_unlocked = False
+        st.session_state.pin_input    = ""
+        st.session_state.pin_error    = ""
+        st.rerun()
+    if _tb4.button("↻", key="refresh_icon", use_container_width=True):
+        hard_refresh()
+
+# ── MyMoney-style balance / summary header ─────────────────────────────────
+_hdr_exp  = df[df["Date"].dt.to_period("M") == pd.Period(curr_ym, freq="M")]["Amount"].sum() if not df.empty else 0.0
+_hdr_inc  = float(get_app_setting(KEY_INCOME, "0") or "0")
+_hdr_bal  = _hdr_inc - _hdr_exp if _hdr_inc > 0 else None
+_hdr_lbl  = f"[ All Accounts &nbsp; Rs.{_hdr_bal:,.0f} balance ]" if _hdr_bal is not None else f"[ Rs.{_hdr_exp:,.0f} this month ]"
+_inc_html = (f'<div class="mm-stat"><div class="mm-stat-lbl">Income so far</div>'
+             f'<div class="mm-stat-val mm-inc">Rs.{_hdr_inc:,.0f}</div></div>') if _hdr_inc > 0 else ""
+st.markdown(
+    f'<div class="mm-header">'
+    f'<div class="mm-balance">{_hdr_lbl}</div>'
+    f'<div class="mm-stats">'
+    f'<div class="mm-stat"><div class="mm-stat-lbl">Expense so far</div>'
+    f'<div class="mm-stat-val mm-exp">Rs.{_hdr_exp:,.0f}</div></div>'
+    f'{_inc_html}'
+    f'</div></div>',
+    unsafe_allow_html=True
+)
 
 
 # ==============================================================================
-# TAB 1 — HOME
+# RECORDS TAB — hero card, budgets, categories, recent transactions
 # ==============================================================================
-with tab_home:
-    # ── Header: title + icon buttons in one stylable_container ────────────────
-    with stylable_container(key="home_header", css_styles="""
-        button {
-            background: #1a1a24 !important;
-            border: 1px solid #2a2a3a !important;
-            border-radius: 8px !important;
-            color: #666 !important;
-            font-size: .8rem !important;
-            padding: 0 !important;
-            line-height: 1 !important;
-            height: 32px !important;
-            min-height: 32px !important;
-            max-height: 32px !important;
-        }
-    """):
-        hc1, hc2, hc3 = st.columns([6, 1, 1])
-        hc1.markdown(
-            "<span style='font-size:1.4rem;font-weight:700;color:#e8e8f0;letter-spacing:-.5px'>"
-            "Fin<span style='color:#f0a500'>Track</span></span>",
-            unsafe_allow_html=True
-        )
-        if hc2.button("🔒", key="lock_icon", use_container_width=True):
-            st.session_state.pin_unlocked = False
-            st.session_state.pin_input    = ""
-            st.session_state.pin_error    = ""
-            st.rerun()
-        if hc3.button("↻", key="refresh_icon", use_container_width=True):
-            hard_refresh()
-
+if active_tab == "records":
     if df.empty:
         st.markdown(
             "<div class='empty-box'><div class='ico'>💸</div>"
@@ -1324,10 +1343,42 @@ with tab_home:
             st.markdown('<div class="empty-box"><div class="ico">📊</div>'
                         '<div class="msg">No data for this period.</div></div>', unsafe_allow_html=True)
 
+        # ── Pending review shortcut ───────────────────────────────────────────
+        if pending_count > 0:
+            _rv1, _rv2 = st.columns([3, 1])
+            _rv1.markdown(
+                f'<div style="background:#100a00;border:1px solid #2a1a00;border-left:3px solid #f0a500;'
+                f'border-radius:10px;padding:7px 12px;display:flex;align-items:center">'
+                f'<span style="font-size:.82rem;color:#f0a500;font-weight:600">'
+                f'⚠️ {pending_count} txn{"s" if pending_count>1 else ""} pending review</span>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
+            with _rv2:
+                with stylable_container(key="rev_link", css_styles="""
+                    button{background:#2a1f00!important;border:1px solid #f0a500!important;
+                    border-radius:8px!important;color:#f0a500!important;font-size:.76rem!important;
+                    font-weight:700!important;height:38px!important;min-height:38px!important}
+                """):
+                    if st.button("Review →", key="review_shortcut", use_container_width=True):
+                        st.session_state.active_tab = "review"
+                        st.rerun()
+
         # ── Recent transactions ───────────────────────────────────────────────
         st.markdown('<p class="sec-head">Recent Transactions</p>', unsafe_allow_html=True)
-        search_q = st.text_input("search_home", placeholder="Filter by category, mode or note...",
-                                 label_visibility="collapsed")
+        _sq1, _sq2 = st.columns([5, 1])
+        with _sq1:
+            search_q = st.text_input("search_home", placeholder="Filter by category, note, mode...",
+                                     label_visibility="collapsed")
+        with _sq2:
+            with stylable_container(key="go_srch_btn", css_styles="""
+                button{background:#1a1a24!important;border:1px solid #2a2a3a!important;
+                border-radius:8px!important;color:#888!important;font-size:.78rem!important;
+                height:38px!important;min-height:38px!important}
+            """):
+                if st.button("🔍 More", key="go_search", use_container_width=True):
+                    st.session_state.active_tab = "search"
+                    st.rerun()
         txn_df = filt.copy()
         if search_q.strip():
             q    = search_q.strip()
@@ -1347,13 +1398,16 @@ with tab_home:
 
 
 # ==============================================================================
-# TAB 2 — CATEGORIES
+# ANALYSIS TAB — part 1: category breakdown
 # ==============================================================================
-with tab_cat_view:
+if active_tab == "analysis":
     st.markdown(
-        "<span style='font-size:1.2rem;font-weight:700;color:#e8e8f0'>Categories</span>",
+        "<span style='font-size:1.2rem;font-weight:700;color:#e8e8f0'>Analysis</span>",
         unsafe_allow_html=True
     )
+    st.markdown('<p class="sec-head">Category Breakdown — All Time</p>', unsafe_allow_html=True)
+    if False:  # placeholder label
+        pass
     if df.empty:
         st.markdown('<div class="empty-box"><div class="ico">🏷️</div>'
                     '<div class="msg">No data yet.</div></div>', unsafe_allow_html=True)
@@ -1447,9 +1501,9 @@ with tab_cat_view:
 
 
 # ==============================================================================
-# TAB 3 — SEARCH
+# SEARCH TAB
 # ==============================================================================
-with tab_search:
+if active_tab == "search":
     st.markdown(
         "<span style='font-size:1.2rem;font-weight:700;color:#e8e8f0'>Search & Filter</span>",
         unsafe_allow_html=True
@@ -1566,13 +1620,83 @@ with tab_search:
 
 
 # ==============================================================================
-# TAB 4 — RECURRING
+# BUDGETS TAB — budget planner + recurring rules
 # ==============================================================================
-with tab_rec:
+if active_tab == "budgets":
     st.markdown(
-        "<span style='font-size:1.2rem;font-weight:700;color:#e8e8f0'>Recurring Rules</span>",
+        "<span style='font-size:1.2rem;font-weight:700;color:#e8e8f0'>Budgets & Recurring</span>",
         unsafe_allow_html=True
     )
+    # ── Budget Planner ────────────────────────────────────────────────────
+    st.markdown('<p class="sec-head">Budget Planner — ' + curr_ym + '</p>', unsafe_allow_html=True)
+    _bp_filt = df[df["Date"].dt.to_period("M") == pd.Period(curr_ym, freq="M")].copy() if not df.empty else pd.DataFrame()
+    _bp_budgets = st.session_state.settings_df[
+        st.session_state.settings_df["Budget"].notna() &
+        (st.session_state.settings_df["Budget"].astype(str).str.strip() != "")
+    ].copy() if not st.session_state.settings_df.empty else pd.DataFrame()
+    _bp_total  = _bp_budgets["Budget"].apply(lambda v: float(v) if str(v).strip() not in ("","nan") else 0).sum() if not _bp_budgets.empty else 0.0
+    _bp_spent  = _bp_filt["Amount"].sum() if not _bp_filt.empty else 0.0
+    _bpc1, _bpc2 = st.columns(2)
+    _bpc1.markdown(f'<div class="tile"><div class="tile-accent" style="background:#5e72e4"></div>'
+                   f'<div class="tile-label">Total Budget</div>'
+                   f'<div class="tile-value" style="font-size:1.3rem">Rs.{_bp_total:,.0f}</div></div>',
+                   unsafe_allow_html=True)
+    _bpc2.markdown(f'<div class="tile"><div class="tile-accent" style="background:#f75676"></div>'
+                   f'<div class="tile-label">Total Spent</div>'
+                   f'<div class="tile-value" style="font-size:1.3rem;color:#f75676">Rs.{_bp_spent:,.0f}</div></div>',
+                   unsafe_allow_html=True)
+    if not _bp_budgets.empty:
+        st.markdown(f'<p class="sec-head">Budgeted categories: {curr_ym}</p>', unsafe_allow_html=True)
+        for _, _bprow in _bp_budgets.iterrows():
+            _bpcat   = _bprow["Category"]
+            _bplimit = float(_bprow.get("Budget", 0) or 0)
+            if _bplimit <= 0: continue
+            _bpspent = _bp_filt[_bp_filt["Category"] == _bpcat]["Amount"].sum() if not _bp_filt.empty else 0.0
+            _bppct   = min(_bpspent / _bplimit * 100, 110)
+            _bprem   = max(_bplimit - _bpspent, 0)
+            _bpcol   = "#2dce89" if _bpspent/_bplimit < 0.75 else ("#f0a500" if _bpspent <= _bplimit else "#f75676")
+            _bpover  = '<span style="color:#f75676;font-size:.7rem"> *Limit exceeded</span>' if _bpspent > _bplimit else ""
+            st.markdown(
+                f'<div class="budget-row">'
+                f'<div class="budget-header">'
+                f'<span class="budget-name">{_bpcat}</span>'
+                f'<span style="background:{_bpcol};color:#000;font-size:.7rem;font-weight:700;'
+                f'padding:1px 7px;border-radius:4px">Rs.{_bplimit:,.0f}</span></div>'
+                f'<div style="font-size:.72rem;color:#888;margin-bottom:4px">'
+                f'Spent: <span style="color:#f75676">Rs.{_bpspent:,.0f}</span>'
+                f' &nbsp;·&nbsp; Remaining: <span style="color:{_bpcol}">Rs.{_bprem:,.0f}</span></div>'
+                f'<div class="prog-track"><div class="prog-fill" style="width:{min(_bppct,100):.1f}%;background:{_bpcol}"></div></div>'
+                f'{_bpover}</div>',
+                unsafe_allow_html=True
+            )
+        # Not budgeted
+        _all_cats_bp = sorted(st.session_state.cat_df["Category"].dropna().tolist()) if not st.session_state.cat_df.empty else []
+        _budgeted_set = set(_bp_budgets["Category"].tolist())
+        _unbudgeted_bp = [c for c in _all_cats_bp if c not in _budgeted_set]
+        if _unbudgeted_bp:
+            st.markdown('<p class="sec-head">Not budgeted this month</p>', unsafe_allow_html=True)
+            for _ubc in _unbudgeted_bp:
+                _ubc1, _ubc2 = st.columns([3, 1])
+                _ubc1.markdown(f'<div class="catlist-row">{_ubc}</div>', unsafe_allow_html=True)
+                with _ubc2:
+                    with stylable_container(key=f"sbtn_{_ubc[:12]}", css_styles="""
+                        button{background:#0d1a0d!important;border:1px solid #2dce89!important;
+                        border-radius:6px!important;color:#2dce89!important;font-size:.65rem!important;
+                        font-weight:700!important;height:28px!important;min-height:28px!important}
+                    """):
+                        if st.button("SET BUDGET", key=f"sb_{_ubc[:14]}", use_container_width=True):
+                            st.session_state[f"_sbdg_{_ubc}"] = True
+                            st.rerun()
+                if st.session_state.get(f"_sbdg_{_ubc}", False):
+                    with st.form(f"sbf_{_ubc[:12]}"):
+                        _nba = st.number_input(f"Budget for {_ubc} (Rs.)", min_value=0.0, step=500.0)
+                        if st.form_submit_button("Save", type="primary"):
+                            _nr = pd.DataFrame([{"Category": _ubc, "Budget": _nba, "Is_Recurring": False, "Day_of_Month": "", "Last_Fired": ""}])
+                            save_settings(pd.concat([st.session_state.settings_df, _nr], ignore_index=True))
+                            st.session_state.pop(f"_sbdg_{_ubc}", None)
+                            st.rerun()
+
+    st.markdown('<p class="sec-head">Recurring Rules</p>', unsafe_allow_html=True)
     with st.expander("Create New Rule"):
         with st.form("new_rec"):
             rc1, rc2 = st.columns(2)
@@ -1629,14 +1753,11 @@ with tab_rec:
                 pass
 
 
-# ==============================================================================
-# TAB 5 — ANALYTICS
-# ==============================================================================
-with tab_analytics:
-    st.markdown(
-        "<span style='font-size:1.2rem;font-weight:700;color:#e8e8f0'>Analytics</span>",
-        unsafe_allow_html=True
-    )
+# ── ANALYSIS TAB — part 2: charts & analytics (continued) ──────────────────
+if active_tab == "analysis":
+    st.markdown('<p class="sec-head">Analytics & Charts</p>', unsafe_allow_html=True)
+    if False:
+        pass
     if df.empty:
         st.markdown('<div class="empty-box"><div class="ico">📈</div>'
                     '<div class="msg">No data yet. Sync transactions to unlock analytics.</div></div>',
@@ -1844,10 +1965,20 @@ with tab_analytics:
 
 
 # ==============================================================================
-# TAB 6 — REVIEW
+# REVIEW TAB
 # ==============================================================================
-with tab_review:
-    st.markdown(
+if active_tab == "review":
+    _rb1, _rb2 = st.columns([1, 4])
+    with _rb1:
+        with stylable_container(key="back_rec", css_styles="""
+            button{background:#1a1a24!important;border:1px solid #2a2a3a!important;
+            border-radius:8px!important;color:#888!important;font-size:.75rem!important;
+            height:32px!important;min-height:32px!important}
+        """):
+            if st.button("← Back", key="back_to_rec"):
+                st.session_state.active_tab = "records"
+                st.rerun()
+    _rb2.markdown(
         "<span style='font-size:1.2rem;font-weight:700;color:#e8e8f0'>Pending Review</span>",
         unsafe_allow_html=True
     )
@@ -2137,11 +2268,11 @@ with tab_review:
 
 
 # ==============================================================================
-# TAB 7 — MANAGE
+# ACCOUNTS / SETTINGS TAB
 # ==============================================================================
-with tab_manage:
+if active_tab == "accounts":
     st.markdown(
-        "<span style='font-size:1.2rem;font-weight:700;color:#e8e8f0'>Manage</span>",
+        "<span style='font-size:1.2rem;font-weight:700;color:#e8e8f0'>Settings & Accounts</span>",
         unsafe_allow_html=True
     )
 
@@ -2470,6 +2601,154 @@ with tab_manage:
 
 
 # ==============================================================================
+# CATEGORIES TAB
+# ==============================================================================
+if active_tab == "categories":
+    st.markdown(
+        "<span style='font-size:1.2rem;font-weight:700;color:#e8e8f0'>Categories</span>",
+        unsafe_allow_html=True
+    )
+    # Summary tile
+    _ct_exp = df[df["Date"].dt.to_period("M") == pd.Period(curr_ym, freq="M")]["Amount"].sum() if not df.empty else 0.0
+    _ct_inc = float(get_app_setting(KEY_INCOME, "0") or "0")
+    st.markdown(
+        f'<div class="mm-header">'
+        f'<div class="mm-balance">[ <b>Rs.{_ct_exp:,.0f}</b> expense so far &nbsp;|&nbsp; '
+        f'<b>{len(st.session_state.cat_df)}</b> categories ]</div>'
+        f'<div class="mm-stats">'
+        f'<div class="mm-stat"><div class="mm-stat-lbl">Expense so far</div>'
+        f'<div class="mm-stat-val mm-exp">Rs.{_ct_exp:,.0f}</div></div>'
+        + (f'<div class="mm-stat"><div class="mm-stat-lbl">Income so far</div>'
+           f'<div class="mm-stat-val mm-inc">Rs.{_ct_inc:,.0f}</div></div>' if _ct_inc > 0 else "")
+        + f'</div></div>',
+        unsafe_allow_html=True
+    )
+
+    # ── Income categories note ────────────────────────────────────────────
+    st.markdown('<p class="sec-head">Income Categories</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<div style="color:#888;font-size:.76rem;padding:6px 10px;background:#0a140a;'
+        'border-radius:8px;border:1px solid #1a2a1a;margin-bottom:6px">'
+        '💡 Add income sources here to track them alongside expenses.</div>',
+        unsafe_allow_html=True
+    )
+
+    # ── Expense categories ────────────────────────────────────────────────
+    st.markdown('<p class="sec-head">Expense Categories</p>', unsafe_allow_html=True)
+    with st.form("cat_tab_add"):
+        _ctf1, _ctf2 = st.columns([4, 1])
+        _ct_new = _ctf1.text_input("New", label_visibility="collapsed", placeholder="e.g. Dining Out")
+        if _ctf2.form_submit_button("+ Add", use_container_width=True):
+            if _ct_new.strip():
+                save_categories(pd.concat([st.session_state.cat_df, pd.DataFrame([{'Category': _ct_new.strip()}])], ignore_index=True))
+                st.rerun()
+            else:
+                st.warning("Name cannot be empty.")
+
+    if st.session_state.cat_df.empty:
+        st.markdown('<div class="empty-box"><div class="ico">🏷️</div>'
+                    '<div class="msg">No categories yet.</div></div>', unsafe_allow_html=True)
+    else:
+        for _cti, _ctrow in st.session_state.cat_df.iterrows():
+            _ct_spent = df[df["Category"] == _ctrow["Category"]]["Amount"].sum() if not df.empty else 0.0
+            _cc1, _cc2 = st.columns([5, 1])
+            _cc1.markdown(
+                f'<div style="display:flex;justify-content:space-between;align-items:center;'
+                f'padding:7px 0;border-bottom:1px solid #1a1a24">'
+                f'<span style="font-size:.86rem;font-weight:500;color:#ccc">{_ctrow["Category"]}</span>'
+                f'<span style="font-size:.76rem;color:#f0a500;font-family:\'JetBrains Mono\',monospace">'
+                f'Rs.{_ct_spent:,.0f}</span></div>',
+                unsafe_allow_html=True
+            )
+            _ctk = f"ct_del_{_cti}"
+            if _ctk not in st.session_state: st.session_state[_ctk] = False
+            if not st.session_state[_ctk]:
+                if _cc2.button("···", key=f"ct_opt_{_cti}", use_container_width=True):
+                    st.session_state[_ctk] = True
+                    st.rerun()
+            else:
+                _yc, _nc = _cc2.columns(2)
+                if _yc.button("Del", key=f"ct_y_{_cti}"):
+                    save_categories(st.session_state.cat_df.drop(_cti).reset_index(drop=True))
+                    st.session_state[_ctk] = False
+                    st.rerun()
+                if _nc.button("✕", key=f"ct_n_{_cti}"):
+                    st.session_state[_ctk] = False
+                    st.rerun()
+
+    # ── Security section ──────────────────────────────────────────────────
+    st.markdown('<p class="sec-head">Security — Change PIN</p>', unsafe_allow_html=True)
+    with st.form("cat_pin_form"):
+        _cpa, _cpb, _cpc = st.columns(3)
+        _c_cur = _cpa.text_input("Current", type="password", max_chars=4, placeholder="****")
+        _c_new = _cpb.text_input("New PIN", type="password", max_chars=4, placeholder="****")
+        _c_cnf = _cpc.text_input("Confirm", type="password", max_chars=4, placeholder="****")
+        if st.form_submit_button("Update PIN", type="primary"):
+            if _c_cur != st.session_state.active_pin:
+                st.error("Current PIN is incorrect.")
+            elif not _c_new.isdigit() or len(_c_new) != 4:
+                st.error("New PIN must be exactly 4 digits.")
+            elif _c_new != _c_cnf:
+                st.error("New PINs do not match.")
+            else:
+                save_pin(_c_new)
+                st.success("PIN updated!")
+
+
+# ==============================================================================
+# BOTTOM NAVIGATION BAR
+# Visual HTML layer + transparent Streamlit buttons overlaid on top
+# ==============================================================================
+_pend_sfx = f" ⚠{pending_count}" if pending_count > 0 else ""
+_NAV_ITEMS = [
+    ("records",    "📋", "Records" + _pend_sfx),
+    ("analysis",   "📊", "Analysis"),
+    ("budgets",    "💰", "Budgets"),
+    ("accounts",   "⚙️",  "Settings"),
+    ("categories", "🏷️", "Categories"),
+]
+# active highlight: records nav also lights up for search/review sub-pages
+_is_records_active = active_tab in ("records", "search", "review")
+
+_nav_html = '<div class="bnav-wrap">'
+for _ntid, _nico, _nlbl in _NAV_ITEMS:
+    _is_act = (_ntid == "records" and _is_records_active) or (_ntid == active_tab and not _is_records_active) or (_ntid == active_tab)
+    _act_cls = " active" if _is_act else ""
+    _nav_html += (f'<div class="bnav-item{_act_cls}">'
+                  f'<span class="bnav-icon">{_nico}</span>'
+                  f'<span>{_nlbl}</span></div>')
+_nav_html += '</div>'
+st.markdown(_nav_html, unsafe_allow_html=True)
+
+# Transparent clickable overlay buttons
+_bnav_cols = st.columns(5)
+for _bc, (_ntid, _nico, _nlbl) in zip(_bnav_cols, _NAV_ITEMS):
+    with _bc:
+        with stylable_container(key=f"nav_{_ntid}", css_styles="""
+            button{
+                background:transparent!important;
+                border:none!important;
+                color:transparent!important;
+                font-size:1px!important;
+                line-height:1px!important;
+                height:60px!important;
+                min-height:60px!important;
+                width:100%!important;
+                position:fixed!important;
+                bottom:0!important;
+                z-index:10000!important;
+                padding:0!important;
+                margin:0!important;
+                border-radius:0!important;
+                opacity:0!important;
+            }
+        """):
+            if st.button("nav", key=f"navbtn_{_ntid}"):
+                st.session_state.active_tab = _ntid
+                st.rerun()
+
+
+# ==============================================================================
 # 11. FAB — QUICK LOG  (unchanged logic; amber colour)
 # ==============================================================================
 if "show_modal" not in st.session_state:
@@ -2535,7 +2814,7 @@ if st.session_state.show_modal:
 
 with stylable_container(key="fab", css_styles="""
 button {
-    position: fixed; bottom: 32px; right: 24px;
+    position: fixed; bottom: 72px; right: 24px;
     width: 60px; height: 60px; border-radius: 50%;
     background: #f0a500; color: #000; font-size: 34px;
     z-index: 9999; border: none;
