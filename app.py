@@ -188,14 +188,6 @@ _CSS = (
     ".stAlert{border-radius:10px!important}"
     "[data-testid='stMultiSelect'] span{background:#1a2035!important;color:#7c9eff!important;"
     "border-radius:5px!important;font-size:.74rem!important}"
-    # Period pills — radio styled as pill bar
-    "div[data-testid='stRadio']>div{display:flex;gap:6px;flex-wrap:wrap}"
-    "div[data-testid='stRadio'] label{background:#1a1a24;border:1px solid #2a2a3a;"
-    "border-radius:20px;padding:5px 14px;cursor:pointer;font-size:.78rem;color:#8888aa;"
-    "transition:all .15s}"
-    "div[data-testid='stRadio'] label:has(input:checked){background:rgba(240,165,0,.13);"
-    "border-color:#f0a500!important;color:#f0a500!important;font-weight:600}"
-    "div[data-testid='stRadio'] [data-testid='stWidgetLabel']{display:none}"
     # Hero card
     ".hero-card{background:#13131a;border:1px solid #2a2a3a;border-radius:16px;"
     "padding:20px 20px;margin-bottom:10px}"
@@ -1017,23 +1009,25 @@ with tab_home:
         "Fin<span style='color:#f0a500'>Track</span></span>",
         unsafe_allow_html=True
     )
-    with stylable_container(key="lock_btn", css_styles="""
-        button{background:#1a1a24!important;border:1px solid #2a2a3a!important;
-        border-radius:8px!important;color:#888!important;font-size:.9rem!important;
-        padding:0 6px!important}
-    """):
-        if hc2.button("🔒", key="lock_icon", use_container_width=True):
-            st.session_state.pin_unlocked = False
-            st.session_state.pin_input    = ""
-            st.session_state.pin_error    = ""
-            st.rerun()
-    with stylable_container(key="refresh_btn", css_styles="""
-        button{background:#1a1a24!important;border:1px solid #2a2a3a!important;
-        border-radius:8px!important;color:#888!important;font-size:.9rem!important;
-        padding:0 6px!important}
-    """):
-        if hc3.button("↻", key="refresh_icon", use_container_width=True):
-            hard_refresh()
+    with hc2:
+        with stylable_container(key="lock_btn", css_styles="""
+            button{background:#1a1a24!important;border:1px solid #2a2a3a!important;
+            border-radius:8px!important;color:#888!important;font-size:.85rem!important;
+            padding:2px 4px!important;min-height:32px!important}
+        """):
+            if st.button("🔒", key="lock_icon", use_container_width=True):
+                st.session_state.pin_unlocked = False
+                st.session_state.pin_input    = ""
+                st.session_state.pin_error    = ""
+                st.rerun()
+    with hc3:
+        with stylable_container(key="refresh_btn", css_styles="""
+            button{background:#1a1a24!important;border:1px solid #2a2a3a!important;
+            border-radius:8px!important;color:#888!important;font-size:.85rem!important;
+            padding:2px 4px!important;min-height:32px!important}
+        """):
+            if st.button("↻", key="refresh_icon", use_container_width=True):
+                hard_refresh()
 
     if df.empty:
         st.markdown(
@@ -1045,10 +1039,39 @@ with tab_home:
         all_months = sorted(
             df["Date"].dropna().dt.to_period("M").unique().astype(str).tolist(), reverse=True
         )
-        # ── Period pills (last 6 months) ──────────────────────────────────────
         pill_months = all_months[:6]
-        sel_month   = st.radio("home_period", pill_months, horizontal=True,
-                               label_visibility="collapsed", index=0)
+
+        # ── Button-based period pills (reliable on mobile) ────────────────────
+        if "home_pill_idx" not in st.session_state:
+            st.session_state.home_pill_idx = 0
+        # Guard: if data changes and fewer months available
+        if st.session_state.home_pill_idx >= len(pill_months):
+            st.session_state.home_pill_idx = 0
+
+        pill_cols = st.columns(len(pill_months))
+        for _pi, (_pc, _pm) in enumerate(zip(pill_cols, pill_months)):
+            _lbl = pd.Period(_pm, freq="M").strftime("%b '%y")
+            _sel = st.session_state.home_pill_idx == _pi
+            with _pc:
+                with stylable_container(
+                    key=f"hpill_{_pi}",
+                    css_styles=f"""
+                        button{{
+                            background:{'rgba(240,165,0,.15)' if _sel else '#13131a'}!important;
+                            border:1px solid {'#f0a500' if _sel else '#2a2a3a'}!important;
+                            border-radius:20px!important;
+                            color:{'#f0a500' if _sel else '#666'}!important;
+                            font-size:.72rem!important;
+                            font-weight:{'700' if _sel else '400'}!important;
+                            padding:4px 2px!important;
+                        }}
+                    """
+                ):
+                    if st.button(_lbl, key=f"hpill_btn_{_pi}", use_container_width=True):
+                        st.session_state.home_pill_idx = _pi
+                        st.rerun()
+
+        sel_month   = pill_months[st.session_state.home_pill_idx]
         sel_period  = pd.Period(sel_month, freq="M")
         prev_period = sel_period - 1
         filt = df[df["Date"].dt.to_period("M") == sel_period].copy()
@@ -1537,11 +1560,39 @@ with tab_analytics:
         all_months_a = sorted(
             df["Date"].dropna().dt.to_period("M").unique().astype(str).tolist(), reverse=True
         )
-        # ── Period pills ──────────────────────────────────────────────────────
-        an_range_opts = ["3M", "6M", "12M"]
-        an_pill_opts  = an_range_opts + all_months_a[:3]
-        an_sel = st.radio("analytics_period", an_pill_opts, horizontal=True,
-                          label_visibility="collapsed", index=0)
+        # ── Button-based period pills for analytics ───────────────────────────
+        _an_range = ["3M", "6M", "12M"]
+        _an_months = [pd.Period(m, freq="M").strftime("%b '%y") + "|" + m
+                      for m in all_months_a[:3]]
+        an_pill_labels = _an_range + [x.split("|")[0] for x in _an_months]
+        an_pill_vals   = _an_range + [x.split("|")[1] for x in _an_months]
+
+        if "an_pill_idx" not in st.session_state:
+            st.session_state.an_pill_idx = 0
+
+        _an_cols = st.columns(len(an_pill_labels))
+        for _ai, (_ac, _al) in enumerate(zip(_an_cols, an_pill_labels)):
+            _asel = st.session_state.an_pill_idx == _ai
+            with _ac:
+                with stylable_container(
+                    key=f"anpill_{_ai}",
+                    css_styles=f"""
+                        button{{
+                            background:{'rgba(240,165,0,.15)' if _asel else '#13131a'}!important;
+                            border:1px solid {'#f0a500' if _asel else '#2a2a3a'}!important;
+                            border-radius:20px!important;
+                            color:{'#f0a500' if _asel else '#666'}!important;
+                            font-size:.68rem!important;
+                            font-weight:{'700' if _asel else '400'}!important;
+                            padding:4px 2px!important;
+                        }}
+                    """
+                ):
+                    if st.button(_al, key=f"anpill_btn_{_ai}", use_container_width=True):
+                        st.session_state.an_pill_idx = _ai
+                        st.rerun()
+
+        an_sel = an_pill_vals[st.session_state.an_pill_idx]
 
         now_per = pd.Period(curr_ym, freq="M")
         if an_sel == "3M":
