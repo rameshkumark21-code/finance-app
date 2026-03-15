@@ -10,7 +10,7 @@ from streamlit_extras.stylable_container import stylable_container
 # ==============================================================================
 # 1. CONSTANTS  (unchanged)
 # ==============================================================================
-RECENT_TXN_COUNT    = 10
+RECENT_TXN_COUNT    = 7
 HDFC_MILESTONE_AMT  = 100_000
 LARGE_AMT_WARNING   = 50_000
 TZ                  = pytz.timezone('Asia/Kolkata')
@@ -37,181 +37,200 @@ _CSS = (
     ".stApp{background-color:#0a0a0f;color:#e8e8f0}"
     "[data-testid='stHeader']{background:transparent}"
     "h1,h2,h3,h4{letter-spacing:-0.3px;color:#e8e8f0}"
+    # Tighten Streamlit block gap globally
+    "[data-testid='stVerticalBlock']>div{gap:0!important}"
+    "div.block-container{padding-top:0.6rem!important;padding-bottom:4rem!important;"
+    "padding-left:1rem!important;padding-right:1rem!important}"
     # Tabs
     ".stTabs [data-baseweb='tab-list']{gap:2px;background:transparent;border-bottom:1px solid #2a2a3a}"
-    ".stTabs [data-baseweb='tab']{height:40px;background:transparent;border-radius:8px 8px 0 0;"
-    "padding:0 10px;color:#444460;font-size:.78rem;font-weight:500}"
+    ".stTabs [data-baseweb='tab']{height:38px;background:transparent;border-radius:8px 8px 0 0;"
+    "padding:0 8px;color:#444460;font-size:.75rem;font-weight:500}"
     ".stTabs [aria-selected='true']{background:transparent!important;color:#f0f0f0!important;"
     "border-bottom:2px solid #f0a500!important;font-weight:600!important}"
-    # Core tiles
-    ".tile{background:#13131a;border:1px solid #2a2a3a;border-radius:14px;padding:16px 18px;margin-bottom:10px}"
-    ".tile-accent{height:3px;border-radius:2px 2px 0 0;margin-bottom:12px}"
-    ".tile-label{color:#444460;font-size:.7rem;text-transform:uppercase;letter-spacing:1.4px;font-weight:600}"
-    ".tile-value{font-size:1.85rem;font-weight:700;margin-top:4px;letter-spacing:-.8px;color:#e8e8f0;"
+    # Core tiles — tighter
+    ".tile{background:#13131a;border:1px solid #2a2a3a;border-radius:12px;padding:10px 14px;margin-bottom:6px}"
+    ".tile-accent{height:3px;border-radius:2px 2px 0 0;margin-bottom:8px}"
+    ".tile-label{color:#444460;font-size:.65rem;text-transform:uppercase;letter-spacing:1.4px;font-weight:600}"
+    ".tile-value{font-size:1.5rem;font-weight:700;margin-top:2px;letter-spacing:-.8px;color:#e8e8f0;"
     "font-family:'JetBrains Mono',monospace!important}"
-    ".tile-sub{font-size:.78rem;margin-top:4px}"
+    ".tile-sub{font-size:.75rem;margin-top:2px}"
     ".trend-up{color:#f75676;font-weight:600}"
     ".trend-down{color:#2dce89;font-weight:600}"
     ".trend-flat{color:#444460}"
-    # Progress bars
-    ".prog-wrap{margin-top:10px}"
-    ".prog-track{background:#22222f;border-radius:6px;height:8px;overflow:hidden}"
-    ".prog-fill{height:8px;border-radius:6px;transition:width .6s ease}"
-    ".prog-meta{display:flex;justify-content:space-between;margin-top:5px;font-size:.72rem;color:#444460}"
-    # Section headings
-    ".sec-head{font-size:.68rem;text-transform:uppercase;letter-spacing:1.6px;color:#444460;"
-    "font-weight:700;margin:22px 0 10px}"
-    # Category rows
+    # Progress bars — thinner
+    ".prog-wrap{margin-top:6px}"
+    ".prog-track{background:#22222f;border-radius:4px;height:5px;overflow:hidden}"
+    ".prog-fill{height:5px;border-radius:4px;transition:width .6s ease}"
+    ".prog-meta{display:flex;justify-content:space-between;margin-top:3px;font-size:.65rem;color:#444460}"
+    # Section headings — less vertical space
+    ".sec-head{font-size:.63rem;text-transform:uppercase;letter-spacing:1.6px;color:#444460;"
+    "font-weight:700;margin:10px 0 5px}"
+    # Category rows — tighter
     ".cat-row{display:flex;align-items:center;justify-content:space-between;"
-    "padding:9px 14px;border-radius:10px;margin-bottom:5px;background:#13131a;border:1px solid #2a2a3a}"
-    ".cat-name{font-size:.88rem;font-weight:500;color:#ccc;flex:1}"
-    ".cat-bar-wrap{width:72px;height:3px;background:#22222f;border-radius:2px;margin:0 12px;flex-shrink:0}"
+    "padding:6px 10px;border-radius:8px;margin-bottom:3px;background:#13131a;border:1px solid #1e1e28}"
+    ".cat-name{font-size:.82rem;font-weight:500;color:#ccc;flex:1}"
+    ".cat-bar-wrap{width:52px;height:3px;background:#22222f;border-radius:2px;margin:0 8px;flex-shrink:0}"
     ".cat-bar-fill{height:3px;border-radius:2px;background:#f0a500}"
-    ".cat-amt{font-size:.88rem;font-weight:600;color:#e8e8f0;white-space:nowrap;"
+    ".cat-amt{font-size:.82rem;font-weight:600;color:#e8e8f0;white-space:nowrap;"
     "font-family:'JetBrains Mono',monospace!important}"
-    # Budget rows
-    ".budget-row{padding:12px 14px;border-radius:10px;background:#13131a;"
-    "border:1px solid #2a2a3a;margin-bottom:7px}"
-    ".budget-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}"
-    ".budget-name{font-size:.88rem;font-weight:600;color:#ccc}"
-    ".budget-nums{font-size:.78rem;color:#444460;font-family:'JetBrains Mono',monospace!important}"
+    # Budget rows — compact inline
+    ".budget-row{padding:6px 10px;border-radius:8px;background:#13131a;"
+    "border:1px solid #1e1e28;margin-bottom:3px}"
+    ".budget-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}"
+    ".budget-name{font-size:.8rem;font-weight:600;color:#ccc}"
+    ".budget-nums{font-size:.72rem;color:#444460;font-family:'JetBrains Mono',monospace!important}"
     # Recurring cards
-    ".rec-card{background:#13131a;border:1px solid #2a2a3a;border-radius:12px;"
-    "padding:13px 15px;margin-bottom:6px}"
+    ".rec-card{background:#13131a;border:1px solid #2a2a3a;border-radius:10px;"
+    "padding:10px 12px;margin-bottom:4px}"
     ".rec-fired{border-left:3px solid #2dce89}"
     ".rec-pending{border-left:3px solid #f0a500}"
-    ".rec-title{font-size:.93rem;font-weight:600;color:#e0e0e0}"
-    ".rec-meta{font-size:.76rem;color:#444460;margin-top:3px;font-family:'JetBrains Mono',monospace!important}"
+    ".rec-title{font-size:.88rem;font-weight:600;color:#e0e0e0}"
+    ".rec-meta{font-size:.72rem;color:#444460;margin-top:2px;font-family:'JetBrains Mono',monospace!important}"
     # Category list rows
-    ".catlist-row{font-size:.9rem;font-weight:500;color:#ccc;padding:9px 0;border-bottom:1px solid #1a1a24}"
+    ".catlist-row{font-size:.86rem;font-weight:500;color:#ccc;padding:7px 0;border-bottom:1px solid #1a1a24}"
     # Empty states
-    ".empty-box{text-align:center;padding:48px 20px;color:#444460}"
-    ".empty-box .ico{font-size:2.2rem;margin-bottom:10px}"
-    ".empty-box .msg{font-size:.88rem;line-height:1.5}"
+    ".empty-box{text-align:center;padding:32px 20px;color:#444460}"
+    ".empty-box .ico{font-size:1.8rem;margin-bottom:8px}"
+    ".empty-box .msg{font-size:.84rem;line-height:1.5}"
     # Category hero
-    ".cat-hero{background:#13131a;border:1px solid #2a2a3a;border-radius:14px;"
-    "padding:16px 18px;margin-bottom:6px}"
-    ".cat-hero-name{font-size:1rem;font-weight:700;color:#e8e8f0}"
-    ".cat-hero-meta{font-size:.74rem;color:#444460;margin-top:3px}"
-    ".cat-hero-amt{font-size:1.2rem;font-weight:700;color:#f0a500;white-space:nowrap;"
+    ".cat-hero{background:#13131a;border:1px solid #2a2a3a;border-radius:12px;"
+    "padding:12px 14px;margin-bottom:5px}"
+    ".cat-hero-name{font-size:.95rem;font-weight:700;color:#e8e8f0}"
+    ".cat-hero-meta{font-size:.7rem;color:#444460;margin-top:2px}"
+    ".cat-hero-amt{font-size:1.1rem;font-weight:700;color:#f0a500;white-space:nowrap;"
     "font-family:'JetBrains Mono',monospace!important}"
     # Search cards
-    ".srch-card{background:#13131a;border:1px solid #2a2a3a;border-radius:12px;"
-    "padding:13px 16px;margin-bottom:5px}"
+    ".srch-card{background:#13131a;border:1px solid #2a2a3a;border-radius:10px;"
+    "padding:10px 13px;margin-bottom:4px}"
     ".srch-top{display:flex;justify-content:space-between;align-items:center}"
-    ".srch-cat{font-size:.9rem;font-weight:700;color:#e0e0e0}"
-    ".srch-amt{font-size:.95rem;font-weight:700;color:#f0a500;white-space:nowrap;"
+    ".srch-cat{font-size:.86rem;font-weight:700;color:#e0e0e0}"
+    ".srch-amt{font-size:.9rem;font-weight:700;color:#f0a500;white-space:nowrap;"
     "font-family:'JetBrains Mono',monospace!important}"
-    ".srch-meta{font-size:.74rem;color:#444460;margin-top:3px}"
-    ".srch-note{font-size:.76rem;color:#8888aa;margin-top:3px;font-style:italic}"
+    ".srch-meta{font-size:.7rem;color:#444460;margin-top:2px}"
+    ".srch-note{font-size:.72rem;color:#8888aa;margin-top:2px;font-style:italic}"
     # Chips / badges
-    ".chip{display:inline-block;background:#1a2035;color:#7c9eff;border-radius:6px;"
-    "font-size:.68rem;font-weight:600;padding:2px 7px;margin-right:4px;letter-spacing:.4px}"
+    ".chip{display:inline-block;background:#1a2035;color:#7c9eff;border-radius:5px;"
+    "font-size:.63rem;font-weight:600;padding:1px 5px;margin-right:3px;letter-spacing:.3px}"
     # Review cards
     ".review-card{background:#13131a;border:1px solid #2a1f05;border-left:3px solid #f0a500;"
-    "border-radius:14px;padding:16px 18px;margin-bottom:12px}"
-    ".review-card-amt{font-size:1.25rem;font-weight:700;color:#e8e8f0;letter-spacing:-.5px;"
+    "border-radius:12px;padding:12px 14px;margin-bottom:8px}"
+    ".review-card-amt{font-size:1.1rem;font-weight:700;color:#e8e8f0;letter-spacing:-.5px;"
     "font-family:'JetBrains Mono',monospace!important}"
-    ".review-card-txn{font-size:.9rem;font-weight:500;color:#ccc;margin-top:4px}"
-    ".review-card-meta{font-size:.73rem;color:#444460;margin-top:5px;line-height:1.6}"
+    ".review-card-txn{font-size:.86rem;font-weight:500;color:#ccc;margin-top:3px}"
+    ".review-card-meta{font-size:.7rem;color:#444460;margin-top:4px;line-height:1.5}"
     ".review-badge-remarks{display:inline-block;background:#0f2a1a;color:#86efac;"
-    "border-radius:6px;font-size:.68rem;font-weight:600;padding:2px 8px;margin-right:4px}"
+    "border-radius:5px;font-size:.63rem;font-weight:600;padding:1px 6px;margin-right:3px}"
     ".review-badge-tags{display:inline-block;background:#0f1a2a;color:#93c5fd;"
-    "border-radius:6px;font-size:.68rem;font-weight:600;padding:2px 8px;margin-right:4px}"
+    "border-radius:5px;font-size:.63rem;font-weight:600;padding:1px 6px;margin-right:3px}"
     ".review-badge-sug{display:inline-block;background:#2a1f05;color:#f0a500;"
-    "border-radius:6px;font-size:.68rem;font-weight:600;padding:2px 8px}"
+    "border-radius:5px;font-size:.63rem;font-weight:600;padding:1px 6px}"
     # Intel badges
     ".badge-anomaly{display:inline-block;background:#1f0505;color:#f75676;"
-    "border-radius:6px;font-size:.68rem;font-weight:700;padding:2px 8px;margin-right:4px}"
+    "border-radius:5px;font-size:.63rem;font-weight:700;padding:1px 6px;margin-right:3px}"
     ".badge-dup{display:inline-block;background:#1f1005;color:#fb923c;"
-    "border-radius:6px;font-size:.68rem;font-weight:700;padding:2px 8px;margin-right:4px}"
+    "border-radius:5px;font-size:.63rem;font-weight:700;padding:1px 6px;margin-right:3px}"
     ".badge-recur{display:inline-block;background:#050f1a;color:#60a5fa;"
-    "border-radius:6px;font-size:.68rem;font-weight:700;padding:2px 8px;margin-right:4px}"
+    "border-radius:5px;font-size:.63rem;font-weight:700;padding:1px 6px;margin-right:3px}"
     ".badge-intel{display:inline-block;background:#0a1a0a;color:#4ade80;"
-    "border-radius:6px;font-size:.68rem;font-weight:700;padding:2px 8px;margin-right:4px}"
-    # Anomaly panel on Home
+    "border-radius:5px;font-size:.63rem;font-weight:700;padding:1px 6px;margin-right:3px}"
+    # Anomaly panel — tighter
     ".anomaly-panel{background:#100505;border:1px solid #200a0a;border-left:3px solid #f75676;"
-    "border-radius:12px;padding:12px 16px;margin-bottom:14px}"
-    ".anomaly-panel-title{font-size:.75rem;font-weight:700;color:#f75676;margin-bottom:8px;"
+    "border-radius:10px;padding:8px 12px;margin-bottom:8px}"
+    ".anomaly-panel-title{font-size:.68rem;font-weight:700;color:#f75676;margin-bottom:5px;"
     "text-transform:uppercase;letter-spacing:1px}"
     ".anomaly-item{display:flex;justify-content:space-between;align-items:center;"
-    "padding:5px 0;font-size:.8rem;border-bottom:1px solid #180808}"
+    "padding:3px 0;font-size:.75rem;border-bottom:1px solid #180808}"
     # ImportLog table
     ".log-row{display:flex;justify-content:space-between;align-items:center;"
-    "padding:8px 14px;border-bottom:1px solid #1a1a24;font-size:.8rem}"
+    "padding:6px 12px;border-bottom:1px solid #1a1a24;font-size:.76rem}"
     ".log-ok{color:#2dce89;font-weight:600}"
     ".log-err{color:#f75676;font-weight:600}"
     ".log-num{color:#e8e8f0;font-weight:600;font-family:'JetBrains Mono',monospace!important}"
     ".log-dim{color:#444460}"
     # Sync panel
-    ".sync-card{background:#13131a;border:1px solid #2a2a3a;border-radius:14px;"
-    "padding:20px 20px;margin-bottom:16px}"
-    ".sync-title{font-size:.95rem;font-weight:700;color:#e8e8f0;margin-bottom:6px}"
-    ".sync-meta{font-size:.78rem;color:#444460}"
+    ".sync-card{background:#13131a;border:1px solid #2a2a3a;border-radius:12px;"
+    "padding:14px 16px;margin-bottom:10px}"
+    ".sync-title{font-size:.9rem;font-weight:700;color:#e8e8f0;margin-bottom:4px}"
+    ".sync-meta{font-size:.74rem;color:#444460}"
     # Filter panel
-    ".filter-panel{background:#0f0f15;border:1px solid #2a2a3a;border-radius:14px;"
-    "padding:16px 18px;margin-bottom:16px}"
+    ".filter-panel{background:#0f0f15;border:1px solid #2a2a3a;border-radius:12px;"
+    "padding:12px 14px;margin-bottom:10px}"
     # Analytics cards
-    ".analytics-card{background:#13131a;border:1px solid #2a2a3a;border-radius:14px;"
-    "padding:18px 20px;margin-bottom:14px}"
-    ".analytics-title{font-size:.68rem;text-transform:uppercase;letter-spacing:1.4px;"
-    "color:#444460;font-weight:700;margin-bottom:14px}"
-    ".heatmap-wrap{overflow-x:auto;padding:4px 0}"
-    ".dow-row{display:flex;align-items:center;margin-bottom:6px;gap:8px}"
-    ".dow-label{font-size:.72rem;color:#444460;width:28px;flex-shrink:0;text-align:right}"
-    ".dow-bar-fill{height:16px;border-radius:4px;min-width:3px}"
-    ".dow-bar-amt{font-size:.7rem;color:#444460;white-space:nowrap;"
+    ".analytics-card{background:#13131a;border:1px solid #2a2a3a;border-radius:12px;"
+    "padding:14px 16px;margin-bottom:10px}"
+    ".analytics-title{font-size:.63rem;text-transform:uppercase;letter-spacing:1.4px;"
+    "color:#444460;font-weight:700;margin-bottom:10px}"
+    ".heatmap-wrap{overflow-x:auto;padding:2px 0}"
+    ".dow-row{display:flex;align-items:center;margin-bottom:4px;gap:6px}"
+    ".dow-label{font-size:.68rem;color:#444460;width:26px;flex-shrink:0;text-align:right}"
+    ".dow-bar-fill{height:13px;border-radius:3px;min-width:3px}"
+    ".dow-bar-amt{font-size:.65rem;color:#444460;white-space:nowrap;"
     "font-family:'JetBrains Mono',monospace!important}"
     ".merchant-rank-row{display:flex;align-items:center;justify-content:space-between;"
-    "padding:9px 0;border-bottom:1px solid #1a1a24}"
-    ".merchant-rank-name{font-size:.86rem;color:#ccc;flex:1}"
-    ".merchant-rank-bar{height:4px;border-radius:2px;background:#f0a500;margin:0 12px;flex-shrink:0}"
-    ".merchant-rank-amt{font-size:.88rem;font-weight:600;color:#f0a500;white-space:nowrap;"
+    "padding:6px 0;border-bottom:1px solid #1a1a24}"
+    ".merchant-rank-name{font-size:.8rem;color:#ccc;flex:1}"
+    ".merchant-rank-bar{height:3px;border-radius:2px;background:#f0a500;margin:0 8px;flex-shrink:0}"
+    ".merchant-rank-amt{font-size:.82rem;font-weight:600;color:#f0a500;white-space:nowrap;"
     "font-family:'JetBrains Mono',monospace!important}"
     # Split form
     ".split-row{background:#0a0a05;border:1px solid #2a2a10;border-left:2px solid #f0a500;"
-    "border-radius:10px;padding:10px 14px;margin-bottom:8px}"
+    "border-radius:8px;padding:8px 12px;margin-bottom:6px}"
     # Dialog
     "div[data-testid='stDialog']{background:#0f0f15!important;border:1px solid #2a2a3a!important;"
-    "border-radius:22px!important}"
+    "border-radius:18px!important}"
     "[data-testid='stTextInput'] input,[data-testid='stNumberInput'] input"
     "{background:#1a1a24!important;border:1px solid #2a2a3a!important;"
     "border-radius:8px!important;color:#e8e8f0!important}"
     "[data-testid='stSelectbox']>div>div{background:#1a1a24!important;"
     "border:1px solid #2a2a3a!important;border-radius:8px!important}"
     "[data-testid='stExpander']{background:#13131a!important;border:1px solid #2a2a3a!important;"
-    "border-radius:10px!important;margin-bottom:5px}"
-    "[data-testid='stExpander'] summary{font-size:.87rem!important;font-weight:500!important;"
+    "border-radius:8px!important;margin-bottom:4px}"
+    "[data-testid='stExpander'] summary{font-size:.83rem!important;font-weight:500!important;"
     "color:#ccc!important}"
-    "[data-testid='stForm']{border:1px solid #2a2a3a!important;border-radius:12px!important;"
-    "padding:16px!important;background:#0f0f15!important}"
-    ".stAlert{border-radius:10px!important}"
+    "[data-testid='stForm']{border:1px solid #2a2a3a!important;border-radius:10px!important;"
+    "padding:10px!important;background:#0f0f15!important}"
+    ".stAlert{border-radius:8px!important}"
     "[data-testid='stMultiSelect'] span{background:#1a2035!important;color:#7c9eff!important;"
-    "border-radius:5px!important;font-size:.74rem!important}"
-    # Hero card
-    ".hero-card{background:#13131a;border:1px solid #2a2a3a;border-radius:16px;"
-    "padding:20px 20px;margin-bottom:10px}"
-    ".hero-amount{font-size:2.3rem;font-weight:700;letter-spacing:-1.5px;color:#e8e8f0;"
-    "font-family:'JetBrains Mono',monospace!important;margin-top:4px}"
+    "border-radius:4px!important;font-size:.7rem!important}"
+    # Hero card — tighter
+    ".hero-card{background:#13131a;border:1px solid #2a2a3a;border-radius:14px;"
+    "padding:14px 16px;margin-bottom:8px}"
+    ".hero-amount{font-size:2rem;font-weight:700;letter-spacing:-1.2px;color:#e8e8f0;"
+    "font-family:'JetBrains Mono',monospace!important;margin-top:2px}"
     ".hero-row{display:flex;justify-content:space-between;align-items:flex-end}"
-    ".hero-today-val{font-size:1.15rem;font-weight:700;color:#f0a500;text-align:right;"
+    ".hero-today-val{font-size:1.05rem;font-weight:700;color:#f0a500;text-align:right;"
     "font-family:'JetBrains Mono',monospace!important}"
-    ".hero-today-lbl{font-size:.65rem;color:#444460;text-transform:uppercase;"
-    "letter-spacing:1px;text-align:right;margin-bottom:3px}"
+    ".hero-today-lbl{font-size:.6rem;color:#444460;text-transform:uppercase;"
+    "letter-spacing:1px;text-align:right;margin-bottom:2px}"
+    # Mini-tile pair (savings + hdfc side by side)
+    ".mini-tile{background:#13131a;border:1px solid #1e1e28;border-radius:10px;"
+    "padding:8px 10px}"
+    ".mini-tile-lbl{font-size:.6rem;color:#444460;text-transform:uppercase;letter-spacing:1px;font-weight:600}"
+    ".mini-tile-val{font-size:1rem;font-weight:700;letter-spacing:-.5px;"
+    "font-family:'JetBrains Mono',monospace!important;margin-top:1px}"
+    ".mini-tile-sub{font-size:.65rem;color:#444460;margin-top:2px}"
     # Monthly bar chart
-    ".monthly-bar-row{display:flex;align-items:center;margin-bottom:5px;gap:8px}"
-    ".monthly-bar-lbl{font-size:.7rem;color:#444460;width:44px;flex-shrink:0;text-align:right}"
-    ".monthly-bar-amt{font-size:.7rem;color:#f0a500;white-space:nowrap;margin-left:4px;"
+    ".monthly-bar-row{display:flex;align-items:center;margin-bottom:4px;gap:6px}"
+    ".monthly-bar-lbl{font-size:.65rem;color:#444460;width:40px;flex-shrink:0;text-align:right}"
+    ".monthly-bar-amt{font-size:.65rem;color:#f0a500;white-space:nowrap;margin-left:3px;"
     "font-family:'JetBrains Mono',monospace!important}"
     # Suggestion chip for review
-    ".sug-chip-row{background:rgba(240,165,0,.07);border:1px solid rgba(240,165,0,.25);"
-    "border-radius:10px;padding:8px 12px;margin-bottom:8px;display:flex;"
+    ".sug-chip-row{background:rgba(240,165,0,.07);border:1px solid rgba(240,165,0,.2);"
+    "border-radius:8px;padding:6px 10px;margin-bottom:6px;display:flex;"
     "align-items:center;justify-content:space-between}"
-    ".sug-chip-label{font-size:.72rem;color:#888;margin-bottom:2px}"
-    ".sug-chip-val{font-size:.88rem;font-weight:600;color:#f0a500}"
+    ".sug-chip-label{font-size:.65rem;color:#888;margin-bottom:1px}"
+    ".sug-chip-val{font-size:.84rem;font-weight:600;color:#f0a500}"
     # Queue preview
     ".queue-pill{display:inline-block;background:#0f0f15;border:1px solid #2a2a3a;"
-    "border-radius:20px;padding:3px 12px;font-size:.72rem;color:#444460;margin-bottom:10px}"
+    "border-radius:20px;padding:2px 10px;font-size:.68rem;color:#444460;margin-bottom:8px}"
+    # Compact txn rows
+    ".txn-row{display:flex;align-items:center;justify-content:space-between;"
+    "padding:7px 0;border-bottom:1px solid #1a1a24}"
+    ".txn-amt{font-size:.9rem;font-weight:700;color:#e8e8f0;white-space:nowrap;"
+    "font-family:'JetBrains Mono',monospace!important;min-width:70px}"
+    ".txn-cat{font-size:.8rem;font-weight:600;color:#ccc}"
+    ".txn-meta{font-size:.65rem;color:#444460;margin-top:1px}"
+    ".txn-note{font-size:.65rem;color:#8888aa;font-style:italic}"
     "</style>"
 )
 st.markdown(_CSS, unsafe_allow_html=True)
@@ -762,7 +781,7 @@ def approve_split_group(split_map, create_cats=None):
 # 7. SHARED TRANSACTION ROW RENDERER  (same keys; visual lift only)
 # ==============================================================================
 def render_txn_row(idx, row, key_prefix="txn", show_edit=True):
-    date_disp = pd.to_datetime(row["Date"]).strftime("%-d %b %Y, %H:%M") if pd.notna(row["Date"]) else "-"
+    date_disp = pd.to_datetime(row["Date"]).strftime("%-d %b, %H:%M") if pd.notna(row["Date"]) else "-"
     note_val  = str(row.get("Note", "") or "").strip()
     edit_key  = f"{key_prefix}_edit_{idx}"
     del_key   = f"{key_prefix}_del_{idx}"
@@ -771,31 +790,29 @@ def render_txn_row(idx, row, key_prefix="txn", show_edit=True):
         if k not in st.session_state:
             st.session_state[k] = v
 
-    c_amt, c_info, c_btn = st.columns([2, 5, 1])
-    c_amt.markdown(
-        f"<div style='font-size:.97rem;font-weight:700;color:#e8e8f0;padding:10px 0;"
-        f"font-family:\"JetBrains Mono\",monospace'>"
-        f"Rs.{float(row['Amount']):,.0f}</div>",
-        unsafe_allow_html=True
-    )
-    mode_chip = f"<span class='chip'>{row['Mode']}</span>" if str(row.get("Mode","")).strip() else ""
-    note_html = (f"<div style='font-size:.72rem;color:#8888aa;margin-top:2px;font-style:italic'>"
-                 f"{note_val}</div>") if note_val else ""
+    mode_val  = str(row.get("Mode","")).strip()
+    note_html = f'<span class="txn-note"> · {note_val[:28]}</span>' if note_val else ""
+    mode_html = f'<span class="chip">{mode_val}</span>' if mode_val else ""
+
+    c_info, c_amt, c_btn = st.columns([5, 3, 1])
     c_info.markdown(
-        f"<div style='padding:10px 0;line-height:1.35'>"
-        f"<span style='font-size:.88rem;font-weight:600;color:#ccc'>{row['Category']}</span>"
-        f"<br><span style='font-size:.72rem;color:#444460'>{date_disp}</span> {mode_chip}"
-        f"{note_html}</div>",
+        f'<div class="txn-row" style="border:none;padding:6px 0">'
+        f'<div><div class="txn-cat">{row["Category"]}{note_html}</div>'
+        f'<div class="txn-meta">{date_disp} {mode_html}</div>'
+        f'</div></div>',
         unsafe_allow_html=True
     )
-    if show_edit and c_btn.button("✏️", key=f"{key_prefix}_tgl_{idx}", help="Edit / Split / Delete"):
+    c_amt.markdown(
+        f'<div style="font-size:.9rem;font-weight:700;color:#e8e8f0;padding:6px 0;text-align:right;'
+        f'font-family:\'JetBrains Mono\',monospace">Rs.{float(row["Amount"]):,.0f}</div>',
+        unsafe_allow_html=True
+    )
+    if show_edit and c_btn.button("✏️", key=f"{key_prefix}_tgl_{idx}"):
         st.session_state[edit_key]  = not st.session_state[edit_key]
         st.session_state[split_key] = False
         st.rerun()
-    st.markdown(
-        "<hr style='border:none;border-top:1px solid #1a1a24;margin:0'>",
-        unsafe_allow_html=True
-    )
+    st.markdown("<hr style='border:none;border-top:1px solid #1a1a24;margin:0'>",
+                unsafe_allow_html=True)
 
     if show_edit and st.session_state[edit_key]:
         with st.container(border=True):
@@ -1136,31 +1153,8 @@ with tab_home:
             unsafe_allow_html=True
         )
 
-        # ── Savings Rate tile (only when income is set + current month view) ──
+        # ── Mini-tile row: Savings Rate + HDFC Milestone ─────────────────────
         monthly_income = float(get_app_setting(KEY_INCOME, "0") or "0")
-        if monthly_income > 0 and _show_today:
-            savings      = monthly_income - month_total
-            savings_pct  = savings / monthly_income * 100
-            sav_color    = "#2dce89" if savings >= 0 else "#f75676"
-            sav_sign     = "+" if savings >= 0 else ""
-            sav_label    = "Saving" if savings >= 0 else "Over budget by"
-            sav_pct_fill = min(abs(savings_pct), 100)
-            sav_bar_col  = "#2dce89" if savings >= 0 else "#f75676"
-            st.markdown(
-                f'<div class="tile" style="border-left:3px solid {sav_color}">'
-                f'<div class="tile-label">Savings Rate</div>'
-                f'<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:4px">'
-                f'<span style="font-size:1.6rem;font-weight:700;color:{sav_color};font-family:JetBrains Mono,monospace">{sav_sign}{savings_pct:.1f}%</span>'
-                f'<span style="font-size:.78rem;color:#444460">{sav_label} Rs.{abs(savings):,.0f}</span>'
-                f'</div>'
-                f'<div class="prog-wrap"><div class="prog-track">'
-                f'<div class="prog-fill" style="width:{sav_pct_fill:.1f}%;background:{sav_bar_col}"></div>'
-                f'</div></div>'
-                f'</div>',
-                unsafe_allow_html=True
-            )
-
-        # ── HDFC Quarterly Milestone ──────────────────────────────────────────
         q_map  = {1:1,2:1,3:1,4:2,5:2,6:2,7:3,8:3,9:3,10:4,11:4,12:4}
         curr_q = q_map[now.month]
         h_spend = df[
@@ -1170,16 +1164,43 @@ with tab_home:
         ]["Amount"].sum()
         h_pct     = min(h_spend / HDFC_MILESTONE_AMT * 100, 100)
         h_color   = "#5e72e4" if h_pct < 75 else ("#f0a500" if h_pct < 100 else "#2dce89")
-        remaining = max(HDFC_MILESTONE_AMT - h_spend, 0)
-        st.markdown(
-            f'<div class="tile" style="border-left:3px solid {h_color}">'
-            f'<div class="tile-label">HDFC Q{curr_q} Milestone</div>'
-            f'<div class="tile-value">Rs.{h_spend:,.0f}'
-            f'<span style="font-size:.82rem;color:#444460;font-weight:400"> / Rs.{HDFC_MILESTONE_AMT:,.0f}</span></div>'
+
+        mt_left, mt_right = st.columns(2)
+        # Left: Savings Rate (if income set + current month) else blank mini-tile
+        if monthly_income > 0 and _show_today:
+            savings     = monthly_income - month_total
+            savings_pct = savings / monthly_income * 100
+            sav_color   = "#2dce89" if savings >= 0 else "#f75676"
+            sav_sign    = "+" if savings >= 0 else ""
+            sav_fill    = min(abs(savings_pct), 100)
+            mt_left.markdown(
+                f'<div class="mini-tile" style="border-left:3px solid {sav_color}">'
+                f'<div class="mini-tile-lbl">Savings Rate</div>'
+                f'<div class="mini-tile-val" style="color:{sav_color}">{sav_sign}{savings_pct:.1f}%</div>'
+                f'<div class="mini-tile-sub">Rs.{abs(savings):,.0f} {"saved" if savings>=0 else "over"}</div>'
+                f'<div class="prog-wrap"><div class="prog-track">'
+                f'<div class="prog-fill" style="width:{sav_fill:.1f}%;background:{sav_color}"></div>'
+                f'</div></div></div>',
+                unsafe_allow_html=True
+            )
+        else:
+            mt_left.markdown(
+                f'<div class="mini-tile" style="border-left:3px solid #2a2a3a">'
+                f'<div class="mini-tile-lbl">Savings Rate</div>'
+                f'<div class="mini-tile-val" style="color:#444460">—</div>'
+                f'<div class="mini-tile-sub">Set income in Manage</div>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
+        # Right: HDFC Milestone
+        mt_right.markdown(
+            f'<div class="mini-tile" style="border-left:3px solid {h_color}">'
+            f'<div class="mini-tile-lbl">HDFC Q{curr_q}</div>'
+            f'<div class="mini-tile-val" style="color:{h_color}">Rs.{h_spend:,.0f}</div>'
+            f'<div class="mini-tile-sub">{h_pct:.0f}% of Rs.{HDFC_MILESTONE_AMT//1000:,}k</div>'
             f'<div class="prog-wrap"><div class="prog-track">'
             f'<div class="prog-fill" style="width:{h_pct:.1f}%;background:{h_color}"></div>'
-            f'</div><div class="prog-meta"><span>{h_pct:.1f}% reached</span>'
-            f'<span>Rs.{remaining:,.0f} to go</span></div></div></div>',
+            f'</div></div></div>',
             unsafe_allow_html=True
         )
 
