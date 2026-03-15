@@ -475,3 +475,8 @@ def approve_split_group(split_map, create_cats=None):
         conn.update(worksheet="PendingReview", data=updated_pend)
         st.session_state.pending_df = updated_pend
         st.cache_data.clear()
+
+# Add these constants here
+TZ = pytz.timezone('Asia/Kolkata')
+DEFAULT_MODES = ["UPI", "Cash", "HDFC Credit Card", "SBI Credit Card"]
+MAX_PIN_ATTEMPTS = 5  # <--- Add this line to fix the error
