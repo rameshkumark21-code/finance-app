@@ -1003,31 +1003,34 @@ tab_home, tab_cat_view, tab_search, tab_rec, tab_analytics, tab_review, tab_mana
 # TAB 1 — HOME
 # ==============================================================================
 with tab_home:
-    hc1, hc2, hc3 = st.columns([6, 1, 1])
-    hc1.markdown(
-        "<span style='font-size:1.4rem;font-weight:700;color:#e8e8f0;letter-spacing:-.5px'>"
-        "Fin<span style='color:#f0a500'>Track</span></span>",
-        unsafe_allow_html=True
-    )
-    with hc2:
-        with stylable_container(key="lock_btn", css_styles="""
-            button{background:#1a1a24!important;border:1px solid #2a2a3a!important;
-            border-radius:8px!important;color:#888!important;font-size:.85rem!important;
-            padding:2px 4px!important;min-height:32px!important}
-        """):
-            if st.button("🔒", key="lock_icon", use_container_width=True):
-                st.session_state.pin_unlocked = False
-                st.session_state.pin_input    = ""
-                st.session_state.pin_error    = ""
-                st.rerun()
-    with hc3:
-        with stylable_container(key="refresh_btn", css_styles="""
-            button{background:#1a1a24!important;border:1px solid #2a2a3a!important;
-            border-radius:8px!important;color:#888!important;font-size:.85rem!important;
-            padding:2px 4px!important;min-height:32px!important}
-        """):
-            if st.button("↻", key="refresh_icon", use_container_width=True):
-                hard_refresh()
+    # ── Header: title + icon buttons in one stylable_container ────────────────
+    with stylable_container(key="home_header", css_styles="""
+        button {
+            background: #1a1a24 !important;
+            border: 1px solid #2a2a3a !important;
+            border-radius: 8px !important;
+            color: #666 !important;
+            font-size: .8rem !important;
+            padding: 0 !important;
+            line-height: 1 !important;
+            height: 32px !important;
+            min-height: 32px !important;
+            max-height: 32px !important;
+        }
+    """):
+        hc1, hc2, hc3 = st.columns([6, 1, 1])
+        hc1.markdown(
+            "<span style='font-size:1.4rem;font-weight:700;color:#e8e8f0;letter-spacing:-.5px'>"
+            "Fin<span style='color:#f0a500'>Track</span></span>",
+            unsafe_allow_html=True
+        )
+        if hc2.button("🔒", key="lock_icon", use_container_width=True):
+            st.session_state.pin_unlocked = False
+            st.session_state.pin_input    = ""
+            st.session_state.pin_error    = ""
+            st.rerun()
+        if hc3.button("↻", key="refresh_icon", use_container_width=True):
+            hard_refresh()
 
     if df.empty:
         st.markdown(
@@ -1036,21 +1039,14 @@ with tab_home:
             unsafe_allow_html=True
         )
     else:
-        all_months = sorted(
-            df["Date"].dropna().dt.to_period("M").unique().astype(str).tolist(), reverse=True
-        )
-        pill_months = all_months[:6]
-
-        # ── Button-based period pills (reliable on mobile) ────────────────────
+        # ── 4 range pills — always fits mobile ───────────────────────────────
+        HOME_RANGES   = ["1M", "3M", "6M", "1Y"]
+        HOME_RANGE_LBL = ["This M", "3M", "6M", "1Y"]
         if "home_pill_idx" not in st.session_state:
             st.session_state.home_pill_idx = 0
-        # Guard: if data changes and fewer months available
-        if st.session_state.home_pill_idx >= len(pill_months):
-            st.session_state.home_pill_idx = 0
 
-        pill_cols = st.columns(len(pill_months))
-        for _pi, (_pc, _pm) in enumerate(zip(pill_cols, pill_months)):
-            _lbl = pd.Period(_pm, freq="M").strftime("%b '%y")
+        _hp_cols = st.columns(4)
+        for _pi, (_pc, _pl) in enumerate(zip(_hp_cols, HOME_RANGE_LBL)):
             _sel = st.session_state.home_pill_idx == _pi
             with _pc:
                 with stylable_container(
@@ -1060,22 +1056,45 @@ with tab_home:
                             background:{'rgba(240,165,0,.15)' if _sel else '#13131a'}!important;
                             border:1px solid {'#f0a500' if _sel else '#2a2a3a'}!important;
                             border-radius:20px!important;
-                            color:{'#f0a500' if _sel else '#666'}!important;
-                            font-size:.72rem!important;
+                            color:{'#f0a500' if _sel else '#555'}!important;
+                            font-size:.75rem!important;
                             font-weight:{'700' if _sel else '400'}!important;
-                            padding:4px 2px!important;
+                            padding:4px 0!important;
+                            height:30px!important;min-height:30px!important;
                         }}
                     """
                 ):
-                    if st.button(_lbl, key=f"hpill_btn_{_pi}", use_container_width=True):
+                    if st.button(_pl, key=f"hpill_btn_{_pi}", use_container_width=True):
                         st.session_state.home_pill_idx = _pi
                         st.rerun()
 
-        sel_month   = pill_months[st.session_state.home_pill_idx]
-        sel_period  = pd.Period(sel_month, freq="M")
-        prev_period = sel_period - 1
-        filt = df[df["Date"].dt.to_period("M") == sel_period].copy()
-        prev = df[df["Date"].dt.to_period("M") == prev_period].copy()
+        _sel_range  = HOME_RANGES[st.session_state.home_pill_idx]
+        now_per     = pd.Period(curr_ym, freq="M")
+
+        if _sel_range == "1M":
+            filt       = df[df["Date"].dt.to_period("M") == now_per].copy()
+            prev       = df[df["Date"].dt.to_period("M") == (now_per - 1)].copy()
+            _show_today = True
+            _range_lbl  = curr_ym
+        elif _sel_range == "3M":
+            filt       = df[df["Date"].dt.to_period("M") > (now_per - 3)].copy()
+            prev       = df[df["Date"].dt.to_period("M").between(str(now_per - 6), str(now_per - 4))].copy()
+            _show_today = False
+            _range_lbl  = "Last 3 months"
+        elif _sel_range == "6M":
+            filt       = df[df["Date"].dt.to_period("M") > (now_per - 6)].copy()
+            prev       = df[df["Date"].dt.to_period("M").between(str(now_per - 12), str(now_per - 7))].copy()
+            _show_today = False
+            _range_lbl  = "Last 6 months"
+        else:  # 1Y
+            filt       = df[df["Date"].dt.to_period("M") > (now_per - 12)].copy()
+            prev       = df[df["Date"].dt.to_period("M") <= (now_per - 12)].copy()
+            _show_today = False
+            _range_lbl  = "Last 12 months"
+
+        # Keep sel_month pointing to current month for savings/hdfc logic
+        sel_month  = curr_ym
+        sel_period = now_per
 
         month_total = filt["Amount"].sum()
         prev_total  = prev["Amount"].sum()
@@ -1084,12 +1103,12 @@ with tab_home:
             pct_diff   = (month_total - prev_total) / prev_total * 100
             t_cls      = "trend-up" if pct_diff > 0 else "trend-down"
             t_sign     = "+" if pct_diff > 0 else ""
-            trend_html = f'<span class="{t_cls}">{t_sign}{pct_diff:.0f}% vs {str(prev_period)}</span>'
+            trend_html = f'<span class="{t_cls}">{t_sign}{pct_diff:.0f}% vs prev</span>'
         else:
-            trend_html = '<span class="trend-flat">First month on record</span>'
+            trend_html = '<span class="trend-flat">First period on record</span>'
 
         # ── Hero balance card ──────────────────────────────────────────────────
-        if sel_month == curr_ym:
+        if _show_today:
             today_total = df[df["Date"].dt.date == today]["Amount"].sum()
             today_block = (
                 f'<div>'
@@ -1098,7 +1117,12 @@ with tab_home:
                 f'</div>'
             )
         else:
-            today_block = ""
+            today_block = (
+                f'<div style="text-align:right">'
+                f'<div class="hero-today-lbl">Period</div>'
+                f'<div style="font-size:.8rem;font-weight:600;color:#666">{_range_lbl}</div>'
+                f'</div>'
+            )
         st.markdown(
             f'<div class="hero-card">'
             f'<div style="font-size:.68rem;text-transform:uppercase;letter-spacing:1.4px;'
@@ -1112,9 +1136,9 @@ with tab_home:
             unsafe_allow_html=True
         )
 
-        # ── Savings Rate tile (only when income is set + current month) ───────
+        # ── Savings Rate tile (only when income is set + current month view) ──
         monthly_income = float(get_app_setting(KEY_INCOME, "0") or "0")
-        if monthly_income > 0 and sel_month == curr_ym:
+        if monthly_income > 0 and _show_today:
             savings      = monthly_income - month_total
             savings_pct  = savings / monthly_income * 100
             sav_color    = "#2dce89" if savings >= 0 else "#f75676"
@@ -1557,21 +1581,15 @@ with tab_analytics:
                     '<div class="msg">No data yet. Sync transactions to unlock analytics.</div></div>',
                     unsafe_allow_html=True)
     else:
-        all_months_a = sorted(
-            df["Date"].dropna().dt.to_period("M").unique().astype(str).tolist(), reverse=True
-        )
-        # ── Button-based period pills for analytics ───────────────────────────
-        _an_range = ["3M", "6M", "12M"]
-        _an_months = [pd.Period(m, freq="M").strftime("%b '%y") + "|" + m
-                      for m in all_months_a[:3]]
-        an_pill_labels = _an_range + [x.split("|")[0] for x in _an_months]
-        an_pill_vals   = _an_range + [x.split("|")[1] for x in _an_months]
+        # ── 4 range pills for analytics ──────────────────────────────────────
+        AN_RANGE_VALS = ["3M", "6M", "1Y", "All"]
+        AN_RANGE_LBL  = ["3M",  "6M", "1Y", "All"]
 
         if "an_pill_idx" not in st.session_state:
             st.session_state.an_pill_idx = 0
 
-        _an_cols = st.columns(len(an_pill_labels))
-        for _ai, (_ac, _al) in enumerate(zip(_an_cols, an_pill_labels)):
+        _an_cols = st.columns(4)
+        for _ai, (_ac, _al) in enumerate(zip(_an_cols, AN_RANGE_LBL)):
             _asel = st.session_state.an_pill_idx == _ai
             with _ac:
                 with stylable_container(
@@ -1581,10 +1599,11 @@ with tab_analytics:
                             background:{'rgba(240,165,0,.15)' if _asel else '#13131a'}!important;
                             border:1px solid {'#f0a500' if _asel else '#2a2a3a'}!important;
                             border-radius:20px!important;
-                            color:{'#f0a500' if _asel else '#666'}!important;
-                            font-size:.68rem!important;
+                            color:{'#f0a500' if _asel else '#555'}!important;
+                            font-size:.75rem!important;
                             font-weight:{'700' if _asel else '400'}!important;
-                            padding:4px 2px!important;
+                            padding:4px 0!important;
+                            height:30px!important;min-height:30px!important;
                         }}
                     """
                 ):
@@ -1592,18 +1611,17 @@ with tab_analytics:
                         st.session_state.an_pill_idx = _ai
                         st.rerun()
 
-        an_sel = an_pill_vals[st.session_state.an_pill_idx]
+        an_sel = AN_RANGE_VALS[st.session_state.an_pill_idx]
 
         now_per = pd.Period(curr_ym, freq="M")
         if an_sel == "3M":
             an_df = df[df["Date"].dt.to_period("M") > (now_per - 3)]
         elif an_sel == "6M":
             an_df = df[df["Date"].dt.to_period("M") > (now_per - 6)]
-        elif an_sel == "12M":
+        elif an_sel == "1Y":
             an_df = df[df["Date"].dt.to_period("M") > (now_per - 12)]
-        else:
-            an_period = pd.Period(an_sel, freq="M")
-            an_df     = df[df["Date"].dt.to_period("M") == an_period]
+        else:  # All
+            an_df = df.copy()
 
         # ── SPEND HEATMAP ─────────────────────────────────────────────────────
         st.markdown(
@@ -1649,7 +1667,7 @@ with tab_analytics:
             (settings_df["Budget"].astype(str).str.strip() != "")
         ].copy() if not settings_df.empty else pd.DataFrame()
 
-        if not budgets_a.empty and an_sel not in ("3M", "6M", "12M"):
+        if not budgets_a.empty and an_sel not in ("3M", "6M", "1Y", "All"):
             st.markdown('<div class="analytics-card">', unsafe_allow_html=True)
             st.markdown('<div class="analytics-title">Budget vs Actual</div>', unsafe_allow_html=True)
             for _, brow in budgets_a.iterrows():
@@ -1677,7 +1695,7 @@ with tab_analytics:
             st.markdown('</div>', unsafe_allow_html=True)
 
         # ── CATEGORY TREND vs 3-MONTH AVG ─────────────────────────────────────
-        if an_sel not in ("3M", "6M", "12M"):
+        if an_sel not in ("3M", "6M", "1Y", "All"):
             an_period   = pd.Period(an_sel, freq="M")
             prev3_start = an_period - 3
             prev3_df    = df[(df["Date"].dt.to_period("M") > prev3_start) &
