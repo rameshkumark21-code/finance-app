@@ -41,10 +41,13 @@ _CSS = (
     "[data-testid='stVerticalBlock']>div{gap:0!important}"
     "div.block-container{padding-top:0.6rem!important;padding-bottom:4rem!important;"
     "padding-left:1rem!important;padding-right:1rem!important}"
-    # Tabs
-    ".stTabs [data-baseweb='tab-list']{gap:2px;background:transparent;border-bottom:1px solid #2a2a3a}"
+    # Tabs — scrollable on mobile
+    ".stTabs [data-baseweb='tab-list']{gap:0;background:transparent;border-bottom:1px solid #2a2a3a;"
+    "overflow-x:auto!important;flex-wrap:nowrap!important;-webkit-overflow-scrolling:touch;"
+    "scrollbar-width:none}"
+    ".stTabs [data-baseweb='tab-list']::-webkit-scrollbar{display:none}"
     ".stTabs [data-baseweb='tab']{height:38px;background:transparent;border-radius:8px 8px 0 0;"
-    "padding:0 8px;color:#444460;font-size:.75rem;font-weight:500}"
+    "padding:0 10px;color:#444460;font-size:.75rem;font-weight:500;white-space:nowrap;flex-shrink:0}"
     ".stTabs [aria-selected='true']{background:transparent!important;color:#f0f0f0!important;"
     "border-bottom:2px solid #f0a500!important;font-weight:600!important}"
     # Core tiles — tighter
@@ -234,6 +237,29 @@ _CSS = (
     "</style>"
 )
 st.markdown(_CSS, unsafe_allow_html=True)
+
+# ── Mobile / Desktop view mode ──────────────────────────────────────────────
+if "view_mode" not in st.session_state:
+    st.session_state.view_mode = "mobile"
+
+if st.session_state.view_mode == "desktop":
+    st.markdown("""<style>
+    div.block-container{padding-left:2rem!important;padding-right:2rem!important;
+        max-width:860px!important;margin:0 auto!important}
+    .hero-amount{font-size:2.6rem!important}
+    .tile-value{font-size:1.8rem!important}
+    .cat-row{padding:9px 14px!important;margin-bottom:5px!important}
+    .cat-name{font-size:.9rem!important}
+    .cat-amt{font-size:.9rem!important}
+    .budget-row{padding:10px 14px!important;margin-bottom:6px!important}
+    .sec-head{margin:16px 0 8px!important;font-size:.68rem!important}
+    .txn-cat{font-size:.88rem!important}
+    .txn-meta{font-size:.72rem!important}
+    .rec-card{padding:12px 14px!important;margin-bottom:6px!important}
+    .analytics-card{padding:16px 18px!important}
+    .mini-tile{padding:12px 14px!important}
+    .mini-tile-val{font-size:1.2rem!important}
+    </style>""", unsafe_allow_html=True)
 
 
 # ==============================================================================
@@ -1009,10 +1035,24 @@ pending_count = 0
 if not st.session_state.pending_df.empty and "Review_Status" in st.session_state.pending_df.columns:
     pending_count = int((st.session_state.pending_df["Review_Status"].astype(str) == "pending").sum())
 
-review_label = f"Review ⚠️ {pending_count}" if pending_count > 0 else "Review"
+review_label = f"⚠️ {pending_count}" if pending_count > 0 else "Review"
+
+# ── View mode toggle ──────────────────────────────────────────────────────────
+_vm = st.session_state.view_mode
+_tog_label = "🖥 Desktop" if _vm == "mobile" else "📱 Mobile"
+_tog_col, _ = st.columns([1, 4])
+with _tog_col:
+    with stylable_container(key="view_toggle", css_styles="""
+        button{background:#1a1a24!important;border:1px solid #2a2a3a!important;
+        border-radius:8px!important;color:#888!important;font-size:.72rem!important;
+        padding:3px 8px!important;height:26px!important;min-height:26px!important}
+    """):
+        if st.button(_tog_label, key="view_mode_btn"):
+            st.session_state.view_mode = "desktop" if _vm == "mobile" else "mobile"
+            st.rerun()
 
 tab_home, tab_cat_view, tab_search, tab_rec, tab_analytics, tab_review, tab_manage = st.tabs([
-    "Home", "Categories", "Search", "Recurring", "Analytics", review_label, "Manage"
+    "🏠 Home", "📊 Categ.", "🔍 Search", "🔄 Recur.", "📈 Analytics", review_label, "⚙️ Manage"
 ])
 
 
