@@ -19,7 +19,9 @@ LARGE_AMT_WARNING = 50_000
 RECUR_MIN_MONTHS = 3
 
 # Fix: avoid stale session data when Sheets are edited externally (e.g. cleared)
-PULL_TTL_SECONDS = 10
+# We intentionally re-read Sheets on every run (no caching / no TTL gating),
+# because showing stale transactions is worse than extra reads.
+PULL_TTL_SECONDS = 0
 
 # ─────────────────────────────────────────────
 # PAGE CONFIG + MOBILE-FIRST CSS
@@ -318,8 +320,8 @@ def bootstrap_session_from_frames(_df, _cat, _set, _modes, _pend, _log, _rules, 
     st.session_state.import_log_df = _log
     st.session_state.import_rules = _rules
     st.session_state.app_settings_df = _app
+    # Keep PIN in session state, but always refresh dataframes from Sheets
     st.session_state.active_pin = load_pin()
-    st.session_state.last_pull_ts = datetime.now(TZ).timestamp()
     st.session_state.bootstrapped = True
 
 
@@ -328,21 +330,16 @@ def bootstrap_session():
     bootstrap_session_from_frames(_df, _cat, _set, _modes, _pend, _log, _rules, _app)
 
 
-def ensure_fresh_data():
-    now_ts = datetime.now(TZ).timestamp()
-    last = float(st.session_state.get("last_pull_ts", 0) or 0)
-    if (now_ts - last) < PULL_TTL_SECONDS:
-        return
+def refresh_dataframes_from_sheets():
+    # Always overwrite the in-memory frames with the latest Sheets state
     _df, _cat, _set, _modes, _pend, _log, _rules, _app = load_all_data()
     bootstrap_session_from_frames(_df, _cat, _set, _modes, _pend, _log, _rules, _app)
-    # Preserve unlocked state; only data frames refresh.
-    # (pin_unlocked etc. are not reset here)
 
 
 if not st.session_state.get("bootstrapped"):
     bootstrap_session()
 else:
-    ensure_fresh_data()
+    refresh_dataframes_from_sheets()
 
 
 def hard_refresh():
@@ -358,7 +355,6 @@ def hard_refresh():
         "import_rules",
         "app_settings_df",
         "active_pin",
-        "last_pull_ts",
     ]:
         st.session_state.pop(k, None)
     st.rerun()
@@ -391,7 +387,6 @@ def save_expense(row_dict):
         conn.update(worksheet="Expenses", data=updated)
         st.session_state.df = updated
         st.cache_data.clear()
-        st.session_state.last_pull_ts = 0
 
 
 def update_expense(idx, fields):
@@ -400,7 +395,6 @@ def update_expense(idx, fields):
             st.session_state.df.at[idx, k] = v
         conn.update(worksheet="Expenses", data=st.session_state.df)
         st.cache_data.clear()
-        st.session_state.last_pull_ts = 0
 
 
 def delete_expense(idx):
@@ -409,7 +403,6 @@ def delete_expense(idx):
         conn.update(worksheet="Expenses", data=updated)
         st.session_state.df = updated
         st.cache_data.clear()
-        st.session_state.last_pull_ts = 0
 
 
 def save_settings(new_df):
@@ -417,7 +410,6 @@ def save_settings(new_df):
         conn.update(worksheet="Settings", data=new_df)
         st.session_state.settings_df = new_df
         st.cache_data.clear()
-        st.session_state.last_pull_ts = 0
 
 
 def save_categories(new_df):
@@ -425,7 +417,6 @@ def save_categories(new_df):
         conn.update(worksheet="Categories", data=new_df)
         st.session_state.cat_df = new_df
         st.cache_data.clear()
-        st.session_state.last_pull_ts = 0
 
 
 def save_modes(new_df):
@@ -433,7 +424,6 @@ def save_modes(new_df):
         conn.update(worksheet="Modes", data=new_df)
         st.session_state.modes_df = new_df
         st.cache_data.clear()
-        st.session_state.last_pull_ts = 0
 
 
 def save_pin(new_pin: str):
@@ -442,7 +432,6 @@ def save_pin(new_pin: str):
         conn.update(worksheet="Security", data=pin_df)
         st.session_state.active_pin = new_pin
         st.cache_data.clear()
-        st.session_state.last_pull_ts = 0
 
 
 def save_import_rules(new_df):
@@ -450,7 +439,6 @@ def save_import_rules(new_df):
         conn.update(worksheet="ImportRules", data=new_df)
         st.session_state.import_rules = new_df
         st.cache_data.clear()
-        st.session_state.last_pull_ts = 0
 
 
 def get_app_setting(key, default="0"):
@@ -473,7 +461,6 @@ def set_app_setting(key, value):
     conn.update(worksheet="AppSettings", data=df_a)
     st.session_state.app_settings_df = df_a
     st.cache_data.clear()
-    st.session_state.last_pull_ts = 0
 
 
 def split_expense_row(idx, amt1, cat1, amt2, cat2):
@@ -511,7 +498,6 @@ def split_expense_row(idx, amt1, cat1, amt2, cat2):
         conn.update(worksheet="Expenses", data=updated)
         st.session_state.df = updated
         st.cache_data.clear()
-        st.session_state.last_pull_ts = 0
 
 
 # ─────────────────────────────────────────────
@@ -554,7 +540,6 @@ def approve_pending_row(idx, chosen_category, create_new_cat=False):
         conn.update(worksheet="PendingReview", data=updated_pend)
         st.session_state.pending_df = updated_pend
         st.cache_data.clear()
-        st.session_state.last_pull_ts = 0
 
 
 def skip_pending_row(idx):
@@ -562,7 +547,6 @@ def skip_pending_row(idx):
         st.session_state.pending_df.at[idx, "Review_Status"] = "skipped"
         conn.update(worksheet="PendingReview", data=st.session_state.pending_df)
         st.cache_data.clear()
-        st.session_state.last_pull_ts = 0
 
 
 def drop_pending_row(idx):
@@ -571,7 +555,6 @@ def drop_pending_row(idx):
         conn.update(worksheet="PendingReview", data=updated_pend)
         st.session_state.pending_df = updated_pend
         st.cache_data.clear()
-        st.session_state.last_pull_ts = 0
 
 
 def auto_save_import_rule(merchant, category):
@@ -896,4 +879,24 @@ elif "⚙️ Manage" in page:
                 except Exception as e:
                     st.session_state.sync_result = {"status": "error", "message": str(e)}
                 hard_refresh()
+
+    # ── Data Source Debug (helps confirm correct spreadsheet) ─────────────
+    with st.expander("Data source debug", expanded=False):
+        try:
+            conn_cfg = st.secrets.get("connections", {}).get("gsheets", {})
+            ss = conn_cfg.get("spreadsheet", "") or conn_cfg.get("spreadsheet_url", "") or ""
+        except Exception:
+            ss = ""
+        st.write(
+            {
+                "spreadsheet": ss if ss else "(not found in secrets)",
+                "expenses_rows": int(len(st.session_state.df)) if "df" in st.session_state else None,
+                "pending_rows": int(len(st.session_state.pending_df)) if "pending_df" in st.session_state else None,
+                "pending_count": int(
+                    (st.session_state.pending_df["Review_Status"].astype(str) == "pending").sum()
+                )
+                if ("pending_df" in st.session_state and not st.session_state.pending_df.empty and "Review_Status" in st.session_state.pending_df.columns)
+                else 0,
+            }
+        )
 
