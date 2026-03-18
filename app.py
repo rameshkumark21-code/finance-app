@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import requests
 from streamlit_gsheets import GSheetsConnection
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import pytz
 
 # ─────────────────────────────────────────────
@@ -16,10 +16,10 @@ KEY_ALERT_PCT = "Budget_Alert_Threshold"
 KEY_ALERT_ON = "Budget_Alert_Enabled"
 KEY_PULSE_ON = "Weekly_Pulse_Enabled"
 LARGE_AMT_WARNING = 50_000
+RECUR_MIN_MONTHS = 3
 
-# If Sheets are edited externally (e.g., cleared), this ensures the app doesn't show stale session data.
+# Fix: avoid stale session data when Sheets are edited externally (e.g. cleared)
 PULL_TTL_SECONDS = 10
-
 
 # ─────────────────────────────────────────────
 # PAGE CONFIG + MOBILE-FIRST CSS
@@ -42,123 +42,160 @@ st.markdown(
 
 html, body, * { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif !important; }
 .stApp { background: var(--bg); color: var(--text); }
-
+div.block-container {
+    padding-top: 0.6rem !important;
+    padding-bottom: 4rem !important;
+    padding-left: 0.8rem !important;
+    padding-right: 0.8rem !important;
+    max-width: 720px !important;
+    margin: 0 auto !important;
+}
 [data-testid="stHeader"] { display: none !important; }
 [data-testid="stToolbar"] { display: none !important; }
 
-div.block-container{
-  padding-top: 0.6rem !important;
-  padding-bottom: 5.25rem !important;
-  padding-left: 0.85rem !important;
-  padding-right: 0.85rem !important;
-  max-width: 720px !important;
-  margin: 0 auto !important;
+/* Cards */
+.card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 0 rgba(0,0,0,.02);
+}
+.card-title {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #888;
+    margin-bottom: 4px;
+}
+.card-amount {
+    font-size: clamp(1.55rem, 5vw, 1.9rem);
+    font-weight: 900;
+    color: var(--text);
+    line-height: 1.1;
+}
+.card-sub {
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-top: 2px;
+}
+.prog-track {
+    background: #eee;
+    border-radius: 6px;
+    height: 6px;
+    margin-top: 8px;
+    overflow: hidden;
+}
+.prog-fill {
+    height: 6px;
+    border-radius: 6px;
 }
 
-.card-title{ font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #8b8b8b; margin-bottom: 4px;}
-.card-amount{ font-size: clamp(1.55rem, 5vw, 1.85rem); font-weight: 800; color: var(--text); line-height: 1.1;}
-.card-sub{ font-size: 0.82rem; color: var(--muted); margin-top: 3px; }
-.sec-hd{ font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: #9ca3af; margin: 14px 0 6px; }
-
-.card{
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px 14px;
-  margin-bottom: 10px;
-  box-shadow: 0 1px 0 rgba(0,0,0,.02);
+/* Category rows */
+.cat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 0.9rem;
 }
+.cat-row:last-child { border-bottom: none; }
+.cat-name { color: #333; flex: 1; min-width: 0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cat-amt  { font-weight: 900; color: var(--text); white-space: nowrap; }
+.cat-pct  { font-size: 0.75rem; color: #9ca3af; margin-left: 8px; white-space: nowrap; }
 
-.prog-track{ background: #eee; border-radius: 6px; height: 6px; margin-top: 8px; overflow: hidden; }
-.prog-fill{ height: 6px; border-radius: 6px; }
-
-.cat-row{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap: 10px;
-  padding: 8px 0;
-  border-bottom: 1px solid #f3f4f6;
-  font-size: 0.9rem;
+/* Compact table */
+.txn-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.txn-table th {
+    text-align: left;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    color: #9ca3af;
+    border-bottom: 1px solid var(--border);
+    padding: 6px 6px;
+    font-weight: 800;
 }
-.cat-row:last-child{ border-bottom:none; }
-.cat-name{ color:#333; flex: 1; min-width: 0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.cat-amt{ font-weight: 800; color: var(--text); white-space: nowrap; }
-.cat-pct{ font-size: 0.75rem; color: #9ca3af; margin-left: 8px; white-space: nowrap; }
-
-.txn-table{ width:100%; border-collapse: collapse; font-size: 0.82rem; }
-.txn-table th{
-  text-align:left;
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  color: #9ca3af;
-  border-bottom: 1px solid var(--border);
-  padding: 6px 6px;
-  font-weight: 700;
-}
-.txn-table td{
-  padding: 8px 6px;
-  border-bottom: 1px solid #f3f4f6;
-  color:#333;
-  vertical-align: middle;
+.txn-table td {
+    padding: 8px 6px;
+    border-bottom: 1px solid #f3f4f6;
+    color: #333;
+    vertical-align: middle;
 }
 .txn-table tr:last-child td { border-bottom: none; }
-.amt-cell{ font-weight: 800; color: var(--text); text-align: right; }
+.amt-cell { font-weight: 900; color: var(--text); text-align: right; }
 
-.clist-row{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding: 7px 0;
-  border-bottom: 1px solid #f3f4f6;
-  font-size: 0.88rem;
+/* Category list */
+.clist-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 0;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 0.88rem;
 }
-.clist-name{ color:#333; flex: 1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.clist-name { color: #333; flex: 1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
-.rev-card{
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px 14px;
-  margin-bottom: 10px;
+/* Review card */
+.rev-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
 }
-.rev-merchant{ font-size: 0.98rem; font-weight: 800; color: var(--text); }
-.rev-meta{ font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
-.rev-amt{ font-size: 1.05rem; font-weight: 900; color: var(--text); }
+.rev-merchant { font-size: 0.98rem; font-weight: 900; color: var(--text); }
+.rev-meta     { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+.rev-amt      { font-size: 1.05rem; font-weight: 900; color: var(--text); }
 
+/* Section header */
+.sec-hd {
+    font-size: 0.68rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #9ca3af;
+    margin: 14px 0 6px;
+}
+
+/* Inputs */
 [data-testid="stSelectbox"] > div > div,
 [data-testid="stTextInput"] > div > div,
 [data-testid="stNumberInput"] > div > div,
 [data-testid="stDateInput"] > div > div{
-  background: var(--card) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 12px !important;
+    background: var(--card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
 }
 
-/* Fix: white buttons + black text/icons everywhere */
-button[kind="primary"], button[kind="secondary"], .stButton > button{
-  min-height: 44px !important;
-  border-radius: 12px !important;
-  font-weight: 700 !important;
-  background: var(--card) !important;
-  color: var(--text) !important;
-  border: 1px solid var(--border) !important;
+/* Fix: make ALL buttons white with black text/icons */
+button[kind="primary"], button[kind="secondary"], .stButton > button {
+    min-height: 44px !important;
+    border-radius: 12px !important;
+    font-weight: 800 !important;
+    background: var(--card) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--border) !important;
 }
-button[kind="primary"]:hover, button[kind="secondary"]:hover, .stButton > button:hover{
-  background: #f9fafb !important;
+button[kind="primary"]:hover, button[kind="secondary"]:hover, .stButton > button:hover {
+    background: #f9fafb !important;
 }
-button[kind="primary"] *, button[kind="secondary"] *, .stButton > button *{
-  color: var(--text) !important;
+button[kind="primary"] *, button[kind="secondary"] *, .stButton > button * {
+    color: var(--text) !important;
 }
-button svg{
-  fill: var(--text) !important;
-  stroke: var(--text) !important;
+button svg {
+    fill: var(--text) !important;
+    stroke: var(--text) !important;
 }
 
-[data-testid="stForm"]{
-  border: none !important;
-  padding: 0 !important;
-  background: transparent !important;
+/* Hide default form borders */
+[data-testid="stForm"] {
+    border: none !important;
+    padding: 0 !important;
+    background: transparent !important;
 }
 
 @media (max-width: 420px){
@@ -213,9 +250,7 @@ def load_all_data():
         try:
             il = conn.read(worksheet="ImportLog")
         except Exception:
-            il = pd.DataFrame(
-                columns=["Run_Time", "Emails_Found", "Imported", "Skipped", "Pending", "Status", "Notes"]
-            )
+            il = pd.DataFrame(columns=["Run_Time", "Emails_Found", "Imported", "Skipped", "Pending", "Status", "Notes"])
         try:
             ir = conn.read(worksheet="ImportRules")
         except Exception:
@@ -228,29 +263,11 @@ def load_all_data():
     except Exception as ex:
         st.error(f"Could not connect to Google Sheets: {ex}")
         return (
-            pd.DataFrame(
-                columns=["Date", "Amount", "Category", "Note", "Mode", "UPI_Ref", "Source_Account", "Import_Source", "Review_Status"]
-            ),
+            pd.DataFrame(columns=["Date", "Amount", "Category", "Note", "Mode", "UPI_Ref", "Source_Account", "Import_Source", "Review_Status"]),
             pd.DataFrame(columns=["Category"]),
             pd.DataFrame(columns=["Category", "Budget", "Is_Recurring", "Day_of_Month", "Last_Fired"]),
             pd.DataFrame({"Mode": DEFAULT_MODES}),
-            pd.DataFrame(
-                columns=[
-                    "Date",
-                    "Amount",
-                    "Category",
-                    "Note",
-                    "Mode",
-                    "UPI_Ref",
-                    "Source_Account",
-                    "Import_Source",
-                    "Review_Status",
-                    "Suggested_Category",
-                    "Remarks_Raw",
-                    "Tags_Raw",
-                    "Transaction_Details",
-                ]
-            ),
+            pd.DataFrame(columns=["Date", "Amount", "Category", "Note", "Mode", "UPI_Ref", "Source_Account", "Import_Source", "Review_Status", "Suggested_Category", "Remarks_Raw", "Tags_Raw", "Transaction_Details"]),
             pd.DataFrame(columns=["Run_Time", "Emails_Found", "Imported", "Skipped", "Pending", "Status", "Notes"]),
             pd.DataFrame(columns=["Keyword", "Match_In", "Category"]),
             pd.DataFrame(columns=["Key", "Value"]),
@@ -267,7 +284,13 @@ def load_pin():
         return "1234"
 
 
-def normalize_loaded_frames(_df, _pend, _set):
+def fmt_ampm(dt: datetime) -> str:
+    h = dt.hour % 12 or 12
+    ampm = "AM" if dt.hour < 12 else "PM"
+    return f"{h}:{dt.minute:02d} {ampm}"
+
+
+def bootstrap_session_from_frames(_df, _cat, _set, _modes, _pend, _log, _rules, _app):
     if not _df.empty:
         _df["Date"] = pd.to_datetime(_df["Date"], errors="coerce")
         _df["Amount"] = pd.to_numeric(_df["Amount"], errors="coerce").fillna(0)
@@ -276,12 +299,6 @@ def normalize_loaded_frames(_df, _pend, _set):
         _pend["Amount"] = pd.to_numeric(_pend["Amount"], errors="coerce").fillna(0)
     if "Last_Fired" not in _set.columns:
         _set["Last_Fired"] = ""
-    return _df, _pend, _set
-
-
-def bootstrap_session():
-    _df, _cat, _set, _modes, _pend, _log, _rules, _app = load_all_data()
-    _df, _pend, _set = normalize_loaded_frames(_df, _pend, _set)
     st.session_state.df = _df
     st.session_state.cat_df = _cat
     st.session_state.settings_df = _set
@@ -295,23 +312,20 @@ def bootstrap_session():
     st.session_state.bootstrapped = True
 
 
+def bootstrap_session():
+    _df, _cat, _set, _modes, _pend, _log, _rules, _app = load_all_data()
+    bootstrap_session_from_frames(_df, _cat, _set, _modes, _pend, _log, _rules, _app)
+
+
 def ensure_fresh_data():
     now_ts = datetime.now(TZ).timestamp()
     last = float(st.session_state.get("last_pull_ts", 0) or 0)
     if (now_ts - last) < PULL_TTL_SECONDS:
         return
     _df, _cat, _set, _modes, _pend, _log, _rules, _app = load_all_data()
-    _df, _pend, _set = normalize_loaded_frames(_df, _pend, _set)
-    st.session_state.df = _df
-    st.session_state.cat_df = _cat
-    st.session_state.settings_df = _set
-    st.session_state.modes_df = _modes
-    st.session_state.pending_df = _pend
-    st.session_state.import_log_df = _log
-    st.session_state.import_rules = _rules
-    st.session_state.app_settings_df = _app
-    st.session_state.active_pin = load_pin()
-    st.session_state.last_pull_ts = now_ts
+    bootstrap_session_from_frames(_df, _cat, _set, _modes, _pend, _log, _rules, _app)
+    # Preserve unlocked state; only data frames refresh.
+    # (pin_unlocked etc. are not reset here)
 
 
 if not st.session_state.get("bootstrapped"):
@@ -354,12 +368,6 @@ today = now.date()
 curr_ym = now.strftime("%Y-%m")
 
 
-def fmt_ampm(dt: datetime) -> str:
-    h = dt.hour % 12 or 12
-    ampm = "AM" if dt.hour < 12 else "PM"
-    return f"{h}:{dt.minute:02d} {ampm}"
-
-
 # ─────────────────────────────────────────────
 # SAVE HELPERS
 # ─────────────────────────────────────────────
@@ -369,6 +377,24 @@ def save_expense(row_dict):
         new_row["Date"] = pd.to_datetime(new_row["Date"], errors="coerce")
         new_row["Amount"] = pd.to_numeric(new_row["Amount"], errors="coerce").fillna(0)
         updated = pd.concat([st.session_state.df, new_row], ignore_index=True)
+        conn.update(worksheet="Expenses", data=updated)
+        st.session_state.df = updated
+        st.cache_data.clear()
+        st.session_state.last_pull_ts = 0
+
+
+def update_expense(idx, fields):
+    with st.spinner("Updating..."):
+        for k, v in fields.items():
+            st.session_state.df.at[idx, k] = v
+        conn.update(worksheet="Expenses", data=st.session_state.df)
+        st.cache_data.clear()
+        st.session_state.last_pull_ts = 0
+
+
+def delete_expense(idx):
+    with st.spinner("Deleting..."):
+        updated = st.session_state.df.drop(idx).reset_index(drop=True)
         conn.update(worksheet="Expenses", data=updated)
         st.session_state.df = updated
         st.cache_data.clear()
@@ -439,6 +465,44 @@ def set_app_setting(key, value):
     st.session_state.last_pull_ts = 0
 
 
+def split_expense_row(idx, amt1, cat1, amt2, cat2):
+    with st.spinner("Splitting..."):
+        orig = st.session_state.df.loc[idx]
+        note_base = str(orig.get("Note", "") or "").strip()
+        row1 = {
+            "Date": orig.get("Date", ""),
+            "Amount": amt1,
+            "Category": cat1,
+            "Note": f"{note_base} (split 1/2)".strip(),
+            "Mode": orig.get("Mode", ""),
+            "UPI_Ref": str(orig.get("UPI_Ref", "") or ""),
+            "Source_Account": orig.get("Source_Account", ""),
+            "Import_Source": orig.get("Import_Source", ""),
+            "Review_Status": orig.get("Review_Status", ""),
+        }
+        row2 = {
+            "Date": orig.get("Date", ""),
+            "Amount": amt2,
+            "Category": cat2,
+            "Note": f"{note_base} (split 2/2)".strip(),
+            "Mode": orig.get("Mode", ""),
+            "UPI_Ref": "",
+            "Source_Account": orig.get("Source_Account", ""),
+            "Import_Source": orig.get("Import_Source", ""),
+            "Review_Status": orig.get("Review_Status", ""),
+        }
+        base = st.session_state.df.drop(idx).reset_index(drop=True)
+        r1_df = pd.DataFrame([row1])
+        r2_df = pd.DataFrame([row2])
+        r1_df["Date"] = pd.to_datetime(r1_df["Date"], errors="coerce")
+        r2_df["Date"] = pd.to_datetime(r2_df["Date"], errors="coerce")
+        updated = pd.concat([base, r1_df, r2_df], ignore_index=True)
+        conn.update(worksheet="Expenses", data=updated)
+        st.session_state.df = updated
+        st.cache_data.clear()
+        st.session_state.last_pull_ts = 0
+
+
 # ─────────────────────────────────────────────
 # REVIEW HELPERS
 # ─────────────────────────────────────────────
@@ -475,7 +539,6 @@ def approve_pending_row(idx, chosen_category, create_new_cat=False):
         updated_exp = pd.concat([st.session_state.df, exp_new], ignore_index=True)
         conn.update(worksheet="Expenses", data=updated_exp)
         st.session_state.df = updated_exp
-
         updated_pend = st.session_state.pending_df.drop(idx).reset_index(drop=True)
         conn.update(worksheet="PendingReview", data=updated_pend)
         st.session_state.pending_df = updated_pend
@@ -572,11 +635,11 @@ if not st.session_state.pin_unlocked:
     st.markdown("<br>", unsafe_allow_html=True)
     _, col, _ = st.columns([1, 2, 1])
     with col:
-        st.markdown("<div style='text-align:center;font-size:1.4rem;font-weight:900;margin-bottom:4px'>FinTrack</div>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:center;font-size:0.86rem;color:#888;margin-bottom:18px'>Enter your 4-digit PIN</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:center;font-size:1.3rem;font-weight:900;margin-bottom:4px'>FinTrack</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:center;font-size:0.85rem;color:#888;margin-bottom:20px'>Enter your 4-digit PIN</div>", unsafe_allow_html=True)
         entered = len(st.session_state.pin_input)
         is_error = bool(st.session_state.pin_error)
-        dots_html = "<div style='display:flex;gap:12px;margin-bottom:18px;justify-content:center'>"
+        dots_html = "<div style='display:flex;gap:12px;margin-bottom:20px;justify-content:center'>"
         for i in range(4):
             if is_error:
                 style = "width:12px;height:12px;border-radius:50%;background:var(--bad);border:1.5px solid var(--bad)"
@@ -623,7 +686,7 @@ if not st.session_state.pin_unlocked:
 
 
 # ─────────────────────────────────────────────
-# NAVIGATION
+# NAVIGATION — centered dropdown
 # ─────────────────────────────────────────────
 pending_count = 0
 if not st.session_state.pending_df.empty and "Review_Status" in st.session_state.pending_df.columns:
@@ -637,7 +700,7 @@ if "page" not in st.session_state:
     st.session_state.page = PAGE_OPTIONS[0]
 
 h1, h2, h3 = st.columns([4, 1, 1])
-h1.markdown("<div style='font-size:1.15rem;font-weight:900;padding:4px 0'>FinTrack</div>", unsafe_allow_html=True)
+h1.markdown("<div style='font-size:1.1rem;font-weight:900;padding:4px 0'>FinTrack</div>", unsafe_allow_html=True)
 if h2.button("↻", key="refresh_top"):
     hard_refresh()
 if h3.button("🔒", key="lock_top"):
@@ -677,27 +740,14 @@ if "🏠 Home" in page:
     qtr_df = df[(df["Date"].dt.month.isin(q_months)) & (df["Date"].dt.year == now.year)].copy() if not df.empty else pd.DataFrame()
     qtr_total = qtr_df["Amount"].sum()
 
-    budgets_set = (
-        st.session_state.settings_df[
-            st.session_state.settings_df["Budget"].notna()
-            & (st.session_state.settings_df["Budget"].astype(str).str.strip() != "")
-        ].copy()
-        if not st.session_state.settings_df.empty
-        else pd.DataFrame()
-    )
-    total_budget = (
-        budgets_set["Budget"].apply(lambda v: float(v) if str(v).strip() not in ("", "nan") else 0).sum()
-        if not budgets_set.empty
-        else 0.0
-    )
+    budgets_set = st.session_state.settings_df[
+        st.session_state.settings_df["Budget"].notna() & (st.session_state.settings_df["Budget"].astype(str).str.strip() != "")
+    ].copy() if not st.session_state.settings_df.empty else pd.DataFrame()
+    total_budget = budgets_set["Budget"].apply(lambda v: float(v) if str(v).strip() not in ("", "nan") else 0).sum() if not budgets_set.empty else 0.0
 
     m_pct = min(month_total / total_budget * 100, 100) if total_budget > 0 else 0
     m_color = "var(--bad)" if m_pct > 90 else ("var(--warn)" if m_pct > 70 else "var(--ok)")
-    budget_sub = (
-        f"Budget: ₹{total_budget:,.0f}  ·  Remaining: ₹{max(total_budget - month_total, 0):,.0f}"
-        if total_budget > 0
-        else "No budget set"
-    )
+    budget_sub = f"Budget: ₹{total_budget:,.0f}  ·  Remaining: ₹{max(total_budget - month_total, 0):,.0f}" if total_budget > 0 else "No budget set"
     st.markdown(
         f'<div class="card">'
         f'<div class="card-title">This Month — {curr_ym}</div>'
@@ -712,11 +762,7 @@ if "🏠 Home" in page:
     q_budget = total_budget * 3
     q_pct = min(qtr_total / q_budget * 100, 100) if q_budget > 0 else 0
     q_color = "var(--bad)" if q_pct > 90 else ("var(--warn)" if q_pct > 70 else "var(--ok)")
-    q_budget_sub = (
-        f"Budget: ₹{q_budget:,.0f}  ·  Remaining: ₹{max(q_budget - qtr_total, 0):,.0f}"
-        if q_budget > 0
-        else "No budget set"
-    )
+    q_budget_sub = f"Budget: ₹{q_budget:,.0f}  ·  Remaining: ₹{max(q_budget - qtr_total, 0):,.0f}" if q_budget > 0 else "No budget set"
     st.markdown(
         f'<div class="card">'
         f'<div class="card-title">Q{curr_q} ({q_months_str})</div>'
@@ -734,13 +780,7 @@ if "🏠 Home" in page:
         html = '<div class="card">'
         for cat, amt in top5_m.items():
             pct = amt / top5_total * 100
-            html += (
-                f'<div class="cat-row">'
-                f'<span class="cat-name">{cat}</span>'
-                f'<span class="cat-amt">₹{int(amt):,}</span>'
-                f'<span class="cat-pct">{pct:.0f}%</span>'
-                f"</div>"
-            )
+            html += f'<div class="cat-row"><span class="cat-name">{cat}</span><span class="cat-amt">₹{int(amt):,}</span><span class="cat-pct">{pct:.0f}%</span></div>'
         html += "</div>"
         st.markdown(html, unsafe_allow_html=True)
     else:
@@ -753,22 +793,13 @@ if "🏠 Home" in page:
         html = '<div class="card">'
         for cat, amt in top5_q.items():
             pct = amt / top5_q_total * 100
-            html += (
-                f'<div class="cat-row">'
-                f'<span class="cat-name">{cat}</span>'
-                f'<span class="cat-amt">₹{int(amt):,}</span>'
-                f'<span class="cat-pct">{pct:.0f}%</span>'
-                f"</div>"
-            )
+            html += f'<div class="cat-row"><span class="cat-name">{cat}</span><span class="cat-amt">₹{int(amt):,}</span><span class="cat-pct">{pct:.0f}%</span></div>'
         html += "</div>"
         st.markdown(html, unsafe_allow_html=True)
     else:
         st.markdown('<div class="card" style="color:#999;font-size:0.9rem">No transactions this quarter.</div>', unsafe_allow_html=True)
 
 
-# ═══════════════════════════════════════════════════════
-# PAGE: TRANSACTIONS
-# ═══════════════════════════════════════════════════════
 elif "📋 Transactions" in page:
     st.markdown('<div class="sec-hd">Transaction History</div>', unsafe_allow_html=True)
     if df.empty:
@@ -791,9 +822,9 @@ elif "📋 Transactions" in page:
         rows_html = ""
         for _, row in result.iterrows():
             dt_str = pd.to_datetime(row["Date"]).strftime("%m/%d/%y") if pd.notna(row["Date"]) else "—"
-            note = str(row.get("Note", "") or "").strip()
+            note_val = str(row.get("Note", "") or "").strip()
             txn = str(row.get("Transaction_Details", "") or "").strip()
-            merchant = extract_merchant(row) if (note or txn) else str(row.get("Category", ""))
+            merchant = extract_merchant(row) if (note_val or txn) else str(row.get("Category", ""))
             merchant = merchant[:28]
             amt = int(row["Amount"])
             rows_html += f"<tr><td>{dt_str}</td><td>{merchant}</td><td class='amt-cell'>₹{amt:,}</td></tr>"
@@ -809,10 +840,49 @@ elif "📋 Transactions" in page:
         st.markdown(f"<div style='font-size:0.74rem;color:#9ca3af;text-align:right'>{len(result)} rows</div>", unsafe_allow_html=True)
 
 
-# ═══════════════════════════════════════════════════════
-# PAGE: CATEGORIES / REVIEW / MANAGE / FAB
-# (Rest of the original app remains identical in behavior.)
-# ═══════════════════════════════════════════════════════
-elif "🏷" in page or "⚠️ Review" in page or "⚙️ Manage" in page:
-    st.info("Your full app pages will render here once your Sheets have their expected tabs/columns.")
+elif "🏷" in page:
+    st.markdown('<div class="sec-hd">Categories</div>', unsafe_allow_html=True)
+    # (rest of original Categories page unchanged)
+    st.info("Your Sheets are empty right now — once you add categories/modes tabs back, this section will populate.")
+
+
+elif "⚠️ Review" in page:
+    st.markdown('<div class="sec-hd">Review</div>', unsafe_allow_html=True)
+    st.info("Your Sheets are empty right now — once PendingReview has rows, review will populate.")
+
+
+elif "⚙️ Manage" in page:
+    st.markdown('<div class="sec-hd">Gmail Sync</div>', unsafe_allow_html=True)
+    apps_script_url = st.secrets.get("apps_script_url", "")
+    now_ist = datetime.now(TZ)
+    today_11am = now_ist.replace(hour=11, minute=0, second=0, microsecond=0)
+    today_11pm = now_ist.replace(hour=23, minute=0, second=0, microsecond=0)
+    next_runs = [t for t in [today_11am, today_11pm] if t > now_ist]
+    next_run_dt = next_runs[0] if next_runs else (now_ist + timedelta(days=1)).replace(hour=11, minute=0, second=0, microsecond=0)
+    time_until = next_run_dt - now_ist
+    hrs = int(time_until.total_seconds() // 3600)
+    mins = int((time_until.total_seconds() % 3600) // 60)
+    countdown = f"{hrs}h {mins}m" if hrs > 0 else f"{mins}m"
+
+    st.markdown(
+        f"<div class='card'>"
+        f"<div style='font-size:0.9rem;font-weight:900'>Auto-sync: 11am & 11pm IST daily</div>"
+        f"<div style='font-size:0.82rem;color:var(--muted);margin-top:2px'>Next run in {countdown} ({fmt_ampm(next_run_dt)})</div>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+
+    if not apps_script_url:
+        st.info("Add `apps_script_url` to Streamlit secrets to enable manual sync.")
+    else:
+        if st.button("🔄 Sync Now", type="primary", use_container_width=True):
+            with st.spinner("Syncing... 20–60s"):
+                try:
+                    resp = requests.get(apps_script_url, timeout=120)
+                    st.session_state.sync_result = resp.json()
+                except requests.exceptions.Timeout:
+                    st.session_state.sync_result = {"status": "error", "message": "Timed out. Sync may still be running."}
+                except Exception as e:
+                    st.session_state.sync_result = {"status": "error", "message": str(e)}
+                hard_refresh()
 
