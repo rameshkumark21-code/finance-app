@@ -42,6 +42,7 @@ st.markdown(
 
 html, body, * { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif !important; }
 .stApp { background: var(--bg); color: var(--text); }
+::selection { background: rgba(0,0,0,.16) !important; color: var(--text) !important; }
 div.block-container {
     padding-top: 0.6rem !important;
     padding-bottom: 4rem !important;
@@ -171,6 +172,18 @@ div.block-container {
     border-radius: 12px !important;
 }
 
+/* Fix odd text / focus styling on inputs */
+input, textarea { color: var(--text) !important; }
+input::placeholder, textarea::placeholder { color: #9ca3af !important; opacity: 1 !important; }
+[data-testid="stTextInput"] input:focus,
+[data-testid="stNumberInput"] input:focus,
+[data-testid="stSelectbox"] div[role="combobox"]:focus,
+[data-testid="stSelectbox"] div[role="combobox"]:focus-within{
+    outline: none !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 0 0 3px rgba(0,0,0,.06) !important;
+}
+
 /* Fix: make ALL buttons white with black text/icons */
 button[kind="primary"], button[kind="secondary"], .stButton > button {
     min-height: 44px !important;
@@ -217,7 +230,6 @@ button svg {
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 
-@st.cache_data(ttl=PULL_TTL_SECONDS)
 def load_all_data():
     try:
         e = conn.read(worksheet="Expenses")
@@ -274,7 +286,6 @@ def load_all_data():
         )
 
 
-@st.cache_data(ttl=PULL_TTL_SECONDS)
 def load_pin():
     try:
         sec = conn.read(worksheet="Security", usecols=[0], nrows=1)
