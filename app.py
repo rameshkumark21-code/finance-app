@@ -330,7 +330,7 @@ def load_all_data():
         except: ir = pd.DataFrame(columns=["Keyword","Match_In","Category"])
         try:    a  = conn.read(worksheet="AppSettings")
         except: a  = pd.DataFrame(columns=["Key","Value"])
-        return e, c, s, m, p, il, ir, a    except Exception as ex:
+        return e, c, s, m, p, il, ir, aexcept Exception as ex:
         st.error(f"Could not connect to Google Sheets: {ex}")
         return (
             pd.DataFrame(columns=["Date","Amount","Category","Note","Mode","UPI_Ref","Source_Account","Import_Source","Review_Status"]),
