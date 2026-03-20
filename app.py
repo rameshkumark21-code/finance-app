@@ -1,4 +1,3 @@
-import streamlit as st
 import pandas as pd
 import requests
 from streamlit_gsheets import GSheetsConnection
@@ -16,9 +15,7 @@ KEY_ALERT_PCT = "Budget_Alert_Threshold"
 KEY_ALERT_ON = "Budget_Alert_Enabled"
 KEY_PULSE_ON = "Weekly_Pulse_Enabled"
 LARGE_AMT_WARNING = 50_000
-RECUR_MIN_MONTHS = 3
-
-# ─────────────────────────────────────────────
+RECUR_MIN_MONTHS = 3# ─────────────────────────────────────────────
 # PAGE CONFIG + RESPONSIVE CSS (MOBILE-FIRST)
 # ─────────────────────────────────────────────
 st.set_page_config(page_title="FinTrack", page_icon="₹", layout="centered")
@@ -227,11 +224,11 @@ button[kind="secondary"] {
     .rev-amt { font-size: 1.25rem; }
     .clist-row { padding: 12px 0; font-size: 0.93rem; }
     .clist-name { font-size: 0.95rem; }
-        /* Table adjustments */
+    /* Table adjustments */
     .txn-table { font-size: 0.9rem; }
     .txn-table th { font-size: 0.8rem; padding: 10px 14px; }
     .txn-table td { padding: 12px 14px; }
-        /* Form elements */
+    /* Form elements */
     .stTextInput > div > div > input {
         min-height: 56px !important;
         font-size: 1.1rem !important;
@@ -248,7 +245,6 @@ button[kind="secondary"] {
         min-height: 56px !important;
         font-size: 1.1rem !important;
     }
-    
     /* Buttons */
     button[kind="primary"] {
         font-size: 1rem !important;
@@ -260,7 +256,6 @@ button[kind="secondary"] {
         padding: 10px 20px !important;
         min-height: 52px !important;
     }
-    
     /* Section headers */
     .sec-hd { margin: 22px 0 14px; }
 }
@@ -368,8 +363,7 @@ if "Last_Fired" not in settings_df_raw.columns:
     settings_df_raw["Last_Fired"] = ""
 
 st.session_state.df              = df_raw
-st.session_state.cat_df          = cat_df_raw
-st.session_state.settings_df     = settings_df_raw
+st.session_state.cat_df          = cat_df_rawst.session_state.settings_df     = settings_df_raw
 st.session_state.modes_df        = modes_df_raw
 st.session_state.pending_df      = pending_df_raw
 st.session_state.import_log_df   = import_log_df_raw
@@ -379,16 +373,14 @@ st.session_state.active_pin      = load_pin()
 
 # INITIALIZE UI STATE
 if "show_modal" not in st.session_state:
-    st.session_state.show_modal = False
-if "form_id" not in st.session_state:
+    st.session_state.show_modal = Falseif "form_id" not in st.session_state:
     st.session_state.form_id = 0
 if "pin_unlocked" not in st.session_state:
     st.session_state.pin_unlocked = False
 if "pin_input" not in st.session_state:
     st.session_state.pin_input = ""
 if "pin_attempts" not in st.session_state:
-    st.session_state.pin_attempts = 0
-if "pin_error" not in st.session_state:
+    st.session_state.pin_attempts = 0if "pin_error" not in st.session_state:
     st.session_state.pin_error = ""
 if "auto_log_checked" not in st.session_state:
     st.session_state.auto_log_checked = False
@@ -417,9 +409,7 @@ def delete_expense(idx):
     with st.spinner("Deleting..."):
         updated = st.session_state.df.drop(idx).reset_index(drop=True)
         conn.update(worksheet="Expenses", data=updated)
-        st.session_state.df = updated
-
-def save_settings(new_df):
+        st.session_state.df = updateddef save_settings(new_df):
     with st.spinner("Saving..."):
         conn.update(worksheet="Settings", data=new_df)
         st.session_state.settings_df = new_df
@@ -432,7 +422,9 @@ def save_categories(new_df):
 def save_modes(new_df):
     with st.spinner("Saving..."):
         conn.update(worksheet="Modes", data=new_df)
-        st.session_state.modes_df = new_dfdef save_pin(new_pin: str):
+        st.session_state.modes_df = new_df
+
+def save_pin(new_pin: str):
     with st.spinner("Saving PIN..."):
         pin_df = pd.DataFrame({"PIN": [new_pin]})
         conn.update(worksheet="Security", data=pin_df)
@@ -482,7 +474,8 @@ def split_expense_row(idx, amt1, cat1, amt2, cat2):
         conn.update(worksheet="Expenses", data=updated)
         st.session_state.df = updated
 
-# ─────────────────────────────────────────────# REVIEW HELPERS  (all original logic preserved)
+# ─────────────────────────────────────────────
+# REVIEW HELPERS  (all original logic preserved)
 # ─────────────────────────────────────────────
 def extract_merchant(row):
     txn  = str(row.get("Transaction_Details", "") or "").strip()
@@ -513,7 +506,8 @@ def approve_pending_row(idx, chosen_category, create_new_cat=False):
         exp_new["Amount"] = pd.to_numeric(exp_new["Amount"], errors="coerce").fillna(0)
         updated_exp  = pd.concat([st.session_state.df, exp_new], ignore_index=True)
         conn.update(worksheet="Expenses", data=updated_exp)
-        st.session_state.df = updated_exp        updated_pend = st.session_state.pending_df.drop(idx).reset_index(drop=True)
+        st.session_state.df = updated_exp
+        updated_pend = st.session_state.pending_df.drop(idx).reset_index(drop=True)
         conn.update(worksheet="PendingReview", data=updated_pend)
         st.session_state.pending_df = updated_pend
 
@@ -580,17 +574,23 @@ if not st.session_state.get("auto_log_checked") and not st.session_state.setting
             fire_dt = f"{today.strftime('%Y-%m-%d')} {datetime.now(TZ).strftime('%H:%M:%S')}"
             save_expense({"Date": fire_dt, "Amount": amt, "Category": row["Category"],
                           "Mode": "Auto", "Note": "Auto-logged (recurring)"})
-            updated_sdf.at[i, "Last_Fired"] = curr_ym
-            fired_any = True        except:
+            updated_sdf.at[i, "Last_Fired"] = curr_ym            fired_any = True
+        except:
             pass
     if fired_any:
         save_settings(updated_sdf)
-    st.session_state.auto_log_checked = True# ─────────────────────────────────────────────
-# PIN GATE# ─────────────────────────────────────────────
+    st.session_state.auto_log_checked = True
+
+# ─────────────────────────────────────────────
+# PIN GATE
+# ─────────────────────────────────────────────
 for _k, _v in [("pin_unlocked",False),("pin_input",""),("pin_attempts",0),("pin_error","")]:
     if _k not in st.session_state:
-        st.session_state[_k] = _vif not st.session_state.pin_unlocked:
-    locked_out = st.session_state.pin_attempts >= MAX_PIN_ATTEMPTS    st.markdown("<br>", unsafe_allow_html=True)
+        st.session_state[_k] = _v
+
+if not st.session_state.pin_unlocked:
+    locked_out = st.session_state.pin_attempts >= MAX_PIN_ATTEMPTS
+    st.markdown("<br>", unsafe_allow_html=True)
     _, col, _ = st.columns([1,2,1])
     with col:
         st.markdown("<div style='text-align:center;font-size:1.3rem;font-weight:700;margin-bottom:4px'>FinTrack</div>", unsafe_allow_html=True)
@@ -673,8 +673,7 @@ with nav_col:
         key="nav_select"
     )
     if selected_page != st.session_state.page:
-        st.session_state.page = selected_page
-        st.rerun()
+        st.session_state.page = selected_page        st.rerun()
 
 page = st.session_state.page
 st.markdown("<hr style='margin:6px 0 10px;border:none;border-top:1px solid #e0e0e0'>", unsafe_allow_html=True)
@@ -726,10 +725,10 @@ if "🏠 Home" in page:
         unsafe_allow_html=True
     )
 
-    # ── Quarterly card ───────────────────────────────
-    q_months_str = ["Jan–Mar","Apr–Jun","Jul–Sep","Oct–Dec"][curr_q-1]
+    # ── Quarterly card ───────────────────────────────    q_months_str = ["Jan–Mar","Apr–Jun","Jul–Sep","Oct–Dec"][curr_q-1]
     q_budget     = total_budget * 3  # quarterly budget = monthly × 3
-    q_pct        = min(qtr_total / q_budget * 100, 100) if q_budget > 0 else 0    q_color      = "#e53935" if q_pct > 90 else ("#f57c00" if q_pct > 70 else "#43a047")
+    q_pct        = min(qtr_total / q_budget * 100, 100) if q_budget > 0 else 0
+    q_color      = "#e53935" if q_pct > 90 else ("#f57c00" if q_pct > 70 else "#43a047")
     q_budget_sub = f"Budget: ₹{q_budget:,.0f}  ·  Remaining: ₹{max(q_budget-qtr_total,0):,.0f}" if q_budget > 0 else "No budget set"
     st.markdown(
         f'<div class="card">'
@@ -738,7 +737,8 @@ if "🏠 Home" in page:
         f'<div class="card-sub">{q_budget_sub}</div>'
         + (f'<div class="prog-track"><div class="prog-fill" style="width:{q_pct:.1f}%;background:{q_color}"></div></div>' if q_budget > 0 else "")
         + '</div>',
-        unsafe_allow_html=True    )
+        unsafe_allow_html=True
+    )
 
     # ── Top 5 categories — Monthly ────────────────────
     st.markdown('<div class="sec-hd">Top Categories — This Month</div>', unsafe_allow_html=True)
@@ -780,7 +780,8 @@ if "🏠 Home" in page:
     else:
         st.markdown('<div class="card" style="color:#999;font-size:0.8rem">No transactions this quarter.</div>', unsafe_allow_html=True)
 
-# ═══════════════════════════════════════════════════════# PAGE: TRANSACTIONS
+# ═══════════════════════════════════════════════════════
+# PAGE: TRANSACTIONS
 # ═══════════════════════════════════════════════════════
 elif "📋 Transactions" in page:
     st.markdown('<div class="sec-hd">Transaction History</div>', unsafe_allow_html=True)
@@ -788,7 +789,8 @@ elif "📋 Transactions" in page:
     if st.session_state.df.empty:
         st.markdown('<div class="card" style="color:#999;font-size:0.8rem">No transactions yet.</div>', unsafe_allow_html=True)
     else:
-        # Filter row        fa, fb = st.columns([3,1])
+        # Filter row
+        fa, fb = st.columns([3,1])
         srch  = fa.text_input("srch", placeholder="Search category / note...", label_visibility="collapsed")
         n_show = fb.selectbox("show", [50, 100, 200, "All"], label_visibility="collapsed")
 
@@ -830,13 +832,11 @@ elif "📋 Transactions" in page:
         st.markdown(f'<div style="font-size:0.7rem;color:#aaa;text-align:right">{len(result)} rows</div>', unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════
-# PAGE: CATEGORIES
-# ═══════════════════════════════════════════════════════
+# PAGE: CATEGORIES# ═══════════════════════════════════════════════════════
 elif "🏷" in page:
     st.markdown('<div class="sec-hd">Categories</div>', unsafe_allow_html=True)
 
-    # Add new
-    with st.form("add_cat_form"):
+    # Add new    with st.form("add_cat_form"):
         ca, cb = st.columns([4,1])
         new_cat_name = ca.text_input("new_cat", placeholder="New category name...", label_visibility="collapsed")
         submitted    = cb.form_submit_button("Add")
@@ -863,7 +863,8 @@ elif "🏷" in page:
                 c1, c2 = st.columns([5,1])
                 c1.markdown(f'<div class="clist-row"><span class="clist-name">{row["Category"]}</span></div>', unsafe_allow_html=True)
                 if c2.button("Edit", key=f"catopen_{i}", use_container_width=True):
-                    st.session_state[edit_key] = True                    st.rerun()
+                    st.session_state[edit_key] = True
+                    st.rerun()
             else:
                 with st.form(f"cat_ef_{i}"):
                     ea, eb, ec = st.columns([4,1,1])
@@ -874,4 +875,407 @@ elif "🏷" in page:
                         if new_val.strip():
                             st.session_state.cat_df.at[i, "Category"] = new_val.strip()
                             save_categories(st.session_state.cat_df)
-                        st.session_state[edit_key]
+                        st.session_state[edit_key] = False
+                        st.rerun()
+                    if del_it:
+                        save_categories(st.session_state.cat_df.drop(i).reset_index(drop=True))
+                        st.session_state[edit_key] = False
+                        st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # Payment modes section
+    st.markdown('<div class="sec-hd" style="margin-top:16px">Payment Modes</div>', unsafe_allow_html=True)
+    with st.form("add_mode_form"):
+        ma, mb = st.columns([4,1])
+        new_mode_name = ma.text_input("new_mode", placeholder="New mode...", label_visibility="collapsed")
+        m_sub         = mb.form_submit_button("Add")
+        if m_sub:
+            if new_mode_name.strip():
+                save_modes(pd.concat([
+                    st.session_state.modes_df,
+                    pd.DataFrame([{"Mode": new_mode_name.strip()}])
+                ], ignore_index=True))
+                st.rerun()
+            else:
+                st.warning("Name cannot be empty.")
+
+    if not st.session_state.modes_df.empty:
+        st.markdown('<div class="card" style="padding:4px 10px">', unsafe_allow_html=True)
+        for i, row in st.session_state.modes_df.iterrows():
+            mc1, mc2 = st.columns([5,1])
+            mc1.markdown(f'<div class="clist-row"><span class="clist-name">{row["Mode"]}</span></div>', unsafe_allow_html=True)
+            mdk = f"mdel_{i}"
+            if mdk not in st.session_state:
+                st.session_state[mdk] = False
+            if not st.session_state[mdk]:
+                if mc2.button("Del", key=f"mopen_{i}", use_container_width=True):
+                    st.session_state[mdk] = True
+                    st.rerun()
+            else:
+                my, mn = mc2.columns(2)
+                if my.button("Y", key=f"mdy_{i}"):
+                    save_modes(st.session_state.modes_df.drop(i).reset_index(drop=True))
+                    st.session_state[mdk] = False
+                    st.rerun()
+                if mn.button("N", key=f"mdn_{i}"):
+                    st.session_state[mdk] = False
+                    st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+
+# ═══════════════════════════════════════════════════════
+# PAGE: REVIEW
+# ═══════════════════════════════════════════════════════elif "⚠️ Review" in page:
+    pend_all = st.session_state.pending_df.copy() if not st.session_state.pending_df.empty else pd.DataFrame()
+
+    if pend_all.empty or "Review_Status" not in pend_all.columns:
+        active_pend = pd.DataFrame()
+    else:
+        active_pend = pend_all[pend_all["Review_Status"].astype(str) == "pending"].copy()
+
+    if active_pend.empty:
+        st.markdown('<div class="card" style="color:#666;font-size:0.85rem;text-align:center;padding:24px">✅ All caught up — nothing pending.</div>', unsafe_allow_html=True)
+    else:
+        active_pend["_merchant"] = active_pend.apply(extract_merchant, axis=1)
+        live_cats = sorted(st.session_state.cat_df["Category"].dropna().tolist()) if not st.session_state.cat_df.empty else []
+
+        n_pend = len(active_pend)
+        st.markdown(f'<div class="sec-hd">{n_pend} pending transaction{"s" if n_pend!=1 else ""}</div>', unsafe_allow_html=True)
+
+        # Bulk approve button
+        n_with_sug = 0
+        if "Suggested_Category" in active_pend.columns:
+            n_with_sug = int(active_pend["Suggested_Category"].astype(str).str.strip().replace("nan","").ne("").sum())
+        if n_with_sug > 0:
+            if st.button(f"✅ Approve all {n_with_sug} with suggestions", type="primary"):
+                count = approve_all_with_suggestions()
+                st.toast(f"Approved {count} transactions!")
+                st.rerun()
+
+        for idx, row in active_pend.iterrows():
+            merchant = row["_merchant"]
+            amt      = int(row.get("Amount", 0))
+            dt_raw   = row.get("Date","")
+            dt_str   = pd.to_datetime(dt_raw).strftime("%m/%d/%y") if pd.notna(dt_raw) else "—"
+            note_val = str(row.get("Note","") or "").strip()
+            sug_cat  = str(row.get("Suggested_Category","") or "").strip()
+            sug_cat  = "" if sug_cat.lower() == "nan" else sug_cat
+
+            # Split expand state
+            split_key = f"rev_split_{idx}"
+            if split_key not in st.session_state:
+                st.session_state[split_key] = False
+
+            st.markdown(
+                f'<div class="rev-card">'
+                f'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+                f'<div><div class="rev-merchant">{merchant}</div>'
+                f'<div class="rev-meta">{dt_str}'
+                + (f'  ·  {note_val[:40]}' if note_val else '')
+                + f'</div></div>'
+                f'<div class="rev-amt">₹{amt:,}</div></div></div>',
+                unsafe_allow_html=True
+            )
+
+            # Category selector — suggestion pre-selected if available            cat_opts      = ["-- Select --"] + live_cats + ["+ New category"]
+            default_idx   = 0
+            if sug_cat and sug_cat in live_cats:
+                default_idx = live_cats.index(sug_cat) + 1
+
+            sel = st.selectbox(
+                "cat", cat_opts, index=default_idx,
+                key=f"rev_cat_{idx}",
+                label_visibility="collapsed",
+                help=f"Suggested: {sug_cat}" if sug_cat else "Choose category"
+            )
+            if sug_cat and default_idx == 0:
+                st.caption(f"💡 Suggestion: {sug_cat}")
+
+            final_cat  = None
+            is_new_cat = False            if sel == "+ New category":
+                nc_val = st.text_input("New cat name", value=sug_cat, key=f"rev_newcat_{idx}", label_visibility="collapsed", placeholder="New category...")
+                if nc_val.strip():
+                    final_cat  = nc_val.strip()
+                    is_new_cat = True
+            elif sel != "-- Select --":
+                final_cat = sel
+
+            # Action buttons in one row            b1, b2, b3, b4 = st.columns(4)
+            if b1.button("✅", key=f"rev_app_{idx}", use_container_width=True, help="Approve", disabled=(not final_cat)):
+                if final_cat:
+                    approve_pending_row(idx, final_cat, create_new_cat=is_new_cat)
+                    auto_save_import_rule(merchant, final_cat)
+                    st.toast(f"Approved → {final_cat}")
+                    st.rerun()
+
+            if b2.button("⏭", key=f"rev_skip_{idx}", use_container_width=True, help="Skip"):
+                skip_pending_row(idx)
+                st.toast("Skipped")
+                st.rerun()
+
+            if b3.button("✂", key=f"rev_spltbtn_{idx}", use_container_width=True, help="Split"):
+                st.session_state[split_key] = not st.session_state[split_key]
+                st.rerun()
+
+            if b4.button("🗑", key=f"rev_drop_{idx}", use_container_width=True, help="Drop permanently"):
+                drop_pending_row(idx)
+                st.toast("Dropped")
+                st.rerun()
+
+            # Split panel
+            if st.session_state.get(split_key, False):
+                total_amt = float(row.get("Amount",0))
+                with st.container(border=True):
+                    st.markdown(f'<div style="font-size:0.75rem;color:#666;margin-bottom:4px">Split ₹{int(total_amt):,}</div>', unsafe_allow_html=True)
+                    s1a, s1b = st.columns([2,3])
+                    spl1_amt = s1a.number_input("Pt1 ₹", min_value=1.0, max_value=total_amt-1, value=round(total_amt/2,0), key=f"spl1a_{idx}", label_visibility="collapsed")
+                    spl1_cat = s1b.selectbox("Cat1", live_cats, key=f"spl1c_{idx}", label_visibility="collapsed")
+                    spl2_amt = total_amt - spl1_amt
+                    s2a, s2b = st.columns([2,3])
+                    s2a.markdown(f'<div style="font-size:0.82rem;font-weight:600;padding:8px 0">₹{int(spl2_amt):,}</div>', unsafe_allow_html=True)
+                    spl2_cat = s2b.selectbox("Cat2", live_cats, key=f"spl2c_{idx}", label_visibility="collapsed")
+                    sb1, sb2 = st.columns(2)
+                    if sb1.button("Save Split", key=f"dosplit_{idx}", type="primary", use_container_width=True):
+                        # Approve with split: create two expense rows, remove from pending
+                        with st.spinner("Splitting..."):
+                            orig = st.session_state.pending_df.loc[idx]
+                            note_b = str(orig.get("Note","") or "").strip()
+                            for split_amt, split_cat, suffix in [(spl1_amt, spl1_cat,"(split 1/2)"),(spl2_amt, spl2_cat,"(split 2/2)")]:
+                                er = {"Date": orig.get("Date",""), "Amount": split_amt,
+                                      "Category": split_cat, "Note": f"{note_b} {suffix}".strip(),
+                                      "Mode": orig.get("Mode",""), "UPI_Ref": orig.get("UPI_Ref",""),
+                                      "Source_Account": orig.get("Source_Account",""),
+                                      "Import_Source": orig.get("Import_Source","paytm_auto"),
+                                      "Review_Status": "approved"}
+                                save_expense(er)
+                            upd_pend = st.session_state.pending_df.drop(idx).reset_index(drop=True)
+                            conn.update(worksheet="PendingReview", data=upd_pend)
+                            st.session_state.pending_df = upd_pend
+                    if sb2.button("Cancel", key=f"cancelsplit_{idx}", use_container_width=True):
+                        st.session_state[split_key] = False
+                        st.rerun()
+
+            st.markdown("<div style='height:2px'></div>", unsafe_allow_html=True)
+
+    # Skipped section
+    if not pend_all.empty and "Review_Status" in pend_all.columns:
+        skipped = pend_all[pend_all["Review_Status"].astype(str) == "skipped"]
+        if not skipped.empty:
+            with st.expander(f"Skipped ({len(skipped)})"):
+                for idx, row in skipped.iterrows():
+                    m   = extract_merchant(row)
+                    amt = int(row.get("Amount",0))
+                    sc1, sc2 = st.columns([4,1])
+                    sc1.markdown(f'<div style="font-size:0.78rem;color:#666">{m}  ₹{amt:,}</div>', unsafe_allow_html=True)
+                    if sc2.button("↩", key=f"restore_{idx}"):
+                        st.session_state.pending_df.at[idx, "Review_Status"] = "pending"
+                        conn.update(worksheet="PendingReview", data=st.session_state.pending_df)
+                        st.rerun()
+
+# ═══════════════════════════════════════════════════════
+# PAGE: MANAGE
+# ═══════════════════════════════════════════════════════
+elif "⚙️ Manage" in page:
+    # ── Gmail Sync ──────────────────────────────────
+    st.markdown('<div class="sec-hd">Gmail Sync</div>', unsafe_allow_html=True)
+    apps_script_url = st.secrets.get("apps_script_url","")
+    now_ist     = datetime.now(TZ)
+    today_11am  = now_ist.replace(hour=11, minute=0, second=0, microsecond=0)
+    today_11pm  = now_ist.replace(hour=23, minute=0, second=0, microsecond=0)
+    next_runs   = [t for t in [today_11am, today_11pm] if t > now_ist]
+    next_run_dt = next_runs[0] if next_runs else (now_ist + timedelta(days=1)).replace(hour=11,minute=0,second=0,microsecond=0)
+    time_until  = next_run_dt - now_ist
+    hrs         = int(time_until.total_seconds()//3600)
+    mins        = int((time_until.total_seconds()%3600)//60)
+    countdown   = f"{hrs}h {mins}m" if hrs > 0 else f"{mins}m"
+
+    last_run_str = ""
+    if not st.session_state.import_log_df.empty:
+        last     = st.session_state.import_log_df.iloc[-1]
+        l_stat   = "✅" if str(last.get("Status","")).strip().upper() == "OK" else "❌"
+        l_imp    = int(last.get("Imported",0) or 0)
+        l_pnd    = int(last.get("Pending",0) or 0)
+        l_skp    = int(last.get("Skipped",0) or 0)
+        last_run_str = f"{l_stat} {str(last.get('Run_Time','—')).strip()}  ·  {l_imp} in  ·  {l_pnd} pending  ·  {l_skp} skipped"
+
+    st.markdown(
+        f'<div class="card">'
+        f'<div style="font-size:0.8rem;font-weight:600">Auto-sync: 11am & 11pm IST daily</div>'
+        f'<div style="font-size:0.74rem;color:#666;margin-top:2px">Next run in {countdown} ({next_run_dt.strftime("%-I:%M %p")})</div>'
+        + (f'<div style="font-size:0.7rem;color:#888;margin-top:6px">{last_run_str}</div>' if last_run_str else "")
+        + '</div>',
+        unsafe_allow_html=True
+    )
+
+    if not apps_script_url:
+        st.info("Add `apps_script_url` to Streamlit secrets to enable manual sync.")
+    else:
+        if "sync_result" in st.session_state:
+            r = st.session_state.sync_result
+            if r.get("status") == "ok":
+                res = r.get("result",{})
+                st.success(f"✅ {res.get('imported',0)} imported · {res.get('pending',0)} pending · {res.get('skipped',0)} skipped")
+            else:
+                st.error(f"Sync failed: {r.get('message','Unknown error')}")             del st.session_state["sync_result"]
+
+        if st.button("🔄 Sync Now", type="primary", use_container_width=True):
+            with st.spinner("Syncing... 20–60s"):
+                try:
+                    resp = requests.get(apps_script_url, timeout=120)
+                    st.session_state.sync_result = resp.json()
+                except requests.exceptions.Timeout:
+                    st.session_state.sync_result = {"status":"error","message":"Timed out. Sync may still be running."}
+                except Exception as e:
+                    st.session_state.sync_result = {"status":"error","message":str(e)}
+                hard_refresh()
+
+    # ── Import Log ──────────────────────────────────
+    st.markdown('<div class="sec-hd">Import Log</div>', unsafe_allow_html=True)
+    if st.session_state.import_log_df.empty:
+        st.markdown('<div class="card" style="color:#999;font-size:0.8rem">No import runs yet.</div>', unsafe_allow_html=True)
+    else:
+        rows_html = ""
+        for _, lr in st.session_state.import_log_df.tail(15).iloc[::-1].iterrows():
+            ok   = str(lr.get("Status","")).strip().upper() == "OK"
+            ico  = "✅" if ok else "❌"
+            rows_html += (
+                f'<tr>'
+                f'<td>{ico}</td>'
+                f'<td style="color:#555">{str(lr.get("Run_Time","")).strip()}</td>'
+                f'<td class="amt-cell" style="color:#43a047">{int(lr.get("Imported",0) or 0)}↓</td>'
+                f'<td class="amt-cell" style="color:#f57c00">{int(lr.get("Pending",0) or 0)}⚠</td>'
+                f'</tr>'
+            )
+        st.markdown(
+            f'<div class="card" style="padding:8px 10px">'
+            f'<table class="txn-table">'
+            f'<thead><tr><th></th><th>Run Time</th><th style="text-align:right">In</th><th style="text-align:right">Pend</th></tr></thead>'
+            f'<tbody>{rows_html}</tbody>'
+            f'</table></div>',
+            unsafe_allow_html=True
+        )
+
+    # ── Import Rules ────────────────────────────────
+    st.markdown('<div class="sec-hd">Import Rules</div>', unsafe_allow_html=True)
+    with st.form("add_rule_form"):
+        ra, rb, rc = st.columns([3,2,1])
+        r_kw  = ra.text_input("kw", placeholder="Keyword", label_visibility="collapsed")
+        r_cat = rb.selectbox("cat", [""]+st.session_state.cat_df["Category"].dropna().tolist(), label_visibility="collapsed")
+        r_sub = rc.form_submit_button("Add")
+        if r_sub:
+            if r_kw.strip() and r_cat:
+                nr  = pd.DataFrame([{"Keyword": r_kw.strip(), "Match_In": "Any", "Category": r_cat}])
+                upd = pd.concat([st.session_state.import_rules, nr], ignore_index=True)
+                save_import_rules(upd)
+                st.rerun()
+            else:
+                st.warning("Keyword and category required.")
+
+    if not st.session_state.import_rules.empty:
+        st.markdown('<div class="card" style="padding:4px 10px">', unsafe_allow_html=True)
+        for i, rr in st.session_state.import_rules.iterrows():
+            rc1, rc2, rc3 = st.columns([3,3,1])
+            rc1.markdown(f'<div class="clist-row" style="color:#43a047">{rr.get("Keyword","")}</div>', unsafe_allow_html=True)
+            rc2.markdown(f'<div class="clist-row">→ {rr.get("Category","")}</div>', unsafe_allow_html=True)
+            if rc3.button("Del", key=f"rdel_{i}", use_container_width=True):
+                save_import_rules(st.session_state.import_rules.drop(i).reset_index(drop=True))
+                st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # ── Change PIN ──────────────────────────────────
+    st.markdown('<div class="sec-hd">Change PIN</div>', unsafe_allow_html=True)
+    with st.form("change_pin_form"):
+        pa, pb, pc = st.columns(3)
+        cur_pin  = pa.text_input("Current", type="password", max_chars=4, placeholder="****", label_visibility="collapsed")
+        new_pin1 = pb.text_input("New",     type="password", max_chars=4, placeholder="New", label_visibility="collapsed")
+        new_pin2 = pc.text_input("Confirm", type="password", max_chars=4, placeholder="Confirm", label_visibility="collapsed")
+        if st.form_submit_button("Update PIN", type="primary", use_container_width=True):
+            if cur_pin != st.session_state.active_pin:
+                st.error("Current PIN incorrect.")
+            elif not new_pin1.isdigit() or len(new_pin1) != 4:
+                st.error("PIN must be 4 digits.")
+            elif new_pin1 != new_pin2:
+                st.error("PINs don't match.")
+            else:
+                save_pin(new_pin1)
+                st.success("PIN updated.")
+
+    # ── App Settings ────────────────────────────────
+    st.markdown('<div class="sec-hd">App Settings</div>', unsafe_allow_html=True)
+    current_income = float(get_app_setting(KEY_INCOME,"0") or 0)
+    curr_thresh    = int(float(get_app_setting(KEY_ALERT_PCT,"70") or 70))
+    curr_alert     = str(get_app_setting(KEY_ALERT_ON,"true")).lower() == "true"
+    curr_pulse     = str(get_app_setting(KEY_PULSE_ON,"true")).lower() == "true"
+
+    with st.form("app_settings_form"):
+        new_income = st.number_input("Monthly Income (₹)", min_value=0.0, value=current_income, step=1000.0)
+        new_thresh = st.slider("Budget alert threshold (%)", 50, 95, curr_thresh, 5)
+        a1, a2     = st.columns(2)
+        new_alert  = a1.checkbox("Budget alert (15th)", value=curr_alert)
+        new_pulse  = a2.checkbox("Weekly pulse (Mon)", value=curr_pulse)
+        if st.form_submit_button("Save Settings", type="primary", use_container_width=True):
+            set_app_setting(KEY_INCOME,    new_income)
+            set_app_setting(KEY_ALERT_PCT, new_thresh)
+            set_app_setting(KEY_ALERT_ON,  str(new_alert).lower())
+            set_app_setting(KEY_PULSE_ON,  str(new_pulse).lower())
+            st.toast("Settings saved!")
+            st.rerun()
+
+# ═══════════════════════════════════════════════════════
+# FAB — QUICK LOG  (logic fully preserved)
+# ═══════════════════════════════════════════════════════
+if "show_modal" not in st.session_state:
+    st.session_state.show_modal = False
+
+@st.dialog("Log Expense")
+def log_modal():
+    if "form_id" not in st.session_state:
+        st.session_state.form_id = 0
+    if "last_log" in st.session_state:
+        ll = st.session_state.last_log
+        st.success(f"Saved ₹{ll['amt']:,} → {ll['cat']}")
+    live_cats  = sorted(st.session_state.cat_df["Category"].dropna().tolist()) if not st.session_state.cat_df.empty else []
+    live_modes = st.session_state.modes_df["Mode"].dropna().tolist() if not st.session_state.modes_df.empty else DEFAULT_MODES
+    fid = st.session_state.form_id
+    amt = st.number_input("Amount (₹)", min_value=0.0, value=None, placeholder="0", key=f"amt_{fid}")
+    if amt and amt > LARGE_AMT_WARNING:
+        st.warning(f"₹{int(amt):,} — unusually large, double-check.")
+    date_choice = st.radio("Date", ["Today","Yesterday","Pick"], horizontal=True, key=f"ds_{fid}")
+    if date_choice == "Today":       log_date = st.session_state.today
+    elif date_choice == "Yesterday": log_date = st.session_state.today - timedelta(days=1)
+    else:                            log_date = st.date_input("Date", value=st.session_state.today, key=f"dp_{fid}")
+    ca, cb = st.columns(2)
+    cat  = ca.selectbox("Category", live_cats,  key=f"cat_{fid}")
+    mode = cb.selectbox("Mode",     live_modes, key=f"mode_{fid}")
+    note = st.text_input("Note", value="", placeholder="Optional note...", key=f"note_{fid}")
+    c1, c2 = st.columns(2)
+    if c1.button("Save & Add More", type="primary", use_container_width=True):
+        if not amt or amt <= 0:
+            st.warning("Enter a valid amount.")
+            return
+        now_ts   = datetime.now(TZ).timestamp()
+        last_ts  = st.session_state.get("last_save_ts", 0)
+        last_amt = st.session_state.get("last_save_amt", None)
+        last_cat = st.session_state.get("last_save_cat", None)
+        if (now_ts - last_ts) < 3 and last_amt == amt and last_cat == cat:
+            st.warning("Possible duplicate — same amount & category within 3s.")
+            return
+        final_dt = f"{log_date.strftime('%Y-%m-%d')} {datetime.now(TZ).strftime('%H:%M:%S')}"
+        save_expense({"Date": final_dt, "Amount": amt, "Category": cat,
+                      "Mode": mode, "Note": note.strip()})
+        st.session_state.update({
+            "last_save_ts": now_ts, "last_save_amt": amt, "last_save_cat": cat,
+            "last_log": {"amt": amt, "cat": cat}, "form_id": fid + 1,
+        })
+        st.rerun()
+    if c2.button("Done", use_container_width=True):
+        st.session_state.show_modal = False
+        for k in ["last_log","last_save_ts","last_save_amt","last_save_cat"]:
+            st.session_state.pop(k, None)
+        st.rerun()
+
+# FAB button (fixed bottom-right)
+st.markdown('<div class="fab-container">', unsafe_allow_html=True)
+if st.button("＋", key="fab_open", help="Log expense"):
+    st.session_state.show_modal = True
+    st.rerun()
+st.markdown('</div>', unsafe_allow_html=True)
