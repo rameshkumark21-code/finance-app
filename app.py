@@ -536,7 +536,8 @@ def auto_save_import_rule(merchant, category):
     words   = [w for w in merchant.split() if len(w) > 3]
     keyword = (words[0] if words else merchant[:10]).strip()
     if len(keyword) < 3:
-        return    existing = rules["Keyword"].astype(str).str.lower().str.strip().tolist() if not rules.empty else []
+        return
+    existing = rules["Keyword"].astype(str).str.lower().str.strip().tolist() if not rules.empty else []
     if keyword.lower() in existing:
         return
     new_rule = pd.DataFrame([{"Keyword": keyword, "Match_In": "Any", "Category": category}])
@@ -649,7 +650,8 @@ if not st.session_state.pin_unlocked:
 
 # ─────────────────────────────────────────────# NAVIGATION — MOBILE-FIRST CENTERED DROPDOWN
 # ─────────────────────────────────────────────
-pending_count = 0if not st.session_state.pending_df.empty and "Review_Status" in st.session_state.pending_df.columns:
+pending_count = 0
+if not st.session_state.pending_df.empty and "Review_Status" in st.session_state.pending_df.columns:
     pending_count = int((st.session_state.pending_df["Review_Status"].astype(str) == "pending").sum())
 
 PAGE_OPTIONS = ["🏠 Home", "📋 Transactions", "🏷 Categories", "⚠️ Review", "⚙️ Manage"]
@@ -1283,3 +1285,6 @@ if st.button("＋", key="fab_open", help="Log expense"):
     st.session_state.show_modal = True
     st.rerun()
 st.markdown('</div>', unsafe_allow_html=True)
+
+def hard_refresh():
+    st.rerun()
