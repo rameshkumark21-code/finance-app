@@ -1,6 +1,7 @@
-import streamlitas st
+import streamlit as st
 import pandas as pd
-import requestsfrom streamlit_gsheets import GSheetsConnection
+import requests
+from streamlit_gsheets import GSheetsConnection
 from datetime import datetime, timedelta, date
 import pytz
 
