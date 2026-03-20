@@ -447,10 +447,12 @@ def save_import_rules(new_df):
 def get_app_setting(key, default="0"):
     df_a = st.session_state.get("app_settings_df", pd.DataFrame())
     if df_a.empty or "Key" not in df_a.columns:
-        return default    mask = df_a["Key"].astype(str).str.strip() == key
+        return default
+    mask = df_a["Key"].astype(str).str.strip() == key
     if not mask.any():
         return default
     return str(df_a.loc[mask, "Value"].iloc[0]).strip()
+
 
 def set_app_setting(key, value):
     df_a = st.session_state.get("app_settings_df", pd.DataFrame(columns=["Key","Value"])).copy()
